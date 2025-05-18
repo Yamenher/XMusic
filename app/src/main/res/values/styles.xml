@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?><resources>
+    <style name="SmallRoundedCornersImage">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="BoldStyleBNV">
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@font/product_sans_regular</item>
+        <item name="fontFamily">@font/product_sans_regular</item>
+    </style>
+</resources>

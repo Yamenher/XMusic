@@ -1,0 +1,56 @@
+<LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical">
+	<LinearLayout
+		android:id="@+id/item"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="5dp"
+		android:padding="8dp"
+		android:gravity="center_vertical"
+		android:orientation="horizontal"
+		android:background="@drawable/rv_ripple">
+		<com.google.android.material.imageview.ShapeableImageView
+			android:id="@+id/songCover"
+			android:focusable="false"
+			android:layout_width="45dp"
+			android:layout_height="45dp"
+			android:layout_marginRight="8dp"
+			android:layout_marginLeft="12dp"
+			android:src="@drawable/img"
+			app:shapeAppearanceOverlay="@style/SmallRoundedCornersImage" />
+		<LinearLayout
+			android:id="@+id/linear3"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:padding="8dp"
+			android:orientation="vertical">
+			<TextView
+				android:id="@+id/SongTitle"
+				android:focusable="false"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginBottom="5dp"
+				android:text="TextView"
+				android:textSize="16sp"
+				android:singleLine="true"
+				android:lines="1"
+				android:textColor="?colorOnSurface"
+				android:ellipsize="end" />
+			<TextView
+				android:id="@+id/SongArtist"
+				android:focusable="false"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="TextView"
+				android:textSize="12sp"
+				android:singleLine="true"
+				android:textColor="?colorOutline"
+				android:ellipsize="end" />
+		</LinearLayout>
+	</LinearLayout>
+</LinearLayout>

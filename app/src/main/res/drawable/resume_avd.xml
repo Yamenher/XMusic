@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?><animated-vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector android:width="128dp" android:height="128dp" android:viewportWidth="128" android:viewportHeight="128">
+            <group android:name="main" android:pivotX="64" android:pivotY="64" android:scaleX="1" android:scaleY="1">
+                <group android:name="top">
+                    <path android:name="top_path" android:pathData="M 44 32 L 44 64 L 100 64 L 100 64 Z" android:fillColor="@android:color/black" android:strokeLineCap="butt" android:strokeLineJoin="miter" android:strokeMiterLimit="10"/>
+                </group>
+                <group android:name="bottom">
+                    <path android:name="bottom_path" android:pathData="M 44 96 L 44 64 L 100 64 L 100 64 Z" android:fillColor="@android:color/black" android:strokeLineCap="butt" android:strokeLineJoin="miter" android:strokeMiterLimit="10"/>
+                </group>
+            </group>
+        </vector>
+    </aapt:attr>
+    <target android:name="main" android:animation="@anim/rotate_90_animation"/>
+    <target android:name="top_path" android:animation="@anim/upper_play_to_pause_animation"/>
+    <target android:name="bottom_path" android:animation="@anim/bottom_play_to_pause_animation"/>
+</animated-vector>
