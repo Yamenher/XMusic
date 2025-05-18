@@ -201,7 +201,7 @@ public class PlayerService extends Service {
             });
         });
         if (mediaItems == null) {
-            SketchwareUtil.showMessage(getApplicationContext(), "fuck");
+            BasicUtil.showMessage(getApplicationContext(), "fuck");
         } else {
 			ExoPlayerHandler.post(() -> {
 				player.setRepeatMode(Player.REPEAT_MODE_ONE);
@@ -489,7 +489,7 @@ private void handleAudioFocusChange(int focusChange) {
         if (result == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             playMedia(uri, title, artist, coverUri, position);   
         } else if (result == android.media.AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
-			SketchwareUtil.showMessage(getApplicationContext(), "Unable to play songs at the moment");
+			BasicUtil.showMessage(getApplicationContext(), "Unable to play songs at the moment");
 		}
     }
 

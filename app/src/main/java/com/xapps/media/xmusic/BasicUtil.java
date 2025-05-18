@@ -11,7 +11,7 @@ import android.widget.*;
 import java.io.*;
 import java.util.*;
 
-public class SketchwareUtil {
+public class BasicUtil {
 
     public static int TOP = 1;
     public static int CENTER = 2;

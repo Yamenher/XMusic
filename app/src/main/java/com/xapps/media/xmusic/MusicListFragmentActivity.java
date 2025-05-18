@@ -105,7 +105,7 @@ public class MusicListFragmentActivity extends Fragment {
 		
         binding.searchBar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.bar_settings) {
-                SketchwareUtil.showMessage((MainActivity)getActivity(), "Settings");
+                BasicUtil.showMessage((MainActivity)getActivity(), "Settings");
                 return true;
             }
             return false;
@@ -206,7 +206,7 @@ public class MusicListFragmentActivity extends Fragment {
                         XUtils.increaseMargins(headerView, 0, searchBarHeight /*+ XUtils.getMargin(binding.searchBar, "top")*2*/, 0, 0);
 					    binding.songsList.animate().alpha(1f).translationY(0f).setDuration(300).start();
 				    } else {
-                        SketchwareUtil.showMessage(getActivity(), "smth is null");
+                        BasicUtil.showMessage(getActivity(), "smth is null");
                     }
 				});
                 MainActivity tmp = (MainActivity) getActivity();
@@ -344,4 +344,4 @@ public class MusicListFragmentActivity extends Fragment {
 			}
 		}
 	}
-}
+}
