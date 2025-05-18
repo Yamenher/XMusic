@@ -17,6 +17,7 @@ import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.session.*;
 import androidx.media3.session.MediaSession;
 import androidx.media3.session.MediaSession.*;
+import androidx.media3.session.MediaStyleNotificationHelper;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
@@ -288,6 +289,8 @@ public class PlayerService extends Service {
         if (mediaSession == null) {
             setupMediaSession();
         }
+        MediaStyleNotificationHelper.MediaStyle mediaStyle = new MediaStyleNotificationHelper.MediaStyle(mediaSession)
+        .setShowActionsInCompactView(0, 1, 2);
         Intent resumeIntent = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
         PendingIntent contentIntent = PendingIntent.getActivity(c, 0, resumeIntent, PendingIntent.FLAG_IMMUTABLE);
 	    int iconRes = isPlaying ? R.drawable.ic_pause : R.drawable.ic_play;
@@ -301,7 +304,7 @@ public class PlayerService extends Service {
 		.addAction(new NotificationCompat.Action(iconRes, actionText, getServiceIntent(this, actionIntent)))
 		.addAction(new NotificationCompat.Action(R.drawable.icon_prev, "Previous", getServiceIntent(this, "ACTION_PREVIOUS")))
 		.addAction(new NotificationCompat.Action(R.drawable.ic_next, "Next", getServiceIntent(this, "ACTION_NEXT")))
-		.setStyle(new androidx.media.app.NotificationCompat.MediaStyle().setShowActionsInCompactView(0, 1, 2).setMediaSession(mediaSession.getSessionCompatToken()))
+		.setStyle(mediaStyle)
 		.setOngoing(true)
         .setContentIntent(contentIntent)
 		.setOnlyAlertOnce(true)
