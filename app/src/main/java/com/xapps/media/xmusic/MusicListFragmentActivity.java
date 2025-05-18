@@ -316,13 +316,14 @@ public class MusicListFragmentActivity extends Fragment {
 			binding.item.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View _view) {
+				    int pos = _holder.getAdapterPosition();
 					if (!IgnoreClicks) {
 						IgnoreClicks = true;
-						path = SongsMap.get(_position).get("path").toString();
+						path = SongsMap.get(pos).get("path").toString();
 						Uri fileUri = Uri.parse("file://" + path);
 						MainActivity act = (MainActivity) getActivity();
-                        String pth = _data.get((int)_position).get("thumbnail").toString();
-						act._setSong(_position, pth, fileUri);
+                        String pth = _data.get(pos).get("thumbnail").toString();
+						act._setSong(pos, pth, fileUri);
 						new Handler(Looper.getMainLooper()).postDelayed(() -> {
 								IgnoreClicks = false;
 						
