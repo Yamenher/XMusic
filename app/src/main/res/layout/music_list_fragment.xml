@@ -1,31 +1,36 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout
-	xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:app="http://schemas.android.com/apk/res-auto"
-	xmlns:tools="http://schemas.android.com/tools"
-	android:layout_width="match_parent"
-	android:layout_height="match_parent"
-	android:background="?colorSurface"
-	android:orientation="vertical">
-	<com.google.android.material.search.SearchBar
-		android:id="@+id/search_bar"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:hint="" />
-	<androidx.recyclerview.widget.RecyclerView
-		android:id="@+id/songsList"
-		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:paddingLeft="0dp"
-		android:paddingRight="0dp"
-		android:alpha="0.0"
-		android:translationY="50.0dp"
-		app:layout_behavior="@string/searchbar_scrolling_view_behavior"
-		tools:listitem="@layout/songs_list_view" />
-	<com.google.android.material.search.SearchView
-		android:id="@+id/search_view"
-		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:orientation="vertical"
-		app:layout_anchor="@id/search_bar"
-		android:hint="Searchyoursongs" />
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/coordinator"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?colorSurface"
+    android:orientation="vertical">
+    <com.google.android.material.search.SearchBar
+        android:id="@+id/search_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="" />
+    <com.google.android.material.search.SearchView
+        android:id="@+id/search_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_anchor="@id/search_bar">
+        <LinearLayout
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:background="?colorSurface" />
+    </com.google.android.material.search.SearchView>        
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/songsList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="0dp"
+        android:paddingRight="0dp"
+        android:alpha="0.0"
+        android:translationY="50.0dp"
+        app:layout_behavior="@string/searchbar_scrolling_view_behavior"
+        tools:listitem="@layout/songs_list_view" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

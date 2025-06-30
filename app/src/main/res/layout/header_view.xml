@@ -9,6 +9,7 @@
 		android:id="@+id/header_layout"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
+        android:layout_marginTop="95dp"
 		android:paddingLeft="2dp"
 		android:paddingTop="8dp"
 		android:paddingRight="2dp"

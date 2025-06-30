@@ -8,6 +8,7 @@ import android.media.*;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.*;
+import android.service.controls.actions.CommandAction;
 import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.*;
@@ -29,6 +30,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.Futures;
 
 public class PlayerService extends Service {
 	
@@ -36,7 +39,7 @@ public class PlayerService extends Service {
 	private static final int NOTIFICATION_ID = 1;  
 	private static final String ACTION_PLAY = "ACTION_PLAY";  
 	
-	private ExoPlayer player;  
+	public static ExoPlayer player;  
 	private Handler handler;  
 	private Runnable updateProgressRunnable;  
     private final Context c = this;
@@ -59,16 +62,19 @@ public class PlayerService extends Service {
     private ScheduledExecutorService executor2 = Executors.newSingleThreadScheduledExecutor();
     private boolean isExecutorStarted = false;
     private Bitmap current;
-    private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
 	private ScheduledFuture<?> currentTask;
 	private MediaSession mediaSession;  
     private List<MediaItem> mediaItems;
     public static boolean isReceiving = false;
     HandlerThread handlerThread = new HandlerThread("ExoPlayerThread");
-	private Handler ExoPlayerHandler;
+	private static Handler ExoPlayerHandler;
 	private android.media.AudioManager audioManager;
     private android.media.AudioFocusRequest audioFocusRequest;
     private boolean wasPausedDueToFocus = false;
+    
+    private static final SessionCommand customCommandSeekBackward = new SessionCommand("custom_seek_backward", Bundle.EMPTY);
+    private static final SessionCommand customCommandSeekForward = new SessionCommand("custom_seek_forward", Bundle.EMPTY);
 
 	@Override 
 	public void onCreate() {  
@@ -112,12 +118,14 @@ public class PlayerService extends Service {
                 ExoPlayerHandler.post(() -> {
 				    if (player != null && currentPosition+1 >= 0 && currentPosition+1 <= mediaItems.size()) {  
 					    player.seekTo(currentPosition+1, 0);
+                        currentPosition++;
 				    }
                 });
             } else if (intent.getAction().equals("ACTION_PREVIOUS")) {   
                 ExoPlayerHandler.post(() -> {
 				    if (player != null && currentPosition-1 >= 0 && currentPosition-1 <= mediaItems.size()) {  
 					    player.seekTo(currentPosition-1, 0);
+                        currentPosition--;
 				    }
                 });
             } else if (intent.getAction().equals("ACTION_STOP")) {  
@@ -207,8 +215,8 @@ public class PlayerService extends Service {
 			ExoPlayerHandler.post(() -> {
 				player.setRepeatMode(Player.REPEAT_MODE_ONE);
                 player.setMediaItems(mediaItems);
-                player.seekTo(position, 0);
                 player.prepare();
+                player.seekTo(position, 0);
                 player.play();
                 player.addListener(new Player.Listener() {
                     @Override
@@ -289,21 +297,17 @@ public class PlayerService extends Service {
         if (mediaSession == null) {
             setupMediaSession();
         }
-        MediaStyleNotificationHelper.MediaStyle mediaStyle = new MediaStyleNotificationHelper.MediaStyle(mediaSession)
-        .setShowActionsInCompactView(0, 1, 2);
+        MediaStyleNotificationHelper.MediaStyle mediaStyle = new MediaStyleNotificationHelper.MediaStyle(mediaSession);
         Intent resumeIntent = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
         PendingIntent contentIntent = PendingIntent.getActivity(c, 0, resumeIntent, PendingIntent.FLAG_IMMUTABLE);
 	    int iconRes = isPlaying ? R.drawable.ic_pause : R.drawable.ic_play;
 	    String actionText = isPlaying ? "Pause" : "Play";
 	    String actionIntent = isPlaying ? "ACTION_PAUSE" : "ACTION_RESUME";
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-		.setSmallIcon(android.R.drawable.ic_media_play)
+		.setSmallIcon(R.mipmap.ic_launcher_foreground)
 		.setContentTitle(title)
 		.setContentText(artist)
 		.setLargeIcon(current)
-		.addAction(new NotificationCompat.Action(iconRes, actionText, getServiceIntent(this, actionIntent)))
-		.addAction(new NotificationCompat.Action(R.drawable.icon_prev, "Previous", getServiceIntent(this, "ACTION_PREVIOUS")))
-		.addAction(new NotificationCompat.Action(R.drawable.ic_next, "Next", getServiceIntent(this, "ACTION_NEXT")))
 		.setStyle(mediaStyle)
 		.setOngoing(true)
         .setContentIntent(contentIntent)
@@ -424,74 +428,61 @@ public class PlayerService extends Service {
 		if (mediaSession != null) {
 			return;
 		}
-		CommandButton loopButton = new CommandButton.Builder()
-        .setDisplayName("Loop")
-        .setIconResId(R.drawable.ic_music_outlined)
-        .setSessionCommand(new SessionCommand("CUSTOM_LOOP", Bundle.EMPTY))
-        .build();
-        CommandButton favButton = new CommandButton.Builder()
-        .setDisplayName("Favorite")
-        .setIconResId(R.drawable.ic_playlists_outlined)
-        .setSessionCommand(new SessionCommand("CUSTOM_FAVORITE", Bundle.EMPTY))
-        .build();
-        mediaSession = new MediaSession.Builder(this, player).setId("XMusicMediaSessionPrivate").setCustomLayout(ImmutableList.of(loopButton, favButton)).build();
+        mediaSession = new androidx.media3.session.MediaSession.Builder(this, player).setId("XMusicMediaSessionPrivate").build();
     }
 
-
-
-private void setupAudioFocusRequest() {
-    android.media.AudioFocusRequest.Builder builder = new android.media.AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+    private void setupAudioFocusRequest() {
+        android.media.AudioFocusRequest.Builder builder = new android.media.AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
         .setOnAudioFocusChangeListener(this::handleAudioFocusChange)
         .setAudioAttributes(new android.media.AudioAttributes.Builder()
-            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
-            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
-            .build());
-
-    audioFocusRequest = builder.build();
-}
-
-private void handleAudioFocusChange(int focusChange) {
-    switch (focusChange) {
-        case AudioManager.AUDIOFOCUS_GAIN:
-		    ExoPlayerHandler.post(() -> {
-				player.setVolume(1.0f);
-                if (wasPausedDueToFocus) {
-                    player.play();
-                    wasPausedDueToFocus = false;
-                }
-			});
-            break;
-        case AudioManager.AUDIOFOCUS_LOSS:
-		    ExoPlayerHandler.post(() -> {
-                if (player.isPlaying()) {
-                    player.pause();
-                    wasPausedDueToFocus = true;
-                }
-			});
-            break;
-        case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-		    ExoPlayerHandler.post(() -> {
-                if (player.isPlaying()) {
-                    player.pause();
-                    wasPausedDueToFocus = true;
-                }
-			});
-            break;
-        case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-		    ExoPlayerHandler.post(() -> {
-                if (player.isPlaying()) {
-                    player.setVolume(0.2f);
-                }
-			});
-			break;
+        .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+        .build());
+        audioFocusRequest = builder.build();
     }
-}
+
+    private void handleAudioFocusChange(int focusChange) {
+        switch (focusChange) {
+            case AudioManager.AUDIOFOCUS_GAIN:
+                ExoPlayerHandler.post(() -> {
+				    player.setVolume(1.0f);
+                    if (wasPausedDueToFocus) {
+                        player.play();
+                        wasPausedDueToFocus = false;
+                    }
+			    });
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS:
+                ExoPlayerHandler.post(() -> {
+                    if (player.isPlaying()) {
+                        player.pause();
+                        wasPausedDueToFocus = true;
+                    }
+			    });
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                ExoPlayerHandler.post(() -> {
+                    if (player.isPlaying()) {
+                        player.pause();
+                        wasPausedDueToFocus = true;
+                    }
+			    });
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                ExoPlayerHandler.post(() -> {
+                    if (player.isPlaying()) {
+                        player.setVolume(0.2f);
+                    }
+			    });
+			    break;
+        }
+    }
 
     public void requestAudioFocus(String uri, String title, String artist, String coverUri, int position) {
         int result = audioManager.requestAudioFocus(audioFocusRequest);
         if (result == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             playMedia(uri, title, artist, coverUri, position);   
-        } else if (result == android.media.AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
+        } else {
 			BasicUtil.showMessage(getApplicationContext(), "Unable to play songs at the moment");
 		}
     }

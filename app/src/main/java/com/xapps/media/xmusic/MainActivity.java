@@ -1,6 +1,5 @@
 package com.xapps.media.xmusic;
 
-import com.xapps.media.xmusic.SplashActivity;
 import android.animation.*;
 import android.app.*;
 import android.content.*;
@@ -15,7 +14,7 @@ import android.text.style.*;
 import android.util.*;
 import android.view.*;
 import android.view.View.*;
-import android.view.animation.*;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.webkit.*;
 import android.widget.*;
 import androidx.activity.*;
@@ -28,6 +27,7 @@ import androidx.customview.*;
 import androidx.customview.poolingcontainer.*;
 import androidx.emoji2.*;
 import androidx.fragment.app.*;
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import androidx.lifecycle.livedata.core.*;
 import androidx.lifecycle.process.*;
 import androidx.lifecycle.runtime.*;
@@ -65,7 +65,7 @@ import androidx.media3.common.Player;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 import java.lang.reflect.Field;
-import com.xapps.media.xmusic.data.DataManager;
+import com.xapps.media.xmusic.XUtils;
 import androidx.constraintlayout.motion.widget.MotionLayout;
 import com.xapps.media.xmusic.widget.PlayerToggle;
 import com.google.android.material.slider.Slider;
@@ -82,26 +82,26 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 public class MainActivity extends AppCompatActivity {
 	
 	private MainBinding binding;
-	public float targetMargin;
-	private DataManager dataManager;
-	private boolean isDataLoaded = false;
+    private final Context c = this;
+	public float targetMargin, bsh;
     private boolean receiveProgress = false;
-	private final Context c = this;
 	private boolean isAnimated = false;
+    private boolean isBsInvisible = true;
+    private boolean isRun = false;
+    private boolean seekbarFree = true;
+    private boolean IsColorAnimated = false;
+    public boolean isbnvHidden, isDataLoaded = false;
+    private int playbackState, playerSurface, bottomSheetColor, tmpColor, navBarHeight, currentPosition;
 	public ExoPlayer player;
 	public BottomSheetBehavior bottomSheetBehavior;
-	private int playbackState;
-	private boolean isBsInvisible = true;
-	private Handler handler;
+	private Handler handler, seekController = new Handler(Looper.getMainLooper());
 	private Runnable updateProgressRunnable;
-	private boolean seekbarFree = true;
-	public int navBarHeight;
 	private MediaSessionCompat mediaSession;
-	private int playerSurface;
-	private int bottomSheetColor;
-	private boolean IsColorAnimated = false;
-	private int tmpColor;
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private float currentSlideOffset;
+    private boolean isPlaying = false;
+    private Handler actionSender = new Handler(Looper.getMainLooper());
+    private boolean seekAllowed = true;
 	
 	public static ArrayList<HashMap<String, Object>> SongsMap = new ArrayList<>();
 	private ArrayList<String> SongsList = new ArrayList<>();
@@ -109,6 +109,15 @@ public class MainActivity extends AppCompatActivity {
 	
 	@Override
 	protected void onCreate(Bundle _savedInstanceState) {
+        executor.execute(() -> {
+            SongsMap = SongMetadataHelper.getAllSongs(c);
+        });
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+		    final SplashScreen splash = SplashScreen.installSplashScreen(this);
+            splash.setKeepOnScreenCondition(() -> {
+                return !isDataLoaded;
+            });
+        }
 		WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
 		super.onCreate(_savedInstanceState);
 		binding = MainBinding.inflate(getLayoutInflater());
@@ -118,7 +127,6 @@ public class MainActivity extends AppCompatActivity {
 	}
 	
 	private void initialize(Bundle _savedInstanceState) {
-        
         IntentFilter filter = new IntentFilter();
 		filter.addAction("PLAYER_PROGRESS");
 		filter.addAction("PLAYER_COLORS");
@@ -129,10 +137,12 @@ public class MainActivity extends AppCompatActivity {
 				if (!binding.toggleView.isAnimating()) {
 					Intent playIntent = new Intent(c, PlayerService.class);
 					playIntent.setAction("ACTION_PAUSE");
+                    isPlaying = false; 
 					startService(playIntent);
 				} else {
 					Intent playIntent = new Intent(c, PlayerService.class);
 					playIntent.setAction("ACTION_RESUME");
+                    isPlaying = true;
 					startService(playIntent);
 				}
 			}
@@ -144,26 +154,42 @@ public class MainActivity extends AppCompatActivity {
             bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         });
         
+        binding.favoriteButton.setOnClickListener(v -> {
+            
+        });
+        
+        binding.saveButton.setOnClickListener(v -> {
+            
+        });
+        
         binding.nextButton.setOnClickListener(v -> {
-            Intent playIntent = new Intent(c, PlayerService.class);
-			playIntent.setAction("ACTION_NEXT");
-			startService(playIntent);
+            if (seekAllowed) {
+                currentPosition++;
+                _setSong(currentPosition, SongsMap.get(currentPosition).get("thumbnail").toString(), Uri.parse("file://"+SongsMap.get(currentPosition).get("path").toString()));
+                seekAllowed = false;
+                seekController.postDelayed(() -> {
+                    seekAllowed = true;
+                }, 150);
+            }
         });
         binding.previousButton.setOnClickListener(v -> {
-            Intent playIntent = new Intent(c, PlayerService.class);
-			playIntent.setAction("ACTION_PREVIOUS");
-			startService(playIntent);
+            if (seekAllowed) {
+                currentPosition--;
+                _setSong(currentPosition, SongsMap.get(currentPosition).get("thumbnail").toString(), Uri.parse("file://"+SongsMap.get(currentPosition).get("path").toString()));
+                seekAllowed = false;
+                seekController.postDelayed(() -> {
+                    seekAllowed = true;
+                }, 150);
+            }
         });
     }
    
 	
 	private void initializeLogic() {
 		bottomSheetColor = extractColor(binding.miniPlayerBottomSheet);
-		getWindow().setNavigationBarColor(0x00000000);
 		int resourceId = c.getResources().getIdentifier("navigation_bar_height", "dimen", "android");
 		if (resourceId > 0) {
             navBarHeight = c.getResources().getDimensionPixelSize(resourceId);
-	
 		}
         binding.songSeekbar.addOnChangeListener((slider, progress, isManual) -> {
             if (isManual) {
@@ -193,46 +219,38 @@ public class MainActivity extends AppCompatActivity {
 		addFragment("com.xapps.media.xmusic.MusicListFragmentActivity");
 		bottomSheetBehavior = BottomSheetBehavior.from(binding.miniPlayerBottomSheet);
 		bottomSheetBehavior.setHideable(true);
+        bsh = bottomSheetBehavior.getPeekHeight();
 		bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
-		Handler handler = new Handler();
-		Runnable runnable = new Runnable() {
-		    @Override
-			public void run() {
-				if (binding.bottomNavigation.getHeight() != 0) {
-					targetMargin = binding.bottomNavigation.getHeight() ;
-					XUtils.increaseMargins(binding.musicProgress, 0, 0, 0, navBarHeight);
-					XUtils.setMargins(binding.fragmentsContainer, 0, 0, 0, (int) targetMargin);
-					bottomSheetBehavior.setPeekHeight(bottomSheetBehavior.getPeekHeight() + navBarHeight);
-					int bottomHeight = binding.imageContainer.getHeight() + binding.bottomNavigation.getHeight() + binding.musicProgress.getHeight() + XUtils.getMargin(binding.musicProgress, "top");
-					XUtils.increaseMargins(binding.Fab, 0, 0, 0, (int)(navBarHeight*1.4f));
-					if (false) {
-						XUtils.increaseMargins(binding.Fab, 0, 0, 0, binding.miniPlayerThumbnail.getHeight() + (int)(binding.miniPlayerBottomSheet.getPaddingTop()*1.25f));
-					}
-					handler.removeCallbacks(this);
-					binding.imageContainer.bringToFront();
-					binding.imageContainer.invalidate();
-				} else {
-					handler.postDelayed(this, 50);
-				}
-			}
-		};handler.post(runnable);
-		bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+        binding.bottomNavigation.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (!isRun) {
+                targetMargin = binding.bottomNavigation.getHeight() ;
+			    XUtils.increaseMargins(binding.musicProgress, 0, 0, 0, navBarHeight);
+			    bottomSheetBehavior.setPeekHeight(bottomSheetBehavior.getPeekHeight() + navBarHeight);
+			    int bottomHeight = binding.imageContainer.getHeight() + binding.bottomNavigation.getHeight() + binding.musicProgress.getHeight() + XUtils.getMargin(binding.musicProgress, "top");
+			    XUtils.increaseMargins(binding.Fab, 0, 0, 0, (int)(navBarHeight*1.4f));
+            }
+            isRun = true;
+        });
+		bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
 			@Override
 			public void onStateChanged(@NonNull View bottomSheet, int newState) {
 				if (newState == BottomSheetBehavior.STATE_DRAGGING) {
-					binding.Fab.hide();
+					if (!isBNVHidden()) binding.Fab.hide();
 					binding.musicProgress.animate().alpha(0f).setDuration(100).start();
 				} else if (newState == BottomSheetBehavior.STATE_COLLAPSED || newState == BottomSheetBehavior.STATE_HIDDEN) {
 					if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                    
 						Intent playIntent = new Intent(c, PlayerService.class);
 						playIntent.setAction("ACTION_STOP");
 						startService(playIntent);
+                        Intent playIntent2 = new Intent("ACTION_STOP");
+						sendBroadcast(playIntent2);
 						isBsInvisible = true;
 						XUtils.increaseMargins(binding.Fab, 0, 0, 0, -(binding.miniPlayerThumbnail.getHeight() + binding.miniPlayerBottomSheet.getPaddingTop()*2));
 				    } else {
 						isBsInvisible = false;
 					}
-						binding.Fab.show();
+						if (!isBNVHidden()) binding.Fab.show();
 						binding.musicProgress.animate().alpha(1f).setDuration(100).start();
 			    } else {
 						isBsInvisible = false;
@@ -241,11 +259,12 @@ public class MainActivity extends AppCompatActivity {
 				
 			@Override
 			public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+                currentSlideOffset = slideOffset;
 				if (0f <= slideOffset) {
-				    binding.fragmentsContainer.setTranslationY(-XUtils.convertToPx(c, 65f)*slideOffset);
+				    binding.fragmentsContainer.setTranslationY(-XUtils.convertToPx(c, 75f)*slideOffset);
 				    binding.Scrim.setAlpha(slideOffset*0.7f);
 					binding.miniPlayerBottomSheet.setProgress(slideOffset);
-					binding.bottomNavigation.setTranslationY(binding.bottomNavigation.getHeight()*slideOffset*2.5f);
+                    if (!isBNVHidden()) binding.bottomNavigation.setTranslationY(binding.bottomNavigation.getHeight()*slideOffset*2.5f);
 					if (slideOffset <= 0.05f) {
 						binding.miniPlayerDetailsLayout.setAlpha(1f - slideOffset*20);
 						if (isAnimated) {
@@ -271,8 +290,8 @@ public class MainActivity extends AppCompatActivity {
 								Drawable background = binding.miniPlayerBottomSheet.getBackground();
 								((GradientDrawable) background).setColor(animatedColor);
 						    
-						    });
-					    }
+                            });
+                        }
                         binding.songSeekbar.setEnabled(false);
 				    }
 				}
@@ -349,6 +368,7 @@ public class MainActivity extends AppCompatActivity {
 	}
         
 	public void _setSong(final int _position, final String _coverPath, final Uri _fileUri) {
+        currentPosition = _position;
         binding.musicProgress.setProgressCompat(0, true);
         binding.songSeekbar.setValue(0);
         if (isBsInvisible) {
@@ -359,23 +379,37 @@ public class MainActivity extends AppCompatActivity {
         if (frag != null) {
             currentMap = frag.getSongsMap();
         }
-        binding.toggleView.startAnimation();
-        binding.currentSongTitle.setText(currentMap.get((int)_position).get("title").toString());
-        binding.currentSongArtist.setText(currentMap.get((int)_position).get("author").toString());
+        binding.artistBigTitle.animate().alpha(0f).translationX(-20f).setDuration(100).start();
+        binding.songBigTitle.animate().alpha(0f).translationX(-20f).setDuration(100).start();
+        handler = new Handler(Looper.getMainLooper());   
+        handler.postDelayed(() -> {
+            binding.artistBigTitle.setTranslationX(20f);
+            binding.songBigTitle.setTranslationX(20f);
+            binding.totalDurationText.setText(currentMap.get(_position).get("duration").toString());
+            binding.artistBigTitle.setText(currentMap.get(_position).get("author").toString());
+            binding.songBigTitle.setText(currentMap.get(_position).get("title").toString());
+            binding.currentSongTitle.setText(currentMap.get(_position).get("title").toString());
+            binding.currentSongArtist.setText(currentMap.get(_position).get("author").toString());
+        }, 110);
+        handler.postDelayed(() -> {
+            binding.artistBigTitle.animate().alpha(1f).translationX(0f).setDuration(120).start();
+            binding.songBigTitle.animate().alpha(1f).translationX(0f).setDuration(120).start();
+        }, 120);
+        if (!isPlaying) binding.toggleView.startAnimation();
+        isPlaying = true;    
         Glide.with(c)
         .load(Uri.parse("file://" + _coverPath))
         .apply(new RequestOptions()
         .centerCrop()
         .override(800, 800)
-        .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
-        .skipMemoryCache(false))
-        .thumbnail(0.1f)
+        .skipMemoryCache(true))
+        .thumbnail(1f)    
         .transition(DrawableTransitionOptions.withCrossFade(300))
         .into(binding.miniPlayerThumbnail);
         int max = Integer.parseInt(currentMap.get(_position).get("total").toString());
         binding.songSeekbar.setValueTo(max);
         binding.musicProgress.setMax(max);
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        handler.postDelayed(() -> {
             Intent playIntent = new Intent(this, PlayerService.class);
             playIntent.setAction("ACTION_PLAY");
             playIntent.putExtra("uri", _fileUri.toString());
@@ -383,9 +417,6 @@ public class MainActivity extends AppCompatActivity {
             playIntent.putExtra("artist", currentMap.get((int)_position).get("author").toString());
             playIntent.putExtra("cover", _coverPath);
             playIntent.putExtra("position", _position);
-            binding.totalDurationText.setText(currentMap.get((int)_position).get("duration").toString());
-            binding.artistBigTitle.setText(currentMap.get((int)_position).get("author").toString());
-            binding.songBigTitle.setText(currentMap.get((int)_position).get("title").toString());
             startService(playIntent);
         }, 10);
 	}
@@ -406,8 +437,12 @@ public class MainActivity extends AppCompatActivity {
 				playerSurface = isDarkMode(c)? ColorPaletteUtils.darkColors.get("surface") : ColorPaletteUtils.lightColors.get("surface");
 				binding.toggleView.setIconColor(isDarkMode(c)? ColorPaletteUtils.darkColors.get("primary") : ColorPaletteUtils.lightColors.get("primary"));
                 binding.nextButton.getBackground().setColorFilter(isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
+                binding.favoriteButton.getBackground().setColorFilter(isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
+                binding.saveButton.getBackground().setColorFilter(isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
                 binding.previousButton.getBackground().setColorFilter(isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
                 binding.nextButton.setColorFilter(isDarkMode(c)? ColorPaletteUtils.darkColors.get("tertiary") : ColorPaletteUtils.lightColors.get("tertiary"), PorterDuff.Mode.SRC_IN);
+                binding.favoriteButton.setColorFilter(isDarkMode(c)? ColorPaletteUtils.darkColors.get("tertiary") : ColorPaletteUtils.lightColors.get("tertiary"), PorterDuff.Mode.SRC_IN);
+                binding.saveButton.setColorFilter(isDarkMode(c)? ColorPaletteUtils.darkColors.get("tertiary") : ColorPaletteUtils.lightColors.get("tertiary"), PorterDuff.Mode.SRC_IN);
                 binding.previousButton.setColorFilter(isDarkMode(c)? ColorPaletteUtils.darkColors.get("tertiary") : ColorPaletteUtils.lightColors.get("tertiary"), PorterDuff.Mode.SRC_IN);
                 Slider slider = binding.songSeekbar;
                 slider.setTrackInactiveTintList(ColorStateList.valueOf(isDarkMode(c)? ColorPaletteUtils.darkColors.get("outline") : ColorPaletteUtils.lightColors.get("outline")));
@@ -418,6 +453,9 @@ public class MainActivity extends AppCompatActivity {
                 binding.songBigTitle.setTextColor(isDarkMode(c)? ColorPaletteUtils.darkColors.get("onSurface") : ColorPaletteUtils.lightColors.get("onSurface"));
                 binding.currentDurationText.setTextColor(isDarkMode(c)? ColorPaletteUtils.darkColors.get("onSurfaceContainer") : ColorPaletteUtils.lightColors.get("onSurfaceContainer"));
                 binding.totalDurationText.setTextColor(isDarkMode(c)? ColorPaletteUtils.darkColors.get("onSurfaceContainer") : ColorPaletteUtils.lightColors.get("onSurfaceContainer"));
+                Drawable background = binding.miniPlayerBottomSheet.getBackground();
+				tmpColor = interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
+				((GradientDrawable) background).setColor(tmpColor);
 			} else if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(action)) {
 				Intent stopIntent = new Intent(c, PlayerService.class);
 				stopIntent.setAction("ACTION_PAUSE");
@@ -468,5 +506,42 @@ public class MainActivity extends AppCompatActivity {
         startService(playIntent);
     }
         
+    public void HideBNV(boolean hide) {
+        if (hide) {
+            binding.bottomNavigation.animate().alpha(0.5f).translationY(binding.bottomNavigation.getHeight()).setDuration(180).withEndAction(() -> binding.bottomMixer.removeView(binding.bottomNavigation)).start();
+            ValueAnimator animator = ValueAnimator.ofFloat(bsh, 0f);
+		    animator.setDuration(300);
+		    animator.addUpdateListener(animation -> {
+			    int progress = Math.round((float) animation.getAnimatedValue());
+                bottomSheetBehavior.setPeekHeight(progress);
+            });
+		    animator.start();
+            binding.Fab.hide();
+        } else {
+            int extraInt = XUtils.convertToPx(c, 15);
+            binding.bottomNavigation.animate().alpha(1f).translationY(0).setDuration(350).withStartAction(() -> binding.bottomMixer.addView(binding.bottomNavigation)).start();
+            ValueAnimator animator = ValueAnimator.ofFloat(0f, bsh);
+		    animator.setDuration(300);
+		    animator.addUpdateListener(animation -> {
+			    int progress = Math.round((float) animation.getAnimatedValue());
+                bottomSheetBehavior.setPeekHeight(progress + extraInt);
+            });
+		    animator.start();
+            binding.Fab.show();
+        }
+        isbnvHidden = hide;
+    }
+    
+    public boolean isBNVHidden() {
+        return isbnvHidden;
+    }
+    
+    public void Start() {
+        isDataLoaded = true;
+    }
+    
+    public ArrayList<HashMap<String, Object>> getSongsMap() {
+        return SongsMap;
+    }
 	
 }
