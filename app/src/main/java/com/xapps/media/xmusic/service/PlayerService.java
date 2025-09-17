@@ -46,6 +46,7 @@ public class PlayerService extends Service {
 	
 	private Bitmap icon;  
 	private boolean isPlaying;  
+    private boolean firstTimeUpdate = false;
 	private int currentState;
 	public static String currentTitle;  
 	public static String currentArtist;  
@@ -53,7 +54,7 @@ public class PlayerService extends Service {
 	public static Bitmap currentArt;
 	public static int lastProgress = 0;
 	public static int lastMax = 0;
-    private int currentPosition = 0;
+    public static int currentPosition = 0;
     private boolean isBuilt = false;
     private boolean isNotifDead = true;
     private byte tb[];
@@ -139,7 +140,7 @@ public class PlayerService extends Service {
                         mediaSession.release();
                         mediaSession = null;
                 }
-				stopForeground(true);
+				stopForeground(Service.STOP_FOREGROUND_REMOVE);
 			} else if (intent.getAction().equals("ACTION_PAUSE")) {  
 				isPlaying = false;  
                 ExoPlayerHandler.post(() -> {
@@ -199,16 +200,19 @@ public class PlayerService extends Service {
 			startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
 		}  
         updateNotification(title, artist, coverUri);
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        executor.execute(() -> {
-            Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
-            tb = toByteArray(transparentBitmap);
-            Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
-            ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
-                Intent progressIntent = new Intent("PLAYER_COLORS");
-                sendBroadcast(progressIntent);
+        if (!firstTimeUpdate) {
+            ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            executor.execute(() -> {
+                Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
+                tb = toByteArray(transparentBitmap);
+                Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
+                ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
+                    Intent progressIntent = new Intent("PLAYER_COLORS");
+                    sendBroadcast(progressIntent);
+                    firstTimeUpdate = true;
+                });
             });
-        });
+        }
         if (mediaItems == null) {
             BasicUtil.showMessage(getApplicationContext(), "fuck");
         } else {
@@ -231,6 +235,16 @@ public class PlayerService extends Service {
                     public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
                         if (mediaItem != null) {
                             updateNotification(currentTitle, currentArtist, currentCover);
+                            currentPosition = player.getCurrentMediaItemIndex();
+                            executor.execute(() -> {
+                                Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
+                                tb = toByteArray(transparentBitmap);
+                                Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(currentPosition).get("thumbnail").toString());
+                                ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
+                                    Intent progressIntent = new Intent("PLAYER_COLORS");
+                                    sendBroadcast(progressIntent);
+                                });
+                            });
                         }
                     }
                 });

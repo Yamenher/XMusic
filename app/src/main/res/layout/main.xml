@@ -14,7 +14,9 @@
             android:id="@+id/fragmentsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:name="com.xapps.media.xmusic.MusicListFragmentActivity"
             android:orientation="vertical"
+            android:transitionGroup="true"
             android:layout_weight="1" />
         <View
             android:id="@+id/Scrim"
@@ -41,20 +43,11 @@
                 android:background="@drawable/rounded_corners_bottom_sheet"
                 app:layoutDescription="@xml/motion_scene"
                 tools:showPaths="true"
-                app:behavior_peekHeight="155dp">
-                <LinearLayout
-                    android:id="@+id/image_container"
+                app:behavior_peekHeight="145dp">
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/covers_pager"
                     android:layout_width="match_parent"
-                    android:layout_height="45dp"
-                    android:orientation="horizontal"
-                    android:elevation="2dp">
-                    <com.appbroker.roundedimageview.RoundedImageView
-                        android:id="@+id/miniPlayerThumbnail"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:src="@drawable/omp"
-                        app:radius="8dp" />
-                </LinearLayout>
+                    android:layout_height="wrap_content"/>
                 <LinearLayout
                     android:id="@+id/miniPlayerDetailsLayout"
                     android:layout_width="match_parent"
@@ -101,7 +94,7 @@
                     app:trackColor="#00000000"
                     app:indicatorColor="?colorPrimary"
                     app:trackThickness="2dp"
-                    app:layout_constraintTop_toBottomOf="@+id/image_container"
+                    app:layout_constraintTop_toBottomOf="@+id/covers_pager"
                     android:elevation="0dp" />
                 <LinearLayout
                     android:id="@+id/controls_layout"
@@ -200,9 +193,10 @@
                         android:paddingBottom="8dp"
                         android:enabled="false"
                         android:progress="0"
-                        app:trackHeight="3dp"
+                        app:trackHeight="5dp"
                         app:trackStopIndicatorSize="0dp"
-                        app:thumbHeight="20dp"
+                        app:thumbWidth="4dp"
+                        app:thumbHeight="25dp"
                         app:labelBehavior="gone" />
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -268,7 +262,7 @@
                 android:layout_gravity="bottom"
                 app:menu="@menu/bnv_menu"
                 app:labelVisibilityMode="selected"
-                app:itemTextAppearanceActive="@style/BoldStyleBNV" />
+                app:itemTextAppearanceActive="@style/BoldStyleBNV"/>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </FrameLayout>
     <com.google.android.material.floatingactionbutton.FloatingActionButton

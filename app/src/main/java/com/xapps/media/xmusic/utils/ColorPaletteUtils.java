@@ -32,34 +32,11 @@ public class ColorPaletteUtils {
         });
     }
 
-    private static Map<String, Integer> extractColorRoles(CorePalette core, boolean isDark) {
-        Map<String, Integer> roles = new HashMap<>();
-
-        TonalPalette a1 = core.a1;
-        TonalPalette n1 = core.n1;
-
-        roles.put("primary", a1.tone(isDark ? 80 : 40));
-        roles.put("onPrimary", a1.tone(isDark ? 20 : 100));
-        roles.put("primaryContainer", a1.tone(isDark ? 30 : 90));
-        roles.put("onPrimaryContainer", a1.tone(isDark ? 90 : 10));
-
-        roles.put("surface", n1.tone(isDark ? 6 : 98));
-        roles.put("onSurface", n1.tone(isDark ? 90 : 10));
-        roles.put("surfaceContainer", n1.tone(isDark ? 12 : 94));
-        roles.put("onSurfaceContainer", n1.tone(isDark ? 90 : 10));
-
-        roles.put("background", n1.tone(isDark ? 6 : 98));
-        roles.put("onBackground", n1.tone(isDark ? 90 : 10));
-        roles.put("outline", n1.tone(isDark ? 60 : 50));
-
-        return roles;
-    }
-
     private static Map<String, Integer> generateMaterialTones(Hct hct, boolean isDark) {
     Map<String, Integer> tones = new HashMap<>();
 
     double hue = hct.getHue();
-    double chroma = hct.getChroma(); // might want to clamp this to 48–64 for consistency
+    double chroma = hct.getChroma();
 
     tones.put("primary", Hct.from(hue, chroma, isDark ? 80 : 30).toInt());
     tones.put("onPrimary", Hct.from(hue, chroma, isDark ? 20 : 80).toInt());

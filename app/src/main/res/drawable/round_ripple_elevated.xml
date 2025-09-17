@@ -2,9 +2,8 @@
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
     android:color="?android:colorControlHighlight">
     <item>
-        <shape android:shape="rectangle">
-            <corners android:radius="18dp"/>
-            <solid android:color="?colorSecondaryContainer"/>
+        <shape android:shape="oval">
+            <solid android:color="?colorSurfaceContainerHigh"/>
         </shape>
     </item>
 </ripple>

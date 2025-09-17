@@ -4,12 +4,14 @@ import android.os.StrictMode;
 import android.os.Build;
 import android.app.Application;
 import android.content.Context;
+import com.google.android.material.color.DynamicColors;
 
 public class XApp extends Application {
     
     @Override
     public void onCreate() {
         super.onCreate();
+        DynamicColors.applyToActivitiesIfAvailable(this);
         if (true) {
     StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
         .detectAll()
@@ -18,7 +20,7 @@ public class XApp extends Application {
         .build());
 
     StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
-        .detectAll() // Leaks, unclosed resources, etc.
+        .detectAll()
         .penaltyLog()
         .build());
 }

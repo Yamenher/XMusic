@@ -22,11 +22,13 @@ import android.view.animation.*;
 import android.webkit.*;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.window.OnBackInvokedDispatcher;
 import androidx.activity.*;
 import androidx.annotation.*;
 import androidx.annotation.experimental.*;
 import androidx.appcompat.*;
 import androidx.appcompat.resources.*;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.*;
 import androidx.core.content.*;
 import androidx.core.content.res.ResourcesCompat;
@@ -53,7 +55,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.RecyclerView.ViewHolder;
 import androidx.savedstate.*;
-import androidx.security.*;
 import androidx.startup.*;
 import androidx.transition.*;
 import com.appbroker.roundedimageview.*;
@@ -61,9 +62,9 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.*;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.search.*;
-import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.databinding.*;
 import com.xapps.media.xmusic.databinding.MainBinding;
+import com.xapps.media.xmusic.settingsFragment;
 import java.io.*;
 import java.text.*;
 import java.util.*;
@@ -87,7 +88,6 @@ public class MusicListFragmentActivity extends Fragment {
 	public SearchBar searchBar;
 	public AppBarLayout appbar;
 	private boolean IsScrolledDown = false;
-	private DataManager dataManager;
 	public static Typeface cachedTypeface;
 	public static int size;
 	private String path = "";
@@ -95,7 +95,7 @@ public class MusicListFragmentActivity extends Fragment {
 	private boolean IgnoreClicks = false;
     private MainActivity a;
     private SongsListAdapter songsAdapter;
-    private boolean isPlaying = false;
+    private boolean isPlaying, fabWasHidden = false;
 	
 	private ArrayList<String> SongsList = new ArrayList<>();
 	private ArrayList<HashMap<String, Object>> SongsMap = new ArrayList<>();
@@ -103,9 +103,8 @@ public class MusicListFragmentActivity extends Fragment {
     private final BroadcastReceiver myReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            android.util.Log.i("Nigger", "Works");
             isPlaying = false;
-            songsAdapter.notifyItemChanged(oldPos);
+            songsAdapter.notifyItemChanged(oldPos, "color");
         }
     };
 	
@@ -113,9 +112,78 @@ public class MusicListFragmentActivity extends Fragment {
 	@Override
 	public View onCreateView(@NonNull LayoutInflater _inflater, @Nullable ViewGroup _container, @Nullable Bundle _savedInstanceState) {
 		binding = MusicListFragmentBinding.inflate(_inflater, _container, false);
-		initialize(_savedInstanceState, binding.getRoot());
 		initializeLogic();
+        setUpListeners(); 
 		return binding.getRoot();
+	}
+	
+	private void initializeLogic() {
+        a = (MainActivity) getActivity();
+		activity = a.getBinding();
+		Context context = getActivity();
+		int cores = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(cores);
+        Handler mainHandler = new Handler(Looper.getMainLooper());
+        binding.collapsingToolbar.setPadding(0, XUtils.getStatusBarHeight(getActivity()), 0, 0);
+        
+        /*binding.songsList.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+                if (parent.getChildAdapterPosition(view) == parent.getAdapter().getItemCount() - 1) {
+                    outRect.bottom = activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight();
+                }
+            }
+        });*/
+
+        executor.execute(() -> {
+            try {
+                if (getActivity() != null) {
+                    MainActivity act = (MainActivity) getActivity();
+                    SongsMap = act.getSongsMap();
+                    songsAdapter = new SongsListAdapter(SongsMap);
+                }
+                
+                MainActivity act = (MainActivity) getActivity();
+                if (act != null) act.updateSongs(SongsMap);
+                act.Start();
+        
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        size = SongsMap.size();
+                        if (size == 0) {
+                            binding.songsList.setVisibility(View.INVISIBLE);
+                            mainHandler.postDelayed(this, 25);
+                        } else {
+                            binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
+                            //View headerView = LayoutInflater.from(getActivity()).inflate(R.layout.header_view, binding.songsList, false);
+                            binding.searchBar.post(() -> {
+                                HeaderAdapter headerAdapter = new HeaderAdapter();
+                                ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
+                                binding.songsList.setAdapter(concatAdapter);
+                                binding.songsList.animate().alpha(1f).translationY(0f).setDuration(300).start();
+                                binding.emptyLayout.setVisibility(View.GONE);
+                            });
+                        }
+                    }
+                });
+
+            } catch (Exception e) {
+                Log.e("CoreExecutor", "Error loading songs", e);
+            }
+        });
+        binding.searchView.addTransitionListener((searchView, previousState, newState) -> {
+            if (newState == SearchView.TransitionState.SHOWING) {
+                a.HideBNV(true, fabWasHidden);
+            } else if (newState == SearchView.TransitionState.HIDING) {
+                a.HideBNV(false, fabWasHidden);
+            }
+        });
+        
+        binding.settingsIcon.setOnClickListener( v -> {
+            
+        });
+		
 	}
     
     @Override
@@ -127,20 +195,22 @@ public class MusicListFragmentActivity extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        IntentFilter filter = new IntentFilter("ACTION_STOP");
+        IntentFilter filter = new IntentFilter("ACTION_STOP_FRAGMENT");
         requireContext().registerReceiver(myReceiver, filter, Context.RECEIVER_EXPORTED);
     }
 	
-	private void initialize(Bundle _savedInstanceState, View _view) {
-		
-        binding.searchBar.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.bar_settings) {
-                BasicUtil.showMessage((MainActivity)getActivity(), "Settings");
-                return true;
-            }
-            return false;
+	public ArrayList<HashMap<String, Object>> getSongsMap() {
+			return SongsMap;
+	}
+    
+    public void setUpListeners() {
+        binding.settingsIcon.setOnClickListener(v -> {
+            Fragment f = new settingsFragment();
+            a.addFragmentWithTransition(f);
         });
-		binding.songsList.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        
+        binding.songsList.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            
 			@Override
 			public void onScrollStateChanged(RecyclerView recyclerView, int _scrollState) {
 				super.onScrollStateChanged(recyclerView, _scrollState);
@@ -150,166 +220,29 @@ public class MusicListFragmentActivity extends Fragment {
 			@Override
 			public void onScrolled(RecyclerView recyclerView, int _offsetX, int _offsetY) {
 				super.onScrolled(recyclerView, _offsetX, _offsetY);
-				final int searchBarHeight= binding.searchBar.getHeight();
 				int firstVisibleItem = ((LinearLayoutManager) binding.songsList.getLayoutManager()).findFirstVisibleItemPosition();
 				final boolean IsInTop = firstVisibleItem == 0 && binding.songsList.computeVerticalScrollOffset() == 0;
 				
 				if ((_offsetY > 20) && !IsScrolledDown) {
-					binding.searchBar.animate().translationY(-(searchBarHeight+XUtils.getStatusBarHeight(getActivity()))).setDuration(150).start();
+                    activity.Fab.hide();
 					IsScrolledDown = true;
+                    fabWasHidden = true;
 				}
 				if (((_offsetY < -20) && IsScrolledDown) || IsInTop) {
-					binding.searchBar.animate().translationY(0).setDuration(150).start();
+                    activity.Fab.show();
 					IsScrolledDown = false;
+                    fabWasHidden = false;
 				}
 			}
 		});
-	}
-	
-	private void initializeLogic() {
-        a = (MainActivity) getActivity();
-		activity = a.getBinding();
-		Context context = getActivity();
-        binding.songsList.addItemDecoration(new LastItemMarginDecoration(XUtils.getMargin(activity.Fab, "bottom")*2 + activity.Fab.getHeight() + activity.bottomNavigation.getHeight()));
-        binding.searchBar.inflateMenu(R.menu.search_menu);
-		TextView textView = new TextView(context);
-		textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
-		textView.setGravity(Gravity.CENTER);
-		textView.setLayoutParams(new LinearLayout.LayoutParams(
-		LinearLayout.LayoutParams.MATCH_PARENT,
-		LinearLayout.LayoutParams.WRAP_CONTENT
-		));
-		if (cachedTypeface == null) {
-			cachedTypeface = ResourcesCompat.getFont(context, R.font.product_sans_regular);
-		}
-		textView.setTypeface(cachedTypeface, Typeface.BOLD);
-		TypedValue typedValue = new TypedValue();
-		context.getTheme().resolveAttribute(android.R.attr.colorPrimary, typedValue, true);
-		int primaryColor = typedValue.data;
-		SpannableStringBuilder spannable = new SpannableStringBuilder("XMusic");
-		spannable.setSpan(new ForegroundColorSpan(primaryColor), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-		spannable.setSpan(new ForegroundColorSpan(Color.WHITE), 1, spannable.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-		textView.setText(spannable);
-		binding.searchBar.setCenterView(textView);
-		binding.searchBar.startOnLoadAnimation();
-		binding.searchView.setHint("Search your songs");
-		new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-			@Override
-			public void run() {
-				binding.searchBar.setHint("Search your songs");
-		    }
-		}, 100);
-		XUtils.increaseMargins(binding.searchBar, 0, XUtils.getStatusBarHeight(getActivity()), 0, 0);
-		binding.searchBar.post(() -> {
-			int searchBarHeight = binding.searchBar.getHeight() + XUtils.getStatusBarHeight(getActivity());
-			if (binding.songsList.getItemDecorationCount() == 0) {
-				binding.songsList.addItemDecoration(new RecyclerView.ItemDecoration() {
-					@Override
-					public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-						if (parent.getChildAdapterPosition(view) == 0) {
-							outRect.top = searchBarHeight;
-						}
-					}
-			    });
-			}
-		});
-		
-		int cores = Runtime.getRuntime().availableProcessors();
-        ExecutorService executor = Executors.newFixedThreadPool(cores);
-        Handler mainHandler = new Handler(Looper.getMainLooper());
-
-        executor.execute(() -> {
-            try {
-                if (getActivity() != null) {
-                    MainActivity act = (MainActivity) getActivity();
-                    SongsMap = act.getSongsMap();
-                    songsAdapter = new SongsListAdapter(SongsMap);
-                }
-                
-                executor.execute(() -> {
-                    MainActivity act = (MainActivity) getActivity();
-                    if (act != null) act.updateSongs(SongsMap);
-                    act.Start();
-                });
-        
-                mainHandler.post(() -> {
-                    size = SongsMap.size();
-                    binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
-                    View headerView = LayoutInflater.from(getActivity()).inflate(R.layout.header_view, binding.songsList, false);
-                    HeaderAdapter headerAdapter = new HeaderAdapter();
-                    ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
-                    binding.songsList.setAdapter(concatAdapter);
-                    int searchBarHeight = binding.searchBar.getHeight() + XUtils.getStatusBarHeight(getActivity());
-                    binding.songsList.animate().alpha(1f).translationY(0f).setDuration(300).start();
-                });
-
-            } catch (Exception e) {
-                Log.e("CoreExecutor", "Error loading songs", e);
-            }
-        });
-        binding.searchView.addTransitionListener((searchView, previousState, newState) -> {
-            if (newState == SearchView.TransitionState.SHOWING) {
-                a.HideBNV(true);
-            } else if (newState == SearchView.TransitionState.HIDING) {
-                a.HideBNV(false);
-            }
-        });
-		
-	}
-	
-	public static class HeaderAdapter extends RecyclerView.Adapter<HeaderAdapter.HeaderViewHolder> {
-	@Override
-	public HeaderViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-		View headerView = LayoutInflater.from(parent.getContext()).inflate(R.layout.header_view, parent, false);
-		return new HeaderViewHolder(headerView);
-	}
-		
-	    @Override
-		public void onBindViewHolder(HeaderViewHolder holder, int position) {
-			View view = holder.itemView;
-			TextView sg = (TextView) view.findViewById(R.id.songs_count);
-			sg.setText("0 Songs".replace("0",String.valueOf(size)));
-		}
-		
-		@Override
-		public int getItemCount() {
-		    return 1;
-		}
-		public static class HeaderViewHolder extends RecyclerView.ViewHolder {
-			public HeaderViewHolder(View itemView) {
-				super(itemView);
-			}
-		}
-	}
-	
-	public ArrayList<HashMap<String, Object>> getSongsMap() {
-			return SongsMap;
-	}
-    
-    public class LastItemMarginDecoration extends RecyclerView.ItemDecoration {
-
-        private final int bottomMarginPx;
-        public LastItemMarginDecoration(int bottomMarginPx) {
-            this.bottomMarginPx = bottomMarginPx;
-        }
-		
-        @Override
-        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-            int position = parent.getChildAdapterPosition(view);
-            if (position == parent.getAdapter().getItemCount() - 1) {
-                outRect.bottom = bottomMarginPx;
-            } else {
-                outRect.bottom = 0;
-            }
-        }
     }
-	
 	
 	public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ViewHolder> {
 		
 		ArrayList<HashMap<String, Object>> _data;
 		
 		public SongsListAdapter(ArrayList<HashMap<String, Object>> _arr) {
+            setHasStableIds(true);
 			_data = _arr;
 		}
 		
@@ -319,6 +252,7 @@ public class MusicListFragmentActivity extends Fragment {
 			View _v = _inflater.inflate(R.layout.songs_list_view, null);
 			RecyclerView.LayoutParams _lp = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 			_v.setLayoutParams(_lp);
+            
 			return new ViewHolder(_v);
 		}
 		
@@ -326,11 +260,25 @@ public class MusicListFragmentActivity extends Fragment {
 		public void onBindViewHolder(ViewHolder _holder, final int _position) {
 			View _view = _holder.itemView;
 			SongsListViewBinding binding = SongsListViewBinding.bind(_view);
+            boolean isLast = _position == getItemCount() - 1;
+            XUtils.setMargins(binding.item, 0, 0, 0, isLast? XUtils.convertToPx(getActivity(), 10f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight() : 0);
+
+            
 			if (_position == oldPos && isPlaying) {
                 binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_selected_ripple));
             } else {
                 binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple));
             }
+            
+            int spacing = XUtils.convertToPx(getContext(), 5f);
+            if (_position == 0) {
+                binding.decoView.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.top_round_corners));
+            } else if (_position == SongsMap.size() - 1) {
+                binding.decoView.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.bottom_round_corners));
+            } else {
+                binding.decoView.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.no_corners));
+            }
+            
 			try {
 				coverUri = _data.get(_position).get("thumbnail").toString();
 			} catch (Exception e) {
@@ -366,9 +314,9 @@ public class MusicListFragmentActivity extends Fragment {
 						
                         }, 50);
 				    }
-                    notifyItemChanged(oldPos);
+                    notifyItemChanged(oldPos, "color");
                     oldPos = pos;
-                    notifyItemChanged(pos);
+                    notifyItemChanged(pos, "color");
 				}
 			});
 			
@@ -378,10 +326,42 @@ public class MusicListFragmentActivity extends Fragment {
 		public int getItemCount() {
 			return _data.size();
 		}
+        
+        @Override
+        public long getItemId(int position) {
+            String path = SongsMap.get(position).get("path").toString();
+            return path.hashCode();
+        }
 		
 		public class ViewHolder extends RecyclerView.ViewHolder {
 			public ViewHolder(View v) {
 				super(v);
+			}
+		}
+        
+	}
+
+    public class HeaderAdapter extends RecyclerView.Adapter<HeaderAdapter.HeaderViewHolder> {
+	    @Override
+	    public HeaderViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+		    View headerView = LayoutInflater.from(parent.getContext()).inflate(R.layout.header_view, parent, false);
+		    return new HeaderViewHolder(headerView);
+	    }
+		
+	    @Override
+		public void onBindViewHolder(HeaderViewHolder holder, int position) {
+			View view = holder.itemView;
+			TextView sg = (TextView) view.findViewById(R.id.songs_count);
+			sg.setText("0 Songs".replace("0",String.valueOf(size)));
+		}
+		
+		@Override
+		public int getItemCount() {
+		    return 1;
+		}
+		public static class HeaderViewHolder extends RecyclerView.ViewHolder {
+			public HeaderViewHolder(View itemView) {
+				super(itemView);
 			}
 		}
 	}
