@@ -13,5 +13,5 @@ jobs:
         uses: EverythingSuckz/github-telegram-notify@main
         with:
           bot_token: ${{ secrets.bot_token }}
-          chat_id: -1002295019134
-          topic_id : 8
+          chat_id: -1002951791106
+          topic_id : 4
