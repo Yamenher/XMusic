@@ -39,6 +39,7 @@
                 android:paddingTop="8dp"
                 android:orientation="vertical"
                 android:layout_gravity="bottom"
+                android:fitsSystemWindows="false"
                 app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
                 android:background="@drawable/rounded_corners_bottom_sheet"
                 app:layoutDescription="@xml/motion_scene"

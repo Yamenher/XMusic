@@ -94,6 +94,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
+        app:autoShowKeyboard="false"
         android:hint="Search your songs"
         app:layout_anchor="@id/search_bar">
         <LinearLayout

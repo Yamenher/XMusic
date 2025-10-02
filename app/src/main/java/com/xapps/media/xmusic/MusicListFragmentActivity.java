@@ -149,6 +149,10 @@ public class MusicListFragmentActivity extends Fragment {
             }
         });
         
+        if (a.isPlaying) {
+            XUtils.increaseMargins(binding.fab, 0, 0, 0, (activity.coversPager.getHeight() + activity.miniPlayerBottomSheet.getPaddingTop()*2));
+        }
+        
         executor.execute(() -> {
             try {
                 SongsMap = SerializationUtils.readFromFile(getActivity(), "songsList");

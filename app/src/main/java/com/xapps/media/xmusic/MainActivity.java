@@ -34,7 +34,9 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.splashscreen.*;
 import androidx.core.splashscreen.SplashScreen;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.customview.*;
 import androidx.customview.poolingcontainer.*;
 import androidx.emoji2.*;
@@ -100,7 +102,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean isbnvHidden, isDataLoaded = false;
     private int playbackState, playerSurface, bottomSheetColor, tmpColor , currentPosition;
     public int navBarHeight;
-    private boolean hasPausedFirst = false; 
 	public ExoPlayer player;
 	public BottomSheetBehavior bottomSheetBehavior;
 	private Handler handler, seekController = new Handler(Looper.getMainLooper());
@@ -108,15 +109,13 @@ public class MainActivity extends AppCompatActivity {
 	private MediaSessionCompat mediaSession;
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private float currentSlideOffset;
-    private boolean isPlaying = false;
+    public boolean isPlaying = false;
     private Handler actionSender = new Handler(Looper.getMainLooper());
     private boolean seekAllowed = true;
     private MusicListFragmentActivity mlfa; 
 	
 	private ArrayList<HashMap<String, Object>> SongsMap = new ArrayList<>();
 	public static ArrayList<HashMap<String, Object>> currentMap = new ArrayList<>();
-    
-    private ActivityResultLauncher<String> requestPermissionLauncher;
 	
 	@Override
 	protected void onCreate(Bundle _savedInstanceState) {
@@ -131,23 +130,16 @@ public class MainActivity extends AppCompatActivity {
                 return !isDataLoaded;
             });
         }*/
-        DynamicColors.applyIfAvailable(this);
-		WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+		EdgeToEdge.enable(this);
 		super.onCreate(_savedInstanceState);
 		binding = MainBinding.inflate(getLayoutInflater());
 		setContentView(binding.getRoot());
 		initialize(_savedInstanceState);
 		initializeLogic();
         mlfa = (MusicListFragmentActivity) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
-        if (Build.VERSION.SDK_INT >= 32) {
-            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO);
-            }
-        } else {
-            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(android.Manifest.permission.READ_EXTERNAL_STORAGE);
-            }
-		}
+        ViewCompat.setOnApplyWindowInsetsListener(binding.miniPlayerBottomSheet, (v, insets) -> {
+            return WindowInsetsCompat.CONSUMED;
+        });
         executor.execute(() -> {
             SongMetadataHelper.getAllSongs(c, new SongLoadListener(){
                 @Override
@@ -352,7 +344,6 @@ public class MainActivity extends AppCompatActivity {
         bsh = bottomSheetBehavior.getPeekHeight();
 		bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
         binding.bottomNavigation.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-            
             if (!isRun) {
                 targetMargin = binding.bottomNavigation.getHeight() ;
 			    XUtils.increaseMargins(binding.musicProgress, 0, 0, 0, navBarHeight);
@@ -361,25 +352,6 @@ public class MainActivity extends AppCompatActivity {
             }
             isRun = true;
         });
-            
-		
-            
-		/*binding.miniPlayerBottomSheet.addTransitionListener(new MotionLayout.TransitionListener() {
-            @Override
-			public void onTransitionStarted(MotionLayout motionLayout, int startId, int endId) {
-		    }
-			@Override
-			public void onTransitionChange(MotionLayout motionLayout, int startId, int endId, float progress) {
-            
-			}
-			@Override
-			    public void onTransitionCompleted(MotionLayout motionLayout, int currentId) {
-			}
-			@Override
-				public void onTransitionTrigger(MotionLayout motionLayout, int triggerId, boolean positive, float progress) {
-			}
-		});*/
-		
 	}
 	
 	public void addFragment(String fragmentName) {
@@ -435,44 +407,17 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (hasPausedFirst) {
-            if (Build.VERSION.SDK_INT >= 32) {
-                if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                    getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE, WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-                    MaterialAlertDialogBuilder m = new MaterialAlertDialogBuilder(this);
-                    m.setTitle("Permission needed to continue");
-                    m.setMessage("To access and play your music, this app requires permission to read audio files on your device. This permission is used solely for identifying and playing your songs—nothing else.");
-                    m.setPositiveButton("Grant", (dialog, which) -> { XUtils.openSettings(c); });
-                    m.setNegativeButton("Cancel", (dialog, which) -> { finishAffinity(); });
-                    m.setCancelable(false);
-                    m.show();
-                }
-            } else {
-                if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE, WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-                    MaterialAlertDialogBuilder m = new MaterialAlertDialogBuilder(this);
-                    m.setTitle("Permission needed to continue");
-                    m.setMessage("To access and play your music, this app requires permission to read audio files on your device. This permission is used solely for identifying and playing your songs—nothing else.");
-                    m.setPositiveButton("Grant", (dialog, which) -> { XUtils.openSettings(c); });
-                    m.setNegativeButton("Cancel", (dialog, which) -> { finishAffinity(); });
-                    m.setCancelable(false);
-                    m.show();
-                }
-		    }
-        }
-        hasPausedFirst = false;
-		    IntentFilter filter = new IntentFilter();
-		    filter.addAction("PLAYER_PROGRESS");
-		    filter.addAction("PLAYER_COLORS");
-		    filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
-		    registerReceiver(multiReceiver, filter, Context.RECEIVER_EXPORTED);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("PLAYER_PROGRESS");
+        filter.addAction("PLAYER_COLORS");
+        filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+        registerReceiver(multiReceiver, filter, Context.RECEIVER_EXPORTED);
     }
 	
 	@Override
 	public void onPause() {
 		super.onPause();
 		unregisterReceiver(multiReceiver);
-        hasPausedFirst = true;
 	}
     
     @Override
@@ -557,24 +502,13 @@ public class MainActivity extends AppCompatActivity {
         
     public void HideBNV(boolean hide) {
         if (hide) {
-            binding.bottomNavigation.animate().alpha(0.5f).translationY(binding.bottomNavigation.getHeight()).setDuration(180).withEndAction(() -> binding.bottomMixer.removeView(binding.bottomNavigation)).start();
-            ValueAnimator animator = ValueAnimator.ofFloat(bsh, 0f);
-		    animator.setDuration(300);
-		    animator.addUpdateListener(animation -> {
-			    int progress = Math.round((float) animation.getAnimatedValue());
-                bottomSheetBehavior.setPeekHeight(progress);
-            });
-		    animator.start();
+            binding.bottomNavigation.animate().alpha(0.5f).translationY(binding.bottomNavigation.getHeight()).setDuration(100).withEndAction(() -> binding.bottomMixer.removeView(binding.bottomNavigation)).start();
+            bottomSheetBehavior.setPeekHeight(0, true);
+            MusicListFragmentActivity.fab.hide();
         } else {
             int extraInt = XUtils.convertToPx(c, 25);
-            binding.bottomNavigation.animate().alpha(1f).translationY(0).setDuration(350).withStartAction(() -> binding.bottomMixer.addView(binding.bottomNavigation)).start();
-            ValueAnimator animator = ValueAnimator.ofFloat(0f, bsh);
-		    animator.setDuration(300);
-		    animator.addUpdateListener(animation -> {
-			    int progress = Math.round((float) animation.getAnimatedValue());
-                bottomSheetBehavior.setPeekHeight(progress + extraInt);
-            });
-		    animator.start();
+            bottomSheetBehavior.setPeekHeight(Math.round(bsh + binding.bottomNavigation.getPaddingBottom()), true);
+            binding.bottomNavigation.animate().alpha(1f).translationY(0).setDuration(100).withStartAction(() -> binding.bottomMixer.addView(binding.bottomNavigation)).start();
             if (SongsMap.size() != 0) {
                 MusicListFragmentActivity.fab.show();
             }
