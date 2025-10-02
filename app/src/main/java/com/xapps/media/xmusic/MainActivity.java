@@ -555,7 +555,7 @@ public class MainActivity extends AppCompatActivity {
         startService(playIntent);
     }
         
-    public void HideBNV(boolean hide, boolean fabWasHidden) {
+    public void HideBNV(boolean hide) {
         if (hide) {
             binding.bottomNavigation.animate().alpha(0.5f).translationY(binding.bottomNavigation.getHeight()).setDuration(180).withEndAction(() -> binding.bottomMixer.removeView(binding.bottomNavigation)).start();
             ValueAnimator animator = ValueAnimator.ofFloat(bsh, 0f);

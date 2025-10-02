@@ -101,7 +101,7 @@ public class MusicListFragmentActivity extends Fragment {
 	private boolean IgnoreClicks = false;
     private MainActivity a;
     private SongsListAdapter songsAdapter;
-    private boolean isPlaying, fabWasHidden = false;
+    private boolean isPlaying = false;
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private Handler mainHandler;
     private Drawable placeholder;
@@ -143,9 +143,9 @@ public class MusicListFragmentActivity extends Fragment {
         binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.searchView.addTransitionListener((searchView, previousState, newState) -> {
             if (newState == SearchView.TransitionState.SHOWING) {
-                a.HideBNV(true, fabWasHidden);
+                a.HideBNV(true);
             } else if (newState == SearchView.TransitionState.HIDING) {
-                a.HideBNV(false, fabWasHidden);
+                a.HideBNV(false);
             }
         });
         
