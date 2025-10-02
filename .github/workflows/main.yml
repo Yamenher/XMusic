@@ -88,7 +88,7 @@ jobs:
           
       - name: Rename file 
         run: |
-          mv app-debug.apk xsigner-app-debug.apk
+          mv app-debug.apk xmusic-app-debug.apk
           ls 
 
       - name: Send APK to Debug Channel Telegram with Topic ID
@@ -96,7 +96,7 @@ jobs:
         continue-on-error: true
         run: |
           curl -X POST "https://api.telegram.org/bot${{ secrets.bot_token }}/sendDocument" \
-            -F chat_id="-1002295019134" \
-            -F message_thread_id="10" \
-            -F document=@"xsigner-app-debug.apk" \
+            -F chat_id="-1002951791106" \
+            -F message_thread_id="4" \
+            -F document=@"xmusic-app-debug.apk" \
             -F caption="${{ github.event.head_commit.message }} by ${{ github.actor }}"
