@@ -565,9 +565,6 @@ public class MainActivity extends AppCompatActivity {
                 bottomSheetBehavior.setPeekHeight(progress);
             });
 		    animator.start();
-            if (!fabWasHidden) {
-                MusicListFragmentActivity.fab.hide();
-            }
         } else {
             int extraInt = XUtils.convertToPx(c, 25);
             binding.bottomNavigation.animate().alpha(1f).translationY(0).setDuration(350).withStartAction(() -> binding.bottomMixer.addView(binding.bottomNavigation)).start();
@@ -578,7 +575,7 @@ public class MainActivity extends AppCompatActivity {
                 bottomSheetBehavior.setPeekHeight(progress + extraInt);
             });
 		    animator.start();
-            if (SongsMap.size() != 0 && !fabWasHidden) {
+            if (SongsMap.size() != 0) {
                 MusicListFragmentActivity.fab.show();
             }
         }
