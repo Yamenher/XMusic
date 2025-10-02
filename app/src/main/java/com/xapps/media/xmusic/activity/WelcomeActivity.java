@@ -122,7 +122,7 @@ public class WelcomeActivity extends AppCompatActivity {
                                 e.printStackTrace();
                             }
                             new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                                binding.loadingText.setText("Complete! starting app...")
+                                binding.loadingText.setText("Complete! starting app...");
                                 Intent i = new Intent();
                                 i.setClass(WelcomeActivity.this, MainActivity.class);
                                 startActivity(i);
