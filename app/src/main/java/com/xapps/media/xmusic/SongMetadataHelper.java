@@ -9,6 +9,8 @@ import android.net.Uri;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import com.xapps.media.xmusic.common.SongLoadListener;
+import com.xapps.media.xmusic.utils.SerializationUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,7 +30,15 @@ public class SongMetadataHelper {
 	private static final String CACHE_DIR_NAME = "covers";
     private static final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	
-	public static ArrayList<HashMap<String, Object>> getAllSongs(Context context) {
+	public static void getAllSongs(Context context, SongLoadListener listener) {
+
+    if (SerializationUtils.readFromFile(context, "songsList") != null) {
+        if (listener != null) {
+            listener.onComplete(SerializationUtils.readFromFile(context, "songsList"));
+        }
+        return;
+    }
+
     ArrayList<HashMap<String, Object>> songListMap = new ArrayList<>();
     String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0" + getListOfMediaTypes();
     String[] projection = {
@@ -54,6 +64,8 @@ public class SongMetadataHelper {
 
     if (cursor != null) {
         List<Future<HashMap<String, Object>>> futures = new ArrayList<>();
+        int count = 0;
+
         while (cursor.moveToNext()) {
             final String path = cursor.getString(6);
             final long songId = cursor.getLong(0);
@@ -86,24 +98,36 @@ public class SongMetadataHelper {
                 map.put("mimeType", mimeType);
                 map.put("track", track);
                 map.put("duration", duration > 0 ? millisecondsToDuration(duration) : "00:00");
-                map.put("total", String.valueOf((int)duration));
+                map.put("total", String.valueOf((int) duration));
                 map.put("dateAdded", dateAdded);
                 map.put("dateModified", dateModified);
                 map.put("thumbnail", getSongCover(context, path));
                 return map;
             }));
+
+            count++;
+            if (listener != null) {
+                listener.onProgress(count);
+            }
         }
         cursor.close();
 
         for (Future<HashMap<String, Object>> future : futures) {
             try {
-                songListMap.add(future.get());
+                HashMap<String, Object> songMap = future.get();
+                songListMap.add(songMap);
+                if (listener != null) {
+                    listener.onProgress(songListMap.size());
+                }
             } catch (ExecutionException | InterruptedException e) {
                 Log.e("SongMetadataHelper", "Error processing song", e);
             }
         }
     }
-    return songListMap;
+
+    if (listener != null) {
+        listener.onComplete(songListMap);
+    }
 }
 	
 	public static String getSongCover(Context context, String songFilePath) {
@@ -114,22 +138,58 @@ public class SongMetadataHelper {
 			}
 			
 			MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-			retriever.setDataSource(songFilePath);
-			
-			byte[] coverArt = retriever.getEmbeddedPicture();
-			if (coverArt != null) {
-				Bitmap bitmap = BitmapFactory.decodeByteArray(coverArt, 0, coverArt.length);
-				if (bitmap != null) {
-					String cacheFilePath = saveCoverToCache(context, songFilePath, bitmap);
-					return cacheFilePath;
-				}
-			}
+            retriever.setDataSource(songFilePath);
+
+            byte[] coverArt = retriever.getEmbeddedPicture();
+            if (coverArt != null) {
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inJustDecodeBounds = true;
+                BitmapFactory.decodeByteArray(coverArt, 0, coverArt.length, options);
+                options.inSampleSize = calculateInSampleSize(options, 800, 800);
+                options.inJustDecodeBounds = false;
+                Bitmap bitmap = BitmapFactory.decodeByteArray(coverArt, 0, coverArt.length, options);
+                if (bitmap != null) {
+                    try {
+                        int width = bitmap.getWidth();
+                        int height = bitmap.getHeight();
+                        int edge = Math.min(width, height);
+                        Bitmap square = Bitmap.createBitmap(bitmap, (width - edge) / 2, (height - edge) / 2, edge, edge);
+                        Bitmap finalBitmap = Bitmap.createScaledBitmap(square, 800, 800, true);
+                        if (square != finalBitmap) {
+                            square.recycle();
+                        }
+                        bitmap.recycle();
+                        String cacheFilePath = saveCoverToCache(context, songFilePath, finalBitmap);
+                        finalBitmap.recycle();
+                        return cacheFilePath;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }
+                return null;
+
+            }
 		} catch (Exception e) {
 			Log.e("SongMetadataHelper", "Error retrieving song cover", e);
 		}
 		
 		return null;
 	}
+    
+    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+        if (height > reqHeight || width > reqWidth) {
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+        return inSampleSize;
+    }
 	
 	private static String getCachedCoverPath(Context context, String songFilePath) {
 		String hashedFileName = hashFilePath(songFilePath);

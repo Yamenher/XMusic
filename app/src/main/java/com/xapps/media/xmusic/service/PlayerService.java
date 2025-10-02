@@ -46,7 +46,6 @@ public class PlayerService extends Service {
 	
 	private Bitmap icon;  
 	private boolean isPlaying;  
-    private boolean firstTimeUpdate = false;
 	private int currentState;
 	public static String currentTitle;  
 	public static String currentArtist;  
@@ -57,6 +56,7 @@ public class PlayerService extends Service {
     public static int currentPosition = 0;
     private boolean isBuilt = false;
     private boolean isNotifDead = true;
+    public static boolean isColorChanged = false;
     private byte tb[];
     private MediaMetadata mt;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -115,20 +115,6 @@ public class PlayerService extends Service {
 				if (uri != null) {   
 					requestAudioFocus(uri, title, artist, coverUri, position);
 				}  
-			} else if (intent.getAction().equals("ACTION_NEXT")) {
-                ExoPlayerHandler.post(() -> {
-				    if (player != null && currentPosition+1 >= 0 && currentPosition+1 <= mediaItems.size()) {  
-					    player.seekTo(currentPosition+1, 0);
-                        currentPosition++;
-				    }
-                });
-            } else if (intent.getAction().equals("ACTION_PREVIOUS")) {   
-                ExoPlayerHandler.post(() -> {
-				    if (player != null && currentPosition-1 >= 0 && currentPosition-1 <= mediaItems.size()) {  
-					    player.seekTo(currentPosition-1, 0);
-                        currentPosition--;
-				    }
-                });
             } else if (intent.getAction().equals("ACTION_STOP")) {  
 				ExoPlayerHandler.post(() -> {
 				    if (player != null && player.isPlaying()) {  
@@ -161,7 +147,6 @@ public class PlayerService extends Service {
                     player.seekTo(position);
 				});
             } else if (intent.getAction().equals("ACTION_UPDATE")) {
-                Log.i("Info", "Requested songs update");
                 mediaItems = new ArrayList<>();
                 ArrayList<HashMap<String, Object>> song = MainActivity.currentMap;
                     executor.execute(() -> {
@@ -194,27 +179,26 @@ public class PlayerService extends Service {
 	} 
 
     private void playMedia(String uri, String title, String artist, String coverUri, int position) {
+        
 		if (Build.VERSION.SDK_INT >= 33) {  
 			startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
 		} else {  
 			startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
 		}  
         updateNotification(title, artist, coverUri);
-        if (!firstTimeUpdate) {
-            ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-            executor.execute(() -> {
-                Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
-                tb = toByteArray(transparentBitmap);
-                Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
-                ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
-                    Intent progressIntent = new Intent("PLAYER_COLORS");
-                    sendBroadcast(progressIntent);
-                    firstTimeUpdate = true;
-                });
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            isColorChanged = true;
+            Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
+            tb = toByteArray(transparentBitmap);
+            Bitmap bmp = MainActivity.currentMap.get(position).get("thumbnail") == null? transparentBitmap : loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
+            ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
+                Intent progressIntent = new Intent("PLAYER_COLORS");
+                sendBroadcast(progressIntent);
             });
-        }
+        });
         if (mediaItems == null) {
-            BasicUtil.showMessage(getApplicationContext(), "fuck");
+            XUtils.showMessage(getApplicationContext(), "no songs were found on this device");
         } else {
 			ExoPlayerHandler.post(() -> {
 				player.setRepeatMode(Player.REPEAT_MODE_ONE);
@@ -236,15 +220,18 @@ public class PlayerService extends Service {
                         if (mediaItem != null) {
                             updateNotification(currentTitle, currentArtist, currentCover);
                             currentPosition = player.getCurrentMediaItemIndex();
-                            executor.execute(() -> {
-                                Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
-                                tb = toByteArray(transparentBitmap);
-                                Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(currentPosition).get("thumbnail").toString());
-                                ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
-                                    Intent progressIntent = new Intent("PLAYER_COLORS");
-                                    sendBroadcast(progressIntent);
+                            if (!isColorChanged) {
+                                ExecutorService executor = Executors.newSingleThreadExecutor();
+                                executor.execute(() -> {
+                                    Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
+                                    tb = toByteArray(transparentBitmap);
+                                    Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
+                                    ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
+                                        Intent progressIntent = new Intent("PLAYER_COLORS");
+                                        sendBroadcast(progressIntent);
+                                    });
                                 });
-                            });
+                            }
                         }
                     }
                 });
@@ -497,7 +484,7 @@ public class PlayerService extends Service {
         if (result == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             playMedia(uri, title, artist, coverUri, position);   
         } else {
-			BasicUtil.showMessage(getApplicationContext(), "Unable to play songs at the moment");
+			XUtils.showMessage(getApplicationContext(), "Unable to play songs at the moment");
 		}
     }
 

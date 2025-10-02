@@ -265,14 +265,4 @@
                 app:itemTextAppearanceActive="@style/BoldStyleBNV"/>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </FrameLayout>
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/_fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginRight="16dp"
-        android:layout_marginBottom="106dp"
-        android:layout_gravity="right|bottom"
-        app:srcCompat="@drawable/ic_shuffle" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

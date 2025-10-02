@@ -1,6 +1,8 @@
 package com.xapps.media.xmusic;
 
 import android.animation.*;
+import android.widget.ImageView;
+import androidx.annotation.NonNull;
 import android.app.*;
 import android.content.*;
 import android.content.res.*;
@@ -14,6 +16,7 @@ import android.text.*;
 import android.text.Spanned;
 import android.text.style.*;
 import android.text.style.ForegroundColorSpan;
+import android.transition.Transition;
 import android.util.*;
 import android.util.TypedValue;
 import android.view.*;
@@ -59,12 +62,18 @@ import androidx.startup.*;
 import androidx.transition.*;
 import com.appbroker.roundedimageview.*;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.Priority;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.material.*;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.color.MaterialColors;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.search.*;
 import com.xapps.media.xmusic.databinding.*;
 import com.xapps.media.xmusic.databinding.MainBinding;
 import com.xapps.media.xmusic.settingsFragment;
+import com.xapps.media.xmusic.utils.MaterialColorUtils;
+import com.xapps.media.xmusic.utils.SerializationUtils;
 import java.io.*;
 import java.text.*;
 import java.util.*;
@@ -80,24 +89,27 @@ public class MusicListFragmentActivity extends Fragment {
 	private MusicListFragmentBinding binding;
     private int oldPos = -1;
 	public final Fragment f = this;
-	private static final Handler handler = new Handler(Looper.getMainLooper());
 	private String Title = "";
 	private String Artitst = "";
-	private double Duration = 0;
 	private String coverUri = "";
 	public SearchBar searchBar;
 	public AppBarLayout appbar;
 	private boolean IsScrolledDown = false;
-	public static Typeface cachedTypeface;
-	public static int size;
+	public int imageSize, size;
 	private String path = "";
 	private MainBinding activity;
 	private boolean IgnoreClicks = false;
     private MainActivity a;
     private SongsListAdapter songsAdapter;
     private boolean isPlaying, fabWasHidden = false;
+    private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private Handler mainHandler;
+    private Drawable placeholder;
+    private long lastClickTime = 0;
+    private static final long DEBOUNCE_MS = 120;
+    
+    public static FloatingActionButton fab;
 	
-	private ArrayList<String> SongsList = new ArrayList<>();
 	private ArrayList<HashMap<String, Object>> SongsMap = new ArrayList<>();
     
     private final BroadcastReceiver myReceiver = new BroadcastReceiver() {
@@ -112,66 +124,23 @@ public class MusicListFragmentActivity extends Fragment {
 	@Override
 	public View onCreateView(@NonNull LayoutInflater _inflater, @Nullable ViewGroup _container, @Nullable Bundle _savedInstanceState) {
 		binding = MusicListFragmentBinding.inflate(_inflater, _container, false);
+        mainHandler = new Handler(Looper.getMainLooper());
 		initializeLogic();
         setUpListeners(); 
 		return binding.getRoot();
 	}
 	
 	private void initializeLogic() {
+        fab = binding.fab;
+        XUtils.increaseMargins(binding.fab, 0, 0, 0, Math.round((getActivity().getResources().getDimensionPixelSize(getResources().getIdentifier("navigation_bar_height", "dimen", "android"))*1.4f)));
         a = (MainActivity) getActivity();
+        placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.placeholder_small);
+        imageSize = XUtils.convertToPx(getActivity(), 45f);
 		activity = a.getBinding();
 		Context context = getActivity();
 		int cores = Runtime.getRuntime().availableProcessors();
-        ExecutorService executor = Executors.newFixedThreadPool(cores);
-        Handler mainHandler = new Handler(Looper.getMainLooper());
         binding.collapsingToolbar.setPadding(0, XUtils.getStatusBarHeight(getActivity()), 0, 0);
-        
-        /*binding.songsList.addItemDecoration(new RecyclerView.ItemDecoration() {
-            @Override
-            public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-                if (parent.getChildAdapterPosition(view) == parent.getAdapter().getItemCount() - 1) {
-                    outRect.bottom = activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight();
-                }
-            }
-        });*/
-
-        executor.execute(() -> {
-            try {
-                if (getActivity() != null) {
-                    MainActivity act = (MainActivity) getActivity();
-                    SongsMap = act.getSongsMap();
-                    songsAdapter = new SongsListAdapter(SongsMap);
-                }
-                
-                MainActivity act = (MainActivity) getActivity();
-                if (act != null) act.updateSongs(SongsMap);
-                act.Start();
-        
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        size = SongsMap.size();
-                        if (size == 0) {
-                            binding.songsList.setVisibility(View.INVISIBLE);
-                            mainHandler.postDelayed(this, 25);
-                        } else {
-                            binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
-                            //View headerView = LayoutInflater.from(getActivity()).inflate(R.layout.header_view, binding.songsList, false);
-                            binding.searchBar.post(() -> {
-                                HeaderAdapter headerAdapter = new HeaderAdapter();
-                                ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
-                                binding.songsList.setAdapter(concatAdapter);
-                                binding.songsList.animate().alpha(1f).translationY(0f).setDuration(300).start();
-                                binding.emptyLayout.setVisibility(View.GONE);
-                            });
-                        }
-                    }
-                });
-
-            } catch (Exception e) {
-                Log.e("CoreExecutor", "Error loading songs", e);
-            }
-        });
+        binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.searchView.addTransitionListener((searchView, previousState, newState) -> {
             if (newState == SearchView.TransitionState.SHOWING) {
                 a.HideBNV(true, fabWasHidden);
@@ -180,10 +149,30 @@ public class MusicListFragmentActivity extends Fragment {
             }
         });
         
-        binding.settingsIcon.setOnClickListener( v -> {
-            
+        executor.execute(() -> {
+            try {
+                SongsMap = SerializationUtils.readFromFile(getActivity(), "songsList");
+                size = SongsMap.size();
+                songsAdapter = new SongsListAdapter(SongsMap);
+                MainActivity act = (MainActivity) getActivity();
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
+                        HeaderAdapter headerAdapter = new HeaderAdapter();
+                        ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
+                        binding.songsList.setAdapter(concatAdapter);
+                        binding.songsList.animate().alpha(1f).translationY(0f).setDuration(300).start();
+                        binding.emptyLayout.setVisibility(View.GONE);
+                        a.Start(); 
+                    }
+                });
+
+            } catch (Exception e) {
+                Log.e("CoreExecutor", "Error loading songs", e);
+            }
         });
-		
+        
 	}
     
     @Override
@@ -198,49 +187,45 @@ public class MusicListFragmentActivity extends Fragment {
         IntentFilter filter = new IntentFilter("ACTION_STOP_FRAGMENT");
         requireContext().registerReceiver(myReceiver, filter, Context.RECEIVER_EXPORTED);
     }
+    
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        executor.shutdown();
+        fab = null;
+    }
 	
 	public ArrayList<HashMap<String, Object>> getSongsMap() {
 			return SongsMap;
 	}
+    
+    public void setupSongsList(ArrayList<HashMap<String, Object>> list) {
+        
+    }
     
     public void setUpListeners() {
         binding.settingsIcon.setOnClickListener(v -> {
             Fragment f = new settingsFragment();
             a.addFragmentWithTransition(f);
         });
-        
-        binding.songsList.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            
-			@Override
-			public void onScrollStateChanged(RecyclerView recyclerView, int _scrollState) {
-				super.onScrollStateChanged(recyclerView, _scrollState);
-				
-			}
-			
-			@Override
-			public void onScrolled(RecyclerView recyclerView, int _offsetX, int _offsetY) {
-				super.onScrolled(recyclerView, _offsetX, _offsetY);
-				int firstVisibleItem = ((LinearLayoutManager) binding.songsList.getLayoutManager()).findFirstVisibleItemPosition();
-				final boolean IsInTop = firstVisibleItem == 0 && binding.songsList.computeVerticalScrollOffset() == 0;
-				
-				if ((_offsetY > 20) && !IsScrolledDown) {
-                    activity.Fab.hide();
-					IsScrolledDown = true;
-                    fabWasHidden = true;
-				}
-				if (((_offsetY < -20) && IsScrolledDown) || IsInTop) {
-                    activity.Fab.show();
-					IsScrolledDown = false;
-                    fabWasHidden = false;
-				}
-			}
-		});
+    }
+    
+    public void hideFab(boolean v) {
+        if (v) {
+            binding.fab.hide();
+        } else {
+            binding.fab.show();
+        }
     }
 	
 	public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ViewHolder> {
 		
 		ArrayList<HashMap<String, Object>> _data;
-		
+        int c1 = MaterialColorUtils.colorPrimary;
+        int c2 = MaterialColorUtils.colorSecondary;
+        int c3 = MaterialColorUtils.colorOnSurface;
+        int c4 = MaterialColorUtils.colorOutline;
+        
 		public SongsListAdapter(ArrayList<HashMap<String, Object>> _arr) {
             setHasStableIds(true);
 			_data = _arr;
@@ -252,7 +237,6 @@ public class MusicListFragmentActivity extends Fragment {
 			View _v = _inflater.inflate(R.layout.songs_list_view, null);
 			RecyclerView.LayoutParams _lp = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 			_v.setLayoutParams(_lp);
-            
 			return new ViewHolder(_v);
 		}
 		
@@ -260,16 +244,20 @@ public class MusicListFragmentActivity extends Fragment {
 		public void onBindViewHolder(ViewHolder _holder, final int _position) {
 			View _view = _holder.itemView;
 			SongsListViewBinding binding = SongsListViewBinding.bind(_view);
+            binding.songCover.setScaleType(ImageView.ScaleType.CENTER_CROP);
             boolean isLast = _position == getItemCount() - 1;
             XUtils.setMargins(binding.item, 0, 0, 0, isLast? XUtils.convertToPx(getActivity(), 10f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight() : 0);
-
-            
-			if (_position == oldPos && isPlaying) {
+            if (_position == oldPos && isPlaying) {
                 binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_selected_ripple));
+                binding.SongTitle.setTextColor(c1);
+                binding.SongArtist.setTextColor(c2);
+                binding.songBars.setVisibility(View.VISIBLE);
             } else {
                 binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple));
+                binding.SongTitle.setTextColor(c3);
+                binding.SongArtist.setTextColor(c4);
+                binding.songBars.setVisibility(View.INVISIBLE);
             }
-            
             int spacing = XUtils.convertToPx(getContext(), 5f);
             if (_position == 0) {
                 binding.decoView.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.top_round_corners));
@@ -278,18 +266,17 @@ public class MusicListFragmentActivity extends Fragment {
             } else {
                 binding.decoView.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.no_corners));
             }
-            
-			try {
-				coverUri = _data.get(_position).get("thumbnail").toString();
-			} catch (Exception e) {
-				 
-			}
+			coverUri = _data.get(_position).get("thumbnail") == null? "invalid" : _data.get(_position).get("thumbnail").toString();
 			Title = _data.get(_position).get("title").toString();
 			Artitst = _data.get(_position).get("author").toString();
 			Glide.with(f)
-			.load(Uri.parse("file://"+coverUri))
+			.load(coverUri.equals("invalid")? placeholder : Uri.parse("file://"+coverUri))
 			.centerCrop()
-            .override(200, 200)
+            .fallback(placeholder)
+            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .placeholder(placeholder)
+            .override(size, size)
+            /*.priority(Priority.HIGH)*/
 			.into(binding.songCover);
 			if (Title == null || Title.equals("")) {
 				binding.SongTitle.setText("Unknown");
@@ -297,28 +284,27 @@ public class MusicListFragmentActivity extends Fragment {
 				binding.SongTitle.setText(Title);
 				binding.SongArtist.setText(Artitst);
 			}
-			binding.item.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View _view) {
-                    isPlaying = true;
-				    int pos = _holder.getAdapterPosition();
-					if (!IgnoreClicks) {
-						IgnoreClicks = true;
-						path = SongsMap.get(pos).get("path").toString();
-						Uri fileUri = Uri.parse("file://" + path);
-						MainActivity act = (MainActivity) getActivity();
-                        String pth = _data.get(pos).get("thumbnail").toString();
-						act._setSong(pos, pth, fileUri);
-						new Handler(Looper.getMainLooper()).postDelayed(() -> {
-								IgnoreClicks = false;
-						
-                        }, 50);
-				    }
-                    notifyItemChanged(oldPos, "color");
-                    oldPos = pos;
-                    notifyItemChanged(pos, "color");
-				}
-			});
+			binding.item.setOnClickListener(v -> {
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - lastClickTime < DEBOUNCE_MS) {
+                    return;
+                }
+                lastClickTime = currentTime;
+                activity.miniPlayerBottomSheet.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rounded_corners_bottom_sheet));
+                isPlaying = true;
+                int pos = _position;
+                int resId = R.drawable.placeholder;
+                Uri uri = Uri.parse("android.resource://" + getActivity().getPackageName() + "/" + resId);
+                String placeholderUri = uri.toString();
+                path = SongsMap.get(pos).get("path").toString();
+                Uri fileUri = Uri.parse("file://" + path);
+                MainActivity act = (MainActivity) getActivity();
+                String pth = _data.get(pos).get("thumbnail") == null ? placeholderUri : _data.get(pos).get("thumbnail").toString();
+                act._setSong(pos, pth, fileUri);
+                notifyItemChanged(oldPos, "color");
+                oldPos = pos;
+                notifyItemChanged(pos, "color");
+            });
 			
 		}
 		

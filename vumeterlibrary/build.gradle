@@ -1,0 +1,22 @@
+import java.util.regex.Pattern
+
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 36
+    namespace 'io.gresse.hugo.vumeterlibrary'
+    resourcePrefix "vumeter_"
+
+    defaultConfig {
+        minSdkVersion 26
+        versionCode 17
+        versionName "1.0.17"
+        targetSdkVersion 36
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}

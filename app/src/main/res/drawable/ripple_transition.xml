@@ -1,0 +1,4 @@
+<transition xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/rv_ripple" />
+    <item android:drawable="@drawable/rv_selected_ripple" />
+</transition>

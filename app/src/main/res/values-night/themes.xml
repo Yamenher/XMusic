@@ -48,5 +48,6 @@
         <item name="colorSurfaceContainerHighest">@color/md_theme_surfaceContainerHighest</item>
         <item name="android:fontFamily">@font/product_sans_regular</item>
         <item name="fontFamily">@font/product_sans_regular</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
     </style>
 </resources>

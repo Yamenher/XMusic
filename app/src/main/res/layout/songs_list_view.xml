@@ -22,15 +22,40 @@
             android:gravity="center_vertical"
             android:background="@drawable/rv_ripple"
             android:orientation="horizontal">
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/songCover"
-                android:focusable="false"
-                android:layout_width="45dp"
-                android:layout_height="45dp"
-                android:layout_marginRight="8dp"
-                android:layout_marginLeft="12dp"
-                android:src="@drawable/img"
-                app:shapeAppearanceOverlay="@style/SmallRoundedCornersImage" />
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/songCover"
+                    android:focusable="false"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_marginRight="8dp"
+                    android:layout_marginLeft="12dp"
+                    android:src="@drawable/placeholder"
+                    app:shapeAppearanceOverlay="@style/SmallRoundedCornersImage" />
+                <LinearLayout
+                    android:id="@+id/song_bars"
+                    android:layout_height="45dp"
+                    android:layout_width="45dp"
+                    android:padding="8dp"
+                    android:visibility="invisible"
+                    android:layout_marginRight="8dp"
+                    android:layout_marginLeft="12dp"
+                    android:background="@drawable/active_item_scrim"
+                    android:gravity="center">
+                    <io.gresse.hugo.vumeterlibrary.VuMeterView
+                        android:id="@+id/vumeter"
+                        android:layout_height="match_parent"
+                        android:layout_width="match_parent"
+                        android:layout_gravity="center"
+                        app:vumeter_stopSize="1dp"
+                        app:vumeter_speed="4"
+                        app:vumeter_blockNumber="3"
+                        app:vumeter_blockSpacing="3dp"
+                        app:vumeter_backgroundColor="?colorPrimary" />
+                </LinearLayout>    
+            </FrameLayout>
             <LinearLayout
                 android:id="@+id/linear3"
                 android:layout_width="wrap_content"

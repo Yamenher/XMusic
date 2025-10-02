@@ -1,4 +1,4 @@
-package com.xapps.media.xmusic;
+package com.xapps.media.xmusic.application;
 
 import android.os.StrictMode;
 import android.os.Build;
@@ -6,7 +6,7 @@ import android.app.Application;
 import android.content.Context;
 import com.google.android.material.color.DynamicColors;
 
-public class XApp extends Application {
+public class XApplication extends Application {
     
     @Override
     public void onCreate() {
