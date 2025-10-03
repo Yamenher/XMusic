@@ -113,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler actionSender = new Handler(Looper.getMainLooper());
     private boolean seekAllowed = true;
     private MusicListFragmentActivity mlfa; 
+    private OnBackPressedCallback callback;
 	
 	private ArrayList<HashMap<String, Object>> SongsMap = new ArrayList<>();
 	public static ArrayList<HashMap<String, Object>> currentMap = new ArrayList<>();
@@ -136,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
 		setContentView(binding.getRoot());
 		initialize(_savedInstanceState);
 		initializeLogic();
+        setupCallbacks();
         mlfa = (MusicListFragmentActivity) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
         ViewCompat.setOnApplyWindowInsetsListener(binding.miniPlayerBottomSheet, (v, insets) -> {
             return WindowInsetsCompat.CONSUMED;
@@ -275,7 +277,10 @@ public class MainActivity extends AppCompatActivity {
 				if (newState == BottomSheetBehavior.STATE_DRAGGING) {
 					if (!isBNVHidden()) MusicListFragmentActivity.fab.hide();
 					binding.musicProgress.animate().alpha(0f).setDuration(100).start();
+                } else if (newState == BottomSheetBehavior.STATE_EXPANDED) {
+                     callback.setEnabled(true);
 				} else if (newState == BottomSheetBehavior.STATE_COLLAPSED || newState == BottomSheetBehavior.STATE_HIDDEN) {
+                    callback.setEnabled(false);
 					if (newState == BottomSheetBehavior.STATE_HIDDEN) {
 						Intent playIntent = new Intent(c, PlayerService.class);
 						playIntent.setAction("ACTION_STOP");
@@ -576,5 +581,43 @@ public class MainActivity extends AppCompatActivity {
             binding.songSeekbar.setValueTo(max);
             binding.musicProgress.setMax(max);
         }
+    }
+
+    public void setupCallbacks() {
+        callback = new OnBackPressedCallback(false) {
+            @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+            @Override
+            public void handleOnBackStarted(BackEventCompat backEvent) {
+                
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+            @Override
+            public void handleOnBackProgressed(BackEventCompat backEvent) {
+                binding.miniPlayerBottomSheet.setScaleX(1f-0.1f*backEvent.getProgress());
+                binding.miniPlayerBottomSheet.setScaleY(1f-0.1f*backEvent.getProgress());
+                binding.miniPlayerBottomSheet.setTranslationY((binding.miniPlayerBottomSheet.getHeight()*0.05f)*backEvent.getProgress());
+                
+            }
+
+            @Override
+            public void handleOnBackPressed() {
+                binding.miniPlayerBottomSheet.animate().scaleX(1f).setDuration(200).start();
+                binding.miniPlayerBottomSheet.animate().scaleY(1f).setDuration(200).start();
+                binding.miniPlayerBottomSheet.animate().translationY(0f).setDuration(200).start();
+                bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                callback.setEnabled(false);
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+            @Override
+            public void handleOnBackCancelled() {
+                binding.miniPlayerBottomSheet.animate().scaleX(1f).setDuration(300).start();
+                binding.miniPlayerBottomSheet.animate().scaleY(1f).setDuration(300).start();
+                bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+        };
+
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 }
