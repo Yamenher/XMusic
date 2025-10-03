@@ -120,17 +120,10 @@ public class MainActivity extends AppCompatActivity {
 	
 	@Override
 	protected void onCreate(Bundle _savedInstanceState) {
-        /*if (Build.VERSION.SDK_INT >= 31) {
-		    final SplashScreen splash = SplashScreen.installSplashScreen(this);
-            splash.setKeepOnScreenCondition(() -> {
-                if (isDataLoaded) {
-                    if (SongsMap.size() == 0) {
-                       MusicListFragmentActivity.fab.hide();
-                    }
-                }
-                return !isDataLoaded;
-            });
-        }*/
+        IntentFilter filter = new IntentFilter();
+		filter.addAction("PLAYER_COLORS");
+        filter.addAction("PLAYER_PROGRESS");
+		registerReceiver(multiReceiver, filter, Context.RECEIVER_EXPORTED);
 		EdgeToEdge.enable(this);
 		super.onCreate(_savedInstanceState);
 		binding = MainBinding.inflate(getLayoutInflater());
@@ -169,10 +162,6 @@ public class MainActivity extends AppCompatActivity {
 	private void initialize(Bundle _savedInstanceState) {
         MaterialColorUtils.initColors(this);
         binding.miniPlayerBottomSheet.setBackground(ContextCompat.getDrawable(this, R.drawable.rounded_corners_bottom_sheet));
-        IntentFilter filter = new IntentFilter();
-		filter.addAction("PLAYER_PROGRESS");
-		filter.addAction("PLAYER_COLORS");
-		registerReceiver(multiReceiver, filter, Context.RECEIVER_EXPORTED);
 		binding.toggleView.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View _view) {
@@ -424,6 +413,7 @@ public class MainActivity extends AppCompatActivity {
 	public void onPause() {
 		super.onPause();
 		unregisterReceiver(multiReceiver);
+        unregisterReceiver(multiReceiver);
 	}
     
     @Override
@@ -477,6 +467,7 @@ public class MainActivity extends AppCompatActivity {
             binding.totalDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
         }, 120);
         if (!isPlaying) binding.toggleView.startAnimation();
+        updateMaxValue(-1);
         isPlaying = true;    
 	}
 	
