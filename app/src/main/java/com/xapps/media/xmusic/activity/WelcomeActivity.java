@@ -30,6 +30,7 @@ import com.xapps.media.xmusic.R;
 import com.xapps.media.xmusic.SongMetadataHelper;
 import com.xapps.media.xmusic.XUtils;
 import com.xapps.media.xmusic.common.SongLoadListener;
+import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.databinding.ActivityWelcomeBinding;
 import com.xapps.media.xmusic.utils.MaterialColorUtils;
 import com.xapps.media.xmusic.utils.SerializationUtils;
@@ -104,7 +105,7 @@ public class WelcomeActivity extends AppCompatActivity {
                 binding.part2View.setVisibility(View.VISIBLE);
 
                 int cores = Math.max(1, Runtime.getRuntime().availableProcessors());
-                ThreadPoolExecutor executor = new ThreadPoolExecutor(cores, cores*2, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+                ThreadPoolExecutor executor = new ThreadPoolExecutor(cores, cores*3, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
                 executor.execute(() -> {
                     SongMetadataHelper.getAllSongs(this, new SongLoadListener(){
                         @Override
@@ -122,6 +123,7 @@ public class WelcomeActivity extends AppCompatActivity {
                                 e.printStackTrace();
                             }
                             new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                DataManager.setDataInitialized();
                                 binding.loadingText.setText("Complete! starting app...");
                                 Intent i = new Intent();
                                 i.setClass(WelcomeActivity.this, MainActivity.class);

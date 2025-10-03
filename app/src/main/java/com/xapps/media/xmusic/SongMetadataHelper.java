@@ -10,7 +10,6 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 import com.xapps.media.xmusic.common.SongLoadListener;
-import com.xapps.media.xmusic.utils.SerializationUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,16 +27,9 @@ import java.util.concurrent.Future;
 public class SongMetadataHelper {
 	
 	private static final String CACHE_DIR_NAME = "covers";
-    private static final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
 	
 	public static void getAllSongs(Context context, SongLoadListener listener) {
-
-    if (SerializationUtils.readFromFile(context, "songsList") != null) {
-        if (listener != null) {
-            listener.onComplete(SerializationUtils.readFromFile(context, "songsList"));
-        }
-        return;
-    }
 
     ArrayList<HashMap<String, Object>> songListMap = new ArrayList<>();
     String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0" + getListOfMediaTypes();
@@ -145,7 +137,7 @@ public class SongMetadataHelper {
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inJustDecodeBounds = true;
                 BitmapFactory.decodeByteArray(coverArt, 0, coverArt.length, options);
-                options.inSampleSize = calculateInSampleSize(options, 800, 800);
+                options.inSampleSize = calculateInSampleSize(options, 1000, 1000);
                 options.inJustDecodeBounds = false;
                 Bitmap bitmap = BitmapFactory.decodeByteArray(coverArt, 0, coverArt.length, options);
                 if (bitmap != null) {
@@ -154,7 +146,7 @@ public class SongMetadataHelper {
                         int height = bitmap.getHeight();
                         int edge = Math.min(width, height);
                         Bitmap square = Bitmap.createBitmap(bitmap, (width - edge) / 2, (height - edge) / 2, edge, edge);
-                        Bitmap finalBitmap = Bitmap.createScaledBitmap(square, 800, 800, true);
+                        Bitmap finalBitmap = Bitmap.createScaledBitmap(square, 1000, 1000, true);
                         if (square != finalBitmap) {
                             square.recycle();
                         }

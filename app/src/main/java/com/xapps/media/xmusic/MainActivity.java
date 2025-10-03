@@ -159,11 +159,6 @@ public class MainActivity extends AppCompatActivity {
                             XUtils.showMessage(c, "no songs found");
                         } 
                     });
-                    try {
-                        SerializationUtils.saveToFile(c, songs, "songsList");
-                    } catch (Exception e) {
-                        XUtils.showMessage(c, "failed to save songs"); 
-                    }
                 }
             });
         });
@@ -208,9 +203,12 @@ public class MainActivity extends AppCompatActivity {
         });
         
         binding.nextButton.setOnClickListener(v -> {
+            int resId = R.drawable.placeholder;
+            Uri uri = Uri.parse("android.resource://" + getPackageName() + "/" + resId);
+            String placeholderUri = uri.toString();
             if (seekAllowed) {
                 currentPosition++;
-                _setSong(currentPosition, SongsMap.get(currentPosition).get("thumbnail").toString(), Uri.parse("file://"+SongsMap.get(currentPosition).get("path").toString()));
+                _setSong(currentPosition, SongsMap.get(currentPosition).get("thumbnail") == null? placeholderUri : SongsMap.get(currentPosition).get("thumbnail").toString() , Uri.parse("file://"+SongsMap.get(currentPosition).get("path").toString()));
                 seekAllowed = false;
                 seekController.postDelayed(() -> {
                     seekAllowed = true;
@@ -218,9 +216,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         binding.previousButton.setOnClickListener(v -> {
+            int resId = R.drawable.placeholder;
+            Uri uri = Uri.parse("android.resource://" + getPackageName() + "/" + resId);
+            String placeholderUri = uri.toString();
             if (seekAllowed) {
                 currentPosition--;
-                _setSong(currentPosition, SongsMap.get(currentPosition).get("thumbnail").toString(), Uri.parse("file://"+SongsMap.get(currentPosition).get("path").toString()));
+                _setSong(currentPosition, SongsMap.get(currentPosition).get("thumbnail") == null? placeholderUri : SongsMap.get(currentPosition).get("thumbnail").toString(), Uri.parse("file://"+SongsMap.get(currentPosition).get("path").toString()));
                 seekAllowed = false;
                 seekController.postDelayed(() -> {
                     seekAllowed = true;
@@ -379,14 +380,14 @@ public class MainActivity extends AppCompatActivity {
 	}
     
     public void addFragmentWithTransition(androidx.fragment.app.Fragment fragment) {
-        fragment.setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
-        fragment.setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
+        fragment.setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
+        fragment.setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
         androidx.fragment.app.Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
         current.setExitTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
         current.setReenterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
         getSupportFragmentManager()
         .beginTransaction()
-        .replace(R.id.fragmentsContainer, fragment)
+        .add(R.id.fragmentsContainer, fragment)
         .addToBackStack(null)
         .commit();
     }
@@ -438,7 +439,9 @@ public class MainActivity extends AppCompatActivity {
             playIntent.putExtra("position", _position);
             startService(playIntent);
         }, 10);
-        binding.coversPager.setCurrentItem(_position, bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED? true : false);
+        binding.coversPager.setCurrentItem(_position, false);
+        binding.coversPager.setAlpha(0f);
+        binding.coversPager.animate().alpha(1f).setDuration(300).start();
         currentPosition = _position;
         binding.musicProgress.setProgressCompat(0, true);
         binding.songSeekbar.setValue(0);

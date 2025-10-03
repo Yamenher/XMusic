@@ -69,6 +69,7 @@ import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.search.*;
+import com.xapps.media.xmusic.common.SongLoadListener;
 import com.xapps.media.xmusic.databinding.*;
 import com.xapps.media.xmusic.databinding.MainBinding;
 import com.xapps.media.xmusic.settingsFragment;
@@ -154,27 +155,32 @@ public class MusicListFragmentActivity extends Fragment {
         }
         
         executor.execute(() -> {
-            try {
-                SongsMap = SerializationUtils.readFromFile(getActivity(), "songsList");
-                size = SongsMap.size();
-                songsAdapter = new SongsListAdapter(SongsMap);
-                MainActivity act = (MainActivity) getActivity();
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
-                        HeaderAdapter headerAdapter = new HeaderAdapter();
-                        ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
-                        binding.songsList.setAdapter(concatAdapter);
-                        binding.songsList.animate().alpha(1f).translationY(0f).setDuration(300).start();
-                        binding.emptyLayout.setVisibility(View.GONE);
-                        a.Start(); 
-                    }
-                });
-
-            } catch (Exception e) {
-                Log.e("CoreExecutor", "Error loading songs", e);
-            }
+            SongMetadataHelper.getAllSongs(getActivity(), new SongLoadListener() {
+                @Override
+                public void onComplete(ArrayList<HashMap<String, Object>> map) {
+                    SongsMap = map;
+                    size = SongsMap.size();
+                    songsAdapter = new SongsListAdapter(SongsMap);
+                    MainActivity act = (MainActivity) getActivity();
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
+                            HeaderAdapter headerAdapter = new HeaderAdapter();
+                            ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
+                            binding.songsList.setAdapter(concatAdapter);
+                            binding.songsList.animate().alpha(1f).translationY(0f).setDuration(300).start();
+                            binding.emptyLayout.setVisibility(View.GONE);
+                            a.Start(); 
+                        }
+                    });
+                }
+                    
+                @Override
+                public void onProgress(int count) {
+                        
+                }
+            });
         });
         
 	}

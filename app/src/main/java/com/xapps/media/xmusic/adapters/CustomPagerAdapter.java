@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import android.content.Context;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import java.util.ArrayList;
@@ -50,13 +51,19 @@ public class CustomPagerAdapter extends RecyclerView.Adapter<CustomPagerAdapter.
                     .load(Uri.parse(path))
                     .apply(new RequestOptions()
                     .centerCrop()
-                    .override(800, 800)
+                    .override(1000, 1000)
+                    .priority(Priority.LOW)
                     .skipMemoryCache(false))
-                    .thumbnail(1f)
-                    .transition(DrawableTransitionOptions.withCrossFade(300))
                     .into(holder.thumbnail);
             } else {
-                holder.thumbnail.setImageResource(R.drawable.placeholder);
+                Glide.with(context)
+                    .load(R.drawable.placeholder)
+                    .apply(new RequestOptions()
+                    .centerCrop()
+                    .override(1000, 1000)
+                    .priority(Priority.LOW)
+                    .skipMemoryCache(false))
+                    .into(holder.thumbnail);
                 Log.i("warning", "No cover at pos: " + position);
             }
         }
