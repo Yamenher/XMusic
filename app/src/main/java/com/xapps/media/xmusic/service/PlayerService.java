@@ -23,7 +23,8 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.common.collect.ImmutableList;
-import com.xapps.media.xmusic.*;
+import com.xapps.media.xmusic.utils.*;
+import com.xapps.media.xmusic.activity.*;
 import com.xapps.media.xmusic.R;
 import com.xapps.media.xmusic.utils.ColorPaletteUtils;
 import java.io.*;
@@ -93,6 +94,12 @@ public class PlayerService extends Service {
 		createNotificationChannel();  
 		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         setupAudioFocusRequest();
+        
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+            executor.execute(() -> {
+                Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
+                tb = toByteArray(transparentBitmap);
+        });
 	}  
 	
 	@Nullable  
@@ -172,6 +179,8 @@ public class PlayerService extends Service {
                     MediaItem mediaItem = new MediaItem.Builder().setMediaMetadata(mt).setUri(uri2).build();
                     mediaItems.add(mediaItem);
                 }
+                
+                
                 });
             }
 		}     
@@ -201,10 +210,10 @@ public class PlayerService extends Service {
             XUtils.showMessage(getApplicationContext(), "no songs were found on this device");
         } else {
 			ExoPlayerHandler.post(() -> {
-				player.setRepeatMode(Player.REPEAT_MODE_ONE);
                 player.setMediaItems(mediaItems);
-                player.prepare();
+				player.setRepeatMode(Player.REPEAT_MODE_ONE);
                 player.seekTo(position, 0);
+                player.prepare();
                 player.play();
                 player.addListener(new Player.Listener() {
                     @Override
@@ -223,8 +232,6 @@ public class PlayerService extends Service {
                             if (!isColorChanged) {
                                 ExecutorService executor = Executors.newSingleThreadExecutor();
                                 executor.execute(() -> {
-                                    Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
-                                    tb = toByteArray(transparentBitmap);
                                     Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
                                     ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
                                         Intent progressIntent = new Intent("PLAYER_COLORS");
@@ -259,7 +266,7 @@ public class PlayerService extends Service {
     
     private byte[] toByteArray(Bitmap bitmap) {
         java.io.ByteArrayOutputStream stream = new java.io.ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
         return stream.toByteArray();
     }
     

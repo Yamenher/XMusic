@@ -13,7 +13,7 @@
         android:paddingHorizontal="8dp"
         android:gravity="center_vertical"
         android:orientation="vertical">
-        <LinearLayout
+        <com.xapps.media.xmusic.widget.CheckableLinearLayout
             android:id="@+id/item"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -85,6 +85,6 @@
                     android:textColor="?colorOutline"
                     android:ellipsize="end" />
             </LinearLayout>
-        </LinearLayout>
+        </com.xapps.media.xmusic.widget.CheckableLinearLayout>
     </LinearLayout>
 </LinearLayout>

@@ -1,6 +1,5 @@
 package com.xapps.media.xmusic.widget;
 
-import com.xapps.media.xmusic.XUtils;
 import com.xapps.media.xmusic.R;
 import android.view.View;
 import android.os.*;
@@ -23,6 +22,8 @@ import androidx.core.graphics.drawable.DrawableCompat;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import com.xapps.media.xmusic.utils.XUtils;
 
 public class PlayerToggle extends FrameLayout {
 

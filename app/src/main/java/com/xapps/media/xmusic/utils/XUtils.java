@@ -1,4 +1,4 @@
-package com.xapps.media.xmusic;
+package com.xapps.media.xmusic.utils;
 
 import android.content.Context;
 import android.content.Intent;

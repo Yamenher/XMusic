@@ -14,7 +14,7 @@
             android:id="@+id/fragmentsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:name="com.xapps.media.xmusic.MusicListFragmentActivity"
+            android:name="com.xapps.media.xmusic.fragment.MusicListFragment"
             android:orientation="vertical"
             android:transitionGroup="true"
             android:layout_weight="1" />

@@ -1,10 +1,10 @@
-package com.xapps.media.xmusic;
+package com.xapps.media.xmusic.activity;
 
 import android.Manifest;
 import android.animation.*;
 import android.app.*;
 import android.content.*;
-import android.content.pm.PackageManager;
+import android.content.pm.PackageManager; 
 import android.content.res.*;
 import android.graphics.*;
 import android.graphics.drawable.*;
@@ -59,6 +59,7 @@ import androidx.transition.*;
 
 import com.appbroker.roundedimageview.*;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 
@@ -74,11 +75,14 @@ import com.google.android.material.transition.MaterialSharedAxis;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.xapps.media.xmusic.helper.SongMetadataHelper;
 import com.xapps.media.xmusic.adapters.CustomPagerAdapter;
 import com.xapps.media.xmusic.common.SongLoadListener;
+import com.xapps.media.xmusic.R;
 import com.xapps.media.xmusic.databinding.MainBinding;
 import com.xapps.media.xmusic.service.PlayerService;
 import com.xapps.media.xmusic.utils.*;
+import com.xapps.media.xmusic.fragment.MusicListFragment;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -112,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean isPlaying = false;
     private Handler actionSender = new Handler(Looper.getMainLooper());
     private boolean seekAllowed = true;
-    private MusicListFragmentActivity mlfa; 
+    private MusicListFragment mlfa; 
     private OnBackPressedCallback callback;
 	
 	private ArrayList<HashMap<String, Object>> SongsMap = new ArrayList<>();
@@ -131,10 +135,7 @@ public class MainActivity extends AppCompatActivity {
 		initialize(_savedInstanceState);
 		initializeLogic();
         setupCallbacks();
-        mlfa = (MusicListFragmentActivity) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
-        ViewCompat.setOnApplyWindowInsetsListener(binding.miniPlayerBottomSheet, (v, insets) -> {
-            return WindowInsetsCompat.CONSUMED;
-        });
+        mlfa = (MusicListFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
         executor.execute(() -> {
             SongMetadataHelper.getAllSongs(c, new SongLoadListener(){
                 @Override
@@ -180,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
 		});
         
         binding.miniPlayerDetailsLayout.setOnClickListener(v -> {
-            MusicListFragmentActivity.fab.hide();
+            MusicListFragment.fab.hide();
             binding.musicProgress.setAlpha(0f);
             bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         });
@@ -264,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
 			@Override
 			public void onStateChanged(@NonNull View bottomSheet, int newState) {
 				if (newState == BottomSheetBehavior.STATE_DRAGGING) {
-					if (!isBNVHidden()) MusicListFragmentActivity.fab.hide();
+					if (!isBNVHidden()) MusicListFragment.fab.hide();
 					binding.musicProgress.animate().alpha(0f).setDuration(100).start();
                 } else if (newState == BottomSheetBehavior.STATE_EXPANDED) {
                      callback.setEnabled(true);
@@ -277,11 +278,11 @@ public class MainActivity extends AppCompatActivity {
                         Intent playIntent2 = new Intent("ACTION_STOP_FRAGMENT");
 						sendBroadcast(playIntent2);
 						isBsInvisible = true;
-                        XUtils.increaseMargins(MusicListFragmentActivity.fab, 0, 0, 0, -(binding.coversPager.getHeight() + binding.miniPlayerBottomSheet.getPaddingTop()*2));
+                        XUtils.increaseMargins(MusicListFragment.fab, 0, 0, 0, -(binding.coversPager.getHeight() + binding.miniPlayerBottomSheet.getPaddingTop()*2));
 				    } else {
 						isBsInvisible = false;
 					}
-					if (!isBNVHidden()) MusicListFragmentActivity.fab.show();
+					if (!isBNVHidden()) MusicListFragment.fab.show();
 					binding.musicProgress.animate().alpha(1f).setDuration(100).start();
 			    } else {
 					isBsInvisible = false;
@@ -423,6 +424,7 @@ public class MainActivity extends AppCompatActivity {
     }
         
 	public void _setSong(final int _position, final String _coverPath, final Uri _fileUri) {
+        updateMaxValue(_position);
         handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(() -> {
             Intent playIntent = new Intent(this, PlayerService.class);
@@ -441,13 +443,9 @@ public class MainActivity extends AppCompatActivity {
         binding.musicProgress.setProgressCompat(0, true);
         binding.songSeekbar.setValue(0);
         if (isBsInvisible) {
-			XUtils.increaseMarginsSmoothly(MusicListFragmentActivity.fab, 0, 0, 0, (binding.coversPager.getHeight() + binding.miniPlayerBottomSheet.getPaddingTop()*2), 200L);
+			XUtils.increaseMarginsSmoothly(MusicListFragment.fab, 0, 0, 0, (binding.coversPager.getHeight() + binding.miniPlayerBottomSheet.getPaddingTop()*2), 200L);
 			bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 		}
-        MusicListFragmentActivity frag = (MusicListFragmentActivity) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
-        if (frag != null) {
-            currentMap = frag.getSongsMap();
-        }
         binding.artistBigTitle.animate().alpha(0f).translationX(-20f).setDuration(100).start();
         binding.songBigTitle.animate().alpha(0f).translationX(-20f).setDuration(100).start();
         binding.totalDurationText.animate().alpha(0f).translationX(-20f).setDuration(100).start();
@@ -467,7 +465,6 @@ public class MainActivity extends AppCompatActivity {
             binding.totalDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
         }, 120);
         if (!isPlaying) binding.toggleView.startAnimation();
-        updateMaxValue(-1);
         isPlaying = true;    
 	}
 	
@@ -503,13 +500,13 @@ public class MainActivity extends AppCompatActivity {
         if (hide) {
             binding.bottomNavigation.animate().alpha(0.5f).translationY(binding.bottomNavigation.getHeight()).setDuration(100).withEndAction(() -> binding.bottomMixer.removeView(binding.bottomNavigation)).start();
             bottomSheetBehavior.setPeekHeight(0, true);
-            MusicListFragmentActivity.fab.hide();
+            MusicListFragment.fab.hide();
         } else {
             int extraInt = XUtils.convertToPx(c, 25);
             bottomSheetBehavior.setPeekHeight(Math.round(bsh + binding.bottomNavigation.getPaddingBottom()), true);
             binding.bottomNavigation.animate().alpha(1f).translationY(0).setDuration(100).withStartAction(() -> binding.bottomMixer.addView(binding.bottomNavigation)).start();
             if (SongsMap.size() != 0) {
-                MusicListFragmentActivity.fab.show();
+                MusicListFragment.fab.show();
             }
         }
         isbnvHidden = hide;
@@ -562,7 +559,6 @@ public class MainActivity extends AppCompatActivity {
             binding.songBigTitle.setText(currentMap.get(pos == -1? PlayerService.currentPosition : pos).get("title").toString());
             binding.currentSongTitle.setText(currentMap.get(pos == -1? PlayerService.currentPosition : pos).get("title").toString());
             binding.currentSongArtist.setText(currentMap.get(pos == -1? PlayerService.currentPosition : pos).get("author").toString());
-            binding.coversPager.setCurrentItem(pos == -1? PlayerService.currentPosition : pos, false);
         }
     }
     

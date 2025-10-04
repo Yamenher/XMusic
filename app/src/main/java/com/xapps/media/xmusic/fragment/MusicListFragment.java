@@ -1,7 +1,7 @@
-package com.xapps.media.xmusic;
+package com.xapps.media.xmusic.fragment;
 
 import android.animation.*;
-import android.widget.ImageView;
+
 import androidx.annotation.NonNull;
 import android.app.*;
 import android.content.*;
@@ -13,28 +13,22 @@ import android.net.*;
 import android.net.Uri;
 import android.os.*;
 import android.text.*;
-import android.text.Spanned;
 import android.text.style.*;
-import android.text.style.ForegroundColorSpan;
-import android.transition.Transition;
+
 import android.util.*;
-import android.util.TypedValue;
 import android.view.*;
 import android.view.View.*;
 import android.view.animation.*;
 import android.webkit.*;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.window.OnBackInvokedDispatcher;
+
 import androidx.activity.*;
 import androidx.annotation.*;
 import androidx.annotation.experimental.*;
 import androidx.appcompat.*;
 import androidx.appcompat.resources.*;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
+
 import androidx.core.*;
 import androidx.core.content.*;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.core.ktx.*;
 import androidx.core.splashscreen.*;
 import androidx.customview.*;
@@ -66,15 +60,18 @@ import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.material.*;
 import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.color.MaterialColors;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.search.*;
+import com.xapps.media.xmusic.helper.SongMetadataHelper;
+import com.xapps.media.xmusic.adapters.HeaderAdapter;
 import com.xapps.media.xmusic.common.SongLoadListener;
 import com.xapps.media.xmusic.databinding.*;
+import com.xapps.media.xmusic.R;
 import com.xapps.media.xmusic.databinding.MainBinding;
-import com.xapps.media.xmusic.settingsFragment;
-import com.xapps.media.xmusic.utils.MaterialColorUtils;
-import com.xapps.media.xmusic.utils.SerializationUtils;
+
+import com.xapps.media.xmusic.utils.*;
+import com.xapps.media.xmusic.activity.MainActivity;
 import java.io.*;
 import java.text.*;
 import java.util.*;
@@ -85,10 +82,10 @@ import java.util.concurrent.Executors;
 import java.util.regex.*;
 import org.json.*;
 
-public class MusicListFragmentActivity extends Fragment {
+public class MusicListFragment extends Fragment {
 	
 	private MusicListFragmentBinding binding;
-    private int oldPos = -1;
+    private int oldPos, previousItem, pos = -1;
 	public final Fragment f = this;
 	private String Title = "";
 	private String Artitst = "";
@@ -166,7 +163,7 @@ public class MusicListFragmentActivity extends Fragment {
                         @Override
                         public void run() {
                             binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
-                            HeaderAdapter headerAdapter = new HeaderAdapter();
+                            HeaderAdapter headerAdapter = new HeaderAdapter(size);
                             ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
                             binding.songsList.setAdapter(concatAdapter);
                             binding.songsList.animate().alpha(1f).translationY(0f).setDuration(300).start();
@@ -215,7 +212,7 @@ public class MusicListFragmentActivity extends Fragment {
     
     public void setUpListeners() {
         binding.settingsIcon.setOnClickListener(v -> {
-            Fragment f = new settingsFragment();
+            Fragment f = new SettingsFragment();
             a.addFragmentWithTransition(f);
         });
     }
@@ -254,16 +251,15 @@ public class MusicListFragmentActivity extends Fragment {
 		public void onBindViewHolder(ViewHolder _holder, final int _position) {
 			View _view = _holder.itemView;
 			SongsListViewBinding binding = SongsListViewBinding.bind(_view);
-            binding.songCover.setScaleType(ImageView.ScaleType.CENTER_CROP);
             boolean isLast = _position == getItemCount() - 1;
             XUtils.setMargins(binding.item, 0, 0, 0, isLast? XUtils.convertToPx(getActivity(), 10f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight() : 0);
-            if (_position == oldPos && isPlaying) {
-                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_selected_ripple));
+            if (_position == pos && isPlaying) {
+                binding.item.setChecked(true);
                 binding.SongTitle.setTextColor(c1);
                 binding.SongArtist.setTextColor(c2);
                 binding.songBars.setVisibility(View.VISIBLE);
             } else {
-                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple));
+                binding.item.setChecked(false);
                 binding.SongTitle.setTextColor(c3);
                 binding.SongArtist.setTextColor(c4);
                 binding.songBars.setVisibility(View.INVISIBLE);
@@ -285,8 +281,8 @@ public class MusicListFragmentActivity extends Fragment {
             .fallback(placeholder)
             .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
             .placeholder(placeholder)
-            .override(size, size)
-            /*.priority(Priority.HIGH)*/
+            .override(200, 200)
+            .priority(Priority.NORMAL)
 			.into(binding.songCover);
 			if (Title == null || Title.equals("")) {
 				binding.SongTitle.setText("Unknown");
@@ -300,9 +296,8 @@ public class MusicListFragmentActivity extends Fragment {
                     return;
                 }
                 lastClickTime = currentTime;
-                activity.miniPlayerBottomSheet.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rounded_corners_bottom_sheet));
                 isPlaying = true;
-                int pos = _position;
+                pos = _position;
                 int resId = R.drawable.placeholder;
                 Uri uri = Uri.parse("android.resource://" + getActivity().getPackageName() + "/" + resId);
                 String placeholderUri = uri.toString();
@@ -335,30 +330,5 @@ public class MusicListFragmentActivity extends Fragment {
 			}
 		}
         
-	}
-
-    public class HeaderAdapter extends RecyclerView.Adapter<HeaderAdapter.HeaderViewHolder> {
-	    @Override
-	    public HeaderViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-		    View headerView = LayoutInflater.from(parent.getContext()).inflate(R.layout.header_view, parent, false);
-		    return new HeaderViewHolder(headerView);
-	    }
-		
-	    @Override
-		public void onBindViewHolder(HeaderViewHolder holder, int position) {
-			View view = holder.itemView;
-			TextView sg = (TextView) view.findViewById(R.id.songs_count);
-			sg.setText("0 Songs".replace("0",String.valueOf(size)));
-		}
-		
-		@Override
-		public int getItemCount() {
-		    return 1;
-		}
-		public static class HeaderViewHolder extends RecyclerView.ViewHolder {
-			public HeaderViewHolder(View itemView) {
-				super(itemView);
-			}
-		}
 	}
 }

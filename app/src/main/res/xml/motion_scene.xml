@@ -3,14 +3,12 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:motion="http://schemas.android.com/apk/res-auto">
-    
-    <!-- First transition: From start to mid (equivalent to your original 0-50%) -->
 <Transition 
     motion:constraintSetStart="@+id/start"
+    motion:layoutDuringTransition="honorRequest"
     motion:constraintSetEnd="@+id/mid"
-    motion:duration="200">  <!-- Halved duration for the first half, adjust as needed -->
+    motion:duration="200"> 
     <KeyFrameSet>
-        <!-- Halved original KeyFrames: 80 → 40, 50 → 25 -->
         <KeyAttribute 
             motion:motionTarget="@+id/controls_layout"
             motion:framePosition="80"
@@ -107,6 +105,6 @@
 </ConstraintSet>
 
 <ConstraintSet android:id="@+id/end">
-    <!-- Left empty; add your final state constraints and keyframes in the second Transition above when ready -->
+    
 </ConstraintSet>
 </MotionScene>
