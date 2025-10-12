@@ -1,0 +1,49 @@
+<RelativeLayout 
+xmlns:android="http://schemas.android.com/apk/res/android"
+ xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="24dp"
+    android:paddingVertical="16dp"
+    android:layout_marginTop="4dp" >
+
+    <ImageView
+        android:id="@+id/preference_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="64px"
+        android:tint="?colorPrimary" />
+
+    <TextView
+        android:id="@+id/preference_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/preference_icon"
+        android:layout_toLeftOf="@id/preference_switch"
+        android:textSize="18sp"
+        android:textColor="?colorOnSurface"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/preference_description"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/preference_name"
+        android:layout_toRightOf="@id/preference_icon"
+        android:layout_toLeftOf="@id/preference_switch"
+        android:textSize="16sp"
+        android:textColor="?colorOnSurfaceVariant" />
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/preference_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="4dp"
+        android:clickable="false"
+        android:focusable="false" />
+</RelativeLayout>
+
