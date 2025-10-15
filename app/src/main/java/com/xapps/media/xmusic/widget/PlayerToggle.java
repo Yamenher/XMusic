@@ -1,6 +1,6 @@
 package com.xapps.media.xmusic.widget;
 
-import com.xapps.media.xmusic.XUtils;
+import com.xapps.media.xmusic.utils.*;
 import com.xapps.media.xmusic.R;
 import android.view.View;
 import android.os.*;

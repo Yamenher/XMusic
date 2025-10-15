@@ -1,4 +1,4 @@
-package com.xapps.media.xmusic;
+package com.xapps.media.xmusic.fragment;
 
 import android.animation.*;
 import android.widget.ImageView;
@@ -70,11 +70,13 @@ import com.google.android.material.color.MaterialColors;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.search.*;
 import com.xapps.media.xmusic.common.SongLoadListener;
+import com.xapps.media.xmusic.activity.MainActivity;
+import com.xapps.media.xmusic.R;
+import com.xapps.media.xmusic.helper.SongMetadataHelper;
 import com.xapps.media.xmusic.databinding.*;
 import com.xapps.media.xmusic.databinding.MainBinding;
-import com.xapps.media.xmusic.settingsFragment;
-import com.xapps.media.xmusic.utils.MaterialColorUtils;
-import com.xapps.media.xmusic.utils.SerializationUtils;
+import com.xapps.media.xmusic.fragment.SettingsFragment;
+import com.xapps.media.xmusic.utils.*;
 import java.io.*;
 import java.text.*;
 import java.util.*;
@@ -85,7 +87,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.*;
 import org.json.*;
 
-public class MusicListFragmentActivity extends Fragment {
+public class MusicListFragment extends Fragment {
 	
 	private MusicListFragmentBinding binding;
     private int oldPos = -1;
@@ -215,7 +217,7 @@ public class MusicListFragmentActivity extends Fragment {
     
     public void setUpListeners() {
         binding.settingsIcon.setOnClickListener(v -> {
-            Fragment f = new settingsFragment();
+            Fragment f = new SettingsFragment();
             a.addFragmentWithTransition(f);
         });
     }

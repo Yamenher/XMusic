@@ -5,7 +5,7 @@ import android.os.Build;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.splashscreen.SplashScreen;
-import com.xapps.media.xmusic.MainActivity;
+import com.xapps.media.xmusic.activity.MainActivity;
 import com.xapps.media.xmusic.data.DataManager;
 
 public class SplashActivity extends AppCompatActivity {

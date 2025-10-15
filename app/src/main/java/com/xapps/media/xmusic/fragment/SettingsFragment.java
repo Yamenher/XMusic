@@ -1,14 +1,15 @@
-package com.xapps.media.xmusic;
+package com.xapps.media.xmusic.fragment;
 import android.os.*;
 import android.view.*;
 import androidx.annotation.*;
 import androidx.fragment.app.Fragment;
+import com.xapps.media.xmusic.R;
 import dev.trindadedev.fastui.preferences.withicon.Preference;
 import com.xapps.media.xmusic.databinding.SettingsBinding;
 
 import java.util.Objects;
 
-public class settingsFragment extends Fragment {
+public class SettingsFragment extends Fragment {
     private SettingsBinding binding; 
         
     @NonNull
