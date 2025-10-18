@@ -76,6 +76,7 @@ import com.xapps.media.xmusic.helper.SongMetadataHelper;
 import com.xapps.media.xmusic.databinding.*;
 import com.xapps.media.xmusic.databinding.MainBinding;
 import com.xapps.media.xmusic.fragment.SettingsFragment;
+import com.xapps.media.xmusic.service.PlayerService;
 import com.xapps.media.xmusic.utils.*;
 import java.io.*;
 import java.text.*;
@@ -87,7 +88,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.*;
 import org.json.*;
 
-public class MusicListFragment extends Fragment {
+public class MusicListFragment extends BaseFragment {
 	
 	private MusicListFragmentBinding binding;
     private int oldPos = -1;
@@ -188,6 +189,12 @@ public class MusicListFragment extends Fragment {
 	}
     
     @Override
+    public void onResume() {
+        super.onResume();
+        
+    }
+    
+    @Override
     public void onStop() {
         super.onStop();
         requireContext().unregisterReceiver(myReceiver);
@@ -198,6 +205,13 @@ public class MusicListFragment extends Fragment {
         super.onStart();
         IntentFilter filter = new IntentFilter("ACTION_STOP_FRAGMENT");
         requireContext().registerReceiver(myReceiver, filter, Context.RECEIVER_EXPORTED);
+        isPlaying = PlayerService.isPlaying;
+        if (!isPlaying && (XUtils.getMargin(binding.fab, "bottom") >= XUtils.convertToPx(getActivity(), 150f)) && songsAdapter != null ) {
+            XUtils.increaseMargins(binding.fab, 0, 0, 0, -(activity.coversPager.getHeight() + activity.miniPlayerBottomSheet.getPaddingTop()*2));
+            int i = oldPos;
+            oldPos = -1;
+            songsAdapter.notifyItemChanged(i);
+        } 
     }
     
     @Override
@@ -260,12 +274,12 @@ public class MusicListFragment extends Fragment {
             boolean isLast = _position == getItemCount() - 1;
             XUtils.setMargins(binding.item, 0, 0, 0, isLast? XUtils.convertToPx(getActivity(), 10f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight() : 0);
             if (_position == oldPos && isPlaying) {
-                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_selected_ripple));
+                binding.item.setChecked(true);
                 binding.SongTitle.setTextColor(c1);
                 binding.SongArtist.setTextColor(c2);
                 binding.songBars.setVisibility(View.VISIBLE);
             } else {
-                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple));
+                binding.item.setChecked(false);
                 binding.SongTitle.setTextColor(c3);
                 binding.SongArtist.setTextColor(c4);
                 binding.songBars.setVisibility(View.INVISIBLE);
@@ -288,7 +302,6 @@ public class MusicListFragment extends Fragment {
             .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
             .placeholder(placeholder)
             .override(size, size)
-            /*.priority(Priority.HIGH)*/
 			.into(binding.songCover);
 			if (Title == null || Title.equals("")) {
 				binding.SongTitle.setText("Unknown");

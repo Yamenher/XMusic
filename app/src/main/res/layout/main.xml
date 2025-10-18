@@ -14,8 +14,10 @@
             android:id="@+id/fragmentsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:name="com.xapps.media.xmusic.fragment.MusicListFragment"
+            android:name="androidx.navigation.fragment.NavHostFragment"
             android:orientation="vertical"
+            app:navGraph="@navigation/nav_graph"
+            app:defaultNavHost="true"
             android:transitionGroup="true"
             android:layout_weight="1" />
         <View

@@ -1,4 +1,4 @@
-package com.xapps.media.xmusic.adapters;
+package com.xapps.media.xmusic.adapter;
 import android.net.Uri;
 import android.util.Log;
 import android.view.LayoutInflater;

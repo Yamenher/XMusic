@@ -2,7 +2,6 @@ package com.xapps.media.xmusic.activity;
 
 import android.Manifest;
 import android.animation.*;
-import android.app.*;
 import android.content.*;
 import android.content.pm.PackageManager; 
 import android.content.res.*;
@@ -50,6 +49,9 @@ import androidx.media.*;
 import androidx.media3.common.*;
 import androidx.media3.exoplayer.*;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.navigation.NavController;
+import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.Navigation;
 import androidx.palette.*;
 import androidx.profileinstaller.*;
 import androidx.recyclerview.widget.RecyclerView;
@@ -76,7 +78,7 @@ import com.google.android.material.transition.MaterialSharedAxis;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.xapps.media.xmusic.helper.SongMetadataHelper;
-import com.xapps.media.xmusic.adapters.CustomPagerAdapter;
+import com.xapps.media.xmusic.adapter.CustomPagerAdapter;
 import com.xapps.media.xmusic.common.SongLoadListener;
 import com.xapps.media.xmusic.R;
 import com.xapps.media.xmusic.databinding.MainBinding;
@@ -135,7 +137,10 @@ public class MainActivity extends AppCompatActivity {
 		initialize(_savedInstanceState);
 		initializeLogic();
         setupCallbacks();
-        mlfa = (MusicListFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
+        Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer).getChildFragmentManager().getFragments().get(0);
+        if (f instanceof MusicListFragment) {
+            mlfa = (MusicListFragment) f;
+        }
         executor.execute(() -> {
             SongMetadataHelper.getAllSongs(c, new SongLoadListener(){
                 @Override
@@ -375,16 +380,19 @@ public class MainActivity extends AppCompatActivity {
 	}
     
     public void addFragmentWithTransition(androidx.fragment.app.Fragment fragment) {
-        fragment.setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        fragment.setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
+        /*fragment.setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
+        fragment.setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
         androidx.fragment.app.Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
         current.setExitTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
         current.setReenterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
         getSupportFragmentManager()
         .beginTransaction()
-        .add(R.id.fragmentsContainer, fragment)
+        .replace(R.id.fragmentsContainer, fragment)
         .addToBackStack(null)
-        .commit();
+        .commit();*/
+        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
+        NavController navController = navHostFragment.getNavController();
+        navController.navigate(R.id.action_open_settings);
     }
 	
 	public MainBinding getBinding() {

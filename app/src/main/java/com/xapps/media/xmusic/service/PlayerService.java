@@ -45,7 +45,7 @@ public class PlayerService extends Service {
     private final Context c = this;
 	
 	private Bitmap icon;  
-	private boolean isPlaying;  
+	public static boolean isPlaying;  
 	private int currentState;
 	public static String currentTitle;  
 	public static String currentArtist;  
@@ -126,6 +126,7 @@ public class PlayerService extends Service {
                         mediaSession.release();
                         mediaSession = null;
                 }
+                isPlaying = false;
 				stopForeground(Service.STOP_FOREGROUND_REMOVE);
 			} else if (intent.getAction().equals("ACTION_PAUSE")) {  
 				isPlaying = false;  

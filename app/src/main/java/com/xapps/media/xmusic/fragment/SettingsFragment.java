@@ -9,7 +9,7 @@ import com.xapps.media.xmusic.databinding.SettingsBinding;
 
 import java.util.Objects;
 
-public class SettingsFragment extends Fragment {
+public class SettingsFragment extends BaseFragment {
     private SettingsBinding binding; 
         
     @NonNull
