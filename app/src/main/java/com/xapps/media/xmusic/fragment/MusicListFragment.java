@@ -99,6 +99,7 @@ public class MusicListFragment extends BaseFragment {
 	public SearchBar searchBar;
 	public AppBarLayout appbar;
 	private boolean IsScrolledDown = false;
+    private static boolean bgSet = false;
 	public int imageSize, size;
 	private String path = "";
 	private MainBinding activity;
@@ -265,14 +266,25 @@ public class MusicListFragment extends BaseFragment {
 			_v.setLayoutParams(_lp);
 			return new ViewHolder(_v);
 		}
-		
+        
+        private Drawable top = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_top);
+		private Drawable bottom = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_bottom);
+        private Drawable middle = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple);
+        
 		@Override
 		public void onBindViewHolder(ViewHolder _holder, final int _position) {
 			View _view = _holder.itemView;
 			SongsListViewBinding binding = SongsListViewBinding.bind(_view);
+            if (_position == 0) {
+                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_top));
+            } else if (_position == SongsMap.size() - 1) {
+                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_bottom));
+            } else {
+                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple));
+            }
             binding.songCover.setScaleType(ImageView.ScaleType.CENTER_CROP);
             boolean isLast = _position == getItemCount() - 1;
-            XUtils.setMargins(binding.item, 0, 0, 0, isLast? XUtils.convertToPx(getActivity(), 10f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight() : 0);
+            XUtils.setMargins(binding.item, 0, 0, 0, isLast? XUtils.convertToPx(getActivity(), 5f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight() : 0);
             if (_position == oldPos && isPlaying) {
                 binding.item.setChecked(true);
                 binding.SongTitle.setTextColor(c1);
@@ -285,13 +297,6 @@ public class MusicListFragment extends BaseFragment {
                 binding.songBars.setVisibility(View.INVISIBLE);
             }
             int spacing = XUtils.convertToPx(getContext(), 5f);
-            if (_position == 0) {
-                binding.decoView.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.top_round_corners));
-            } else if (_position == SongsMap.size() - 1) {
-                binding.decoView.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.bottom_round_corners));
-            } else {
-                binding.decoView.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.no_corners));
-            }
 			coverUri = _data.get(_position).get("thumbnail") == null? "invalid" : _data.get(_position).get("thumbnail").toString();
 			Title = _data.get(_position).get("title").toString();
 			Artitst = _data.get(_position).get("author").toString();

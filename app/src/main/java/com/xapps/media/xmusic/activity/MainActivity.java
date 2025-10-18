@@ -534,9 +534,9 @@ public class MainActivity extends AppCompatActivity {
     
 	public void updateColors() {
         if (ColorPaletteUtils.lightColors != null || ColorPaletteUtils.darkColors != null) {
-            binding.toggleView.setShapeColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("primary") : ColorPaletteUtils.lightColors.get("onPrimary"));
+            binding.toggleView.setShapeColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onPrimary") : ColorPaletteUtils.lightColors.get("onPrimary"));
 		    playerSurface = XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("surface") : ColorPaletteUtils.lightColors.get("surface");
-		    binding.toggleView.setIconColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onPrimary") : ColorPaletteUtils.lightColors.get("primary"));
+		    binding.toggleView.setIconColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("primary") : ColorPaletteUtils.lightColors.get("primary"));
             binding.nextButton.getBackground().setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
             binding.favoriteButton.getBackground().setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
             binding.saveButton.getBackground().setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
