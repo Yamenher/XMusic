@@ -36,6 +36,8 @@ import com.xapps.media.xmusic.utils.MaterialColorUtils;
 import com.xapps.media.xmusic.utils.SerializationUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -103,9 +105,8 @@ public class WelcomeActivity extends AppCompatActivity {
                 TransitionManager.beginDelayedTransition(binding.coordinator, msa);
                 binding.finalScreen.setVisibility(View.GONE);
                 binding.part2View.setVisibility(View.VISIBLE);
-
-                int cores = Math.max(1, Runtime.getRuntime().availableProcessors());
-                ThreadPoolExecutor executor = new ThreadPoolExecutor(cores, cores*3, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+                
+                ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
                 executor.execute(() -> {
                     SongMetadataHelper.getAllSongs(this, new SongLoadListener(){
                         @Override
@@ -122,9 +123,11 @@ public class WelcomeActivity extends AppCompatActivity {
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                binding.loadingText.setText("Complete! starting app...");
+                            });
                             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                                 DataManager.setDataInitialized();
-                                binding.loadingText.setText("Complete! starting app...");
                                 Intent i = new Intent();
                                 i.setClass(WelcomeActivity.this, MainActivity.class);
                                 startActivity(i);

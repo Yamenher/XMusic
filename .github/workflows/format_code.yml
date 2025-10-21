@@ -1,0 +1,41 @@
+name: Code Formatter
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  format-java:
+    name: Format Java Code with Google Java Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+          
+      - name: Download Google Java Format
+        run: |
+          wget https://github.com/google/google-java-format/releases/download/v1.24.0/google-java-format-1.24.0-all-deps.jar -O google-java-format.jar
+
+      - name: Run Google Java Format in Java files
+        run: |
+          find . -name "*.java" -exec java -jar google-java-format.jar --aosp --replace {} +
+
+      - name: Commit and Push changes
+        run: |
+          rm google-java-format.jar
+          git config --global user.name "trindadedev13"
+          git config --global user.email "trindadedev13@gmail.com"
+          git fetch origin ${GITHUB_REF_NAME}:temp
+          git add .
+          git commit -m "chore: Format Java Code" -m "format code with google java format in github actions"
+          git rebase temp
+          git push origin HEAD:${GITHUB_REF_NAME}
+        env:
+          TOKEN: ${{ secrets.SUPER_TOKEN }}
+        continue-on-error: true

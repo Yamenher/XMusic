@@ -192,27 +192,14 @@ public class MusicListFragment extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        
+        IntentFilter filter = new IntentFilter("ACTION_STOP_FRAGMENT");
+        requireContext().registerReceiver(myReceiver, filter, Context.RECEIVER_EXPORTED);
     }
     
     @Override
     public void onStop() {
         super.onStop();
         requireContext().unregisterReceiver(myReceiver);
-    }
-    
-    @Override
-    public void onStart() {
-        super.onStart();
-        IntentFilter filter = new IntentFilter("ACTION_STOP_FRAGMENT");
-        requireContext().registerReceiver(myReceiver, filter, Context.RECEIVER_EXPORTED);
-        isPlaying = PlayerService.isPlaying;
-        if (!isPlaying && (XUtils.getMargin(binding.fab, "bottom") >= XUtils.convertToPx(getActivity(), 150f)) && songsAdapter != null ) {
-            XUtils.increaseMargins(binding.fab, 0, 0, 0, -(activity.coversPager.getHeight() + activity.miniPlayerBottomSheet.getPaddingTop()*2));
-            int i = oldPos;
-            oldPos = -1;
-            songsAdapter.notifyItemChanged(i);
-        } 
     }
     
     @Override
@@ -286,7 +273,7 @@ public class MusicListFragment extends BaseFragment {
             boolean isLast = _position == getItemCount() - 1;
             XUtils.setMargins(binding.item, 0, 0, 0, isLast? XUtils.convertToPx(getActivity(), 5f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight() : 0);
             if (_position == oldPos && isPlaying) {
-                binding.item.setChecked(true);
+                if (!binding.item.isChecked()) binding.item.setChecked(true);
                 binding.SongTitle.setTextColor(c1);
                 binding.SongArtist.setTextColor(c2);
                 binding.songBars.setVisibility(View.VISIBLE);
@@ -331,9 +318,9 @@ public class MusicListFragment extends BaseFragment {
                 MainActivity act = (MainActivity) getActivity();
                 String pth = _data.get(pos).get("thumbnail") == null ? placeholderUri : _data.get(pos).get("thumbnail").toString();
                 act._setSong(pos, pth, fileUri);
-                notifyItemChanged(oldPos, "color");
+                notifyItemChanged(oldPos/*, "color"*/);
                 oldPos = pos;
-                notifyItemChanged(pos, "color");
+                notifyItemChanged(pos/*, "color"*/);
             });
 			
 		}
@@ -381,4 +368,14 @@ public class MusicListFragment extends BaseFragment {
 			}
 		}
 	}
+
+    public void adjustUI() {
+        isPlaying = PlayerService.isPlaying;
+        if (!isPlaying && (XUtils.getMargin(binding.fab, "bottom") >= XUtils.convertToPx(getActivity(), 150f)) && songsAdapter != null ) {
+            XUtils.increaseMarginsSmoothly(binding.fab, 0, 0, 0, -(activity.coversPager.getHeight() + activity.miniPlayerBottomSheet.getPaddingTop()*2), 200);
+            int i = oldPos;
+            oldPos = -1;
+            songsAdapter.notifyItemChanged(i);
+        }
+    }
 }

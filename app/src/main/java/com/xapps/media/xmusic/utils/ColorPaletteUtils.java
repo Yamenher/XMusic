@@ -18,7 +18,7 @@ public class ColorPaletteUtils {
     public static Map<String, Integer> lightColors;
     public static Map<String, Integer> darkColors;
 
-    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     public interface ResultCallback {
         void onResult(Map<String, Integer> lightColors, Map<String, Integer> darkColors);
@@ -27,7 +27,7 @@ public class ColorPaletteUtils {
     public static void generateFromBitmap(Bitmap bitmap, ResultCallback callback) {
         executor.execute(() -> {
             try {
-                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 128, 128, false);
+                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 32, 32, false);
 
                 int[] pixels = new int[scaled.getWidth() * scaled.getHeight()];
                 scaled.getPixels(pixels, 0, scaled.getWidth(), 0, 0, scaled.getWidth(), scaled.getHeight());

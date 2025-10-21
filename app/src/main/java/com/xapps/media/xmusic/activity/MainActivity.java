@@ -108,9 +108,10 @@ public class MainActivity extends AppCompatActivity {
     public boolean isbnvHidden, isDataLoaded = false;
     private int playbackState, playerSurface, bottomSheetColor, tmpColor , currentPosition;
     public int navBarHeight;
+    private long lastClick = 0;
 	public ExoPlayer player;
 	public BottomSheetBehavior bottomSheetBehavior;
-	private Handler handler, seekController = new Handler(Looper.getMainLooper());
+	private Handler handler = new Handler(Looper.getMainLooper());
 	private Runnable updateProgressRunnable;
 	private MediaSessionCompat mediaSession;
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -118,18 +119,25 @@ public class MainActivity extends AppCompatActivity {
     public boolean isPlaying = false;
     private Handler actionSender = new Handler(Looper.getMainLooper());
     private boolean seekAllowed = true;
+    private boolean progressAllowed = false;
     private MusicListFragment mlfa; 
     private OnBackPressedCallback callback;
+    
+    private HandlerThread handlerThread = new HandlerThread("BackgroundThread");
+    private Handler bgHandler;
 	
 	private ArrayList<HashMap<String, Object>> SongsMap = new ArrayList<>();
 	public static ArrayList<HashMap<String, Object>> currentMap = new ArrayList<>();
+    
+    private NavHostFragment navHostFragment;
+    private NavController navController;
 	
 	@Override
 	protected void onCreate(Bundle _savedInstanceState) {
-        IntentFilter filter = new IntentFilter();
-		filter.addAction("PLAYER_COLORS");
-        filter.addAction("PLAYER_PROGRESS");
-		registerReceiver(multiReceiver, filter, Context.RECEIVER_EXPORTED);
+        handlerThread.start();
+        Looper l = handlerThread.getLooper();
+        bgHandler = new Handler(l);
+        setupReceivers(true);
 		EdgeToEdge.enable(this);
 		super.onCreate(_savedInstanceState);
 		binding = MainBinding.inflate(getLayoutInflater());
@@ -198,33 +206,19 @@ public class MainActivity extends AppCompatActivity {
         binding.saveButton.setOnClickListener(v -> {
             
         });
-        
-        binding.nextButton.setOnClickListener(v -> {
+
+        View.OnClickListener navClick = v -> {
+            if (System.currentTimeMillis() - lastClick < 150) return;
+            lastClick = System.currentTimeMillis();
             int resId = R.drawable.placeholder;
-            Uri uri = Uri.parse("android.resource://" + getPackageName() + "/" + resId);
-            String placeholderUri = uri.toString();
-            if (seekAllowed) {
-                currentPosition++;
-                _setSong(currentPosition, SongsMap.get(currentPosition).get("thumbnail") == null? placeholderUri : SongsMap.get(currentPosition).get("thumbnail").toString() , Uri.parse("file://"+SongsMap.get(currentPosition).get("path").toString()));
-                seekAllowed = false;
-                seekController.postDelayed(() -> {
-                    seekAllowed = true;
-                }, 150);
-            }
-        });
-        binding.previousButton.setOnClickListener(v -> {
-            int resId = R.drawable.placeholder;
-            Uri uri = Uri.parse("android.resource://" + getPackageName() + "/" + resId);
-            String placeholderUri = uri.toString();
-            if (seekAllowed) {
-                currentPosition--;
-                _setSong(currentPosition, SongsMap.get(currentPosition).get("thumbnail") == null? placeholderUri : SongsMap.get(currentPosition).get("thumbnail").toString(), Uri.parse("file://"+SongsMap.get(currentPosition).get("path").toString()));
-                seekAllowed = false;
-                seekController.postDelayed(() -> {
-                    seekAllowed = true;
-                }, 150);
-            }
-        });
+            String placeholder = "android.resource://" + getPackageName() + "/" + resId;
+            currentPosition += (v == binding.nextButton ? 1 : -1);
+            HashMap<String, Object> song = SongsMap.get(currentPosition);
+            _setSong(currentPosition, song.get("thumbnail") == null? placeholder : song.get("thumbnail").toString(), Uri.parse("file://" + song.get("path").toString()));
+        };
+
+        binding.nextButton.setOnClickListener(navClick);
+        binding.previousButton.setOnClickListener(navClick);
         
     }    
    
@@ -251,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
 			}
 			@Override
 			public void onStopTrackingTouch(Slider slider) {
-				new Handler(Looper.getMainLooper()).postDelayed(() -> {
+				bgHandler.postDelayed(() -> {
 					seekbarFree = true;
 				}, 101);
                 Intent playIntent = new Intent(c, PlayerService.class);
@@ -354,49 +348,20 @@ public class MainActivity extends AppCompatActivity {
             isRun = true;
         });
 	}
-	
-	public void addFragment(String fragmentName) {
-		androidx.fragment.app.Fragment fragment = null;
-		try {
-		    fragment = (androidx.fragment.app.Fragment) Class.forName(fragmentName).newInstance();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		if (fragment != null) {
-			androidx.fragment.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-			androidx.fragment.app.Fragment existingFragment = getSupportFragmentManager().findFragmentByTag(fragmentName);
-			if (existingFragment == null) {
-			    com.google.android.material.transition.MaterialSharedAxis enterTransition = new com.google.android.material.transition.MaterialSharedAxis(com.google.android.material.transition.MaterialSharedAxis.X, true);
-				com.google.android.material.transition.MaterialSharedAxis exitTransition = new com.google.android.material.transition.MaterialSharedAxis(com.google.android.material.transition.MaterialSharedAxis.X, false);
-				fragment.setEnterTransition(enterTransition);
-				fragment.setExitTransition(exitTransition);		
-				transaction.add(R.id.fragmentsContainer, fragment, fragmentName);
-				transaction.addToBackStack(null);
-			} else {
-				transaction.show(existingFragment);
-			}		
-                transaction.commit();
-			}
-	}
     
     public void addFragmentWithTransition(androidx.fragment.app.Fragment fragment) {
-        /*fragment.setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
-        fragment.setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        androidx.fragment.app.Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
-        current.setExitTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        current.setReenterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
-        getSupportFragmentManager()
-        .beginTransaction()
-        .replace(R.id.fragmentsContainer, fragment)
-        .addToBackStack(null)
-        .commit();*/
-        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
-        NavController navController = navHostFragment.getNavController();
         navController.navigate(R.id.action_open_settings);
     }
 	
 	public MainBinding getBinding() {
-			return binding;
+        navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
+            navController = navHostFragment.getNavController();
+            navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            if (destination.getId() == R.id.homeFragment) {
+                mlfa.adjustUI();
+            }
+        });
+		return binding;
 	}
 	
 	@Override
@@ -411,17 +376,12 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        IntentFilter filter = new IntentFilter();
-        filter.addAction("PLAYER_PROGRESS");
-        filter.addAction("PLAYER_COLORS");
-        filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
-        registerReceiver(multiReceiver, filter, Context.RECEIVER_EXPORTED);
+        setupReceivers(false);
     }
 	
 	@Override
 	public void onPause() {
 		super.onPause();
-		unregisterReceiver(multiReceiver);
         unregisterReceiver(multiReceiver);
 	}
     
@@ -429,12 +389,16 @@ public class MainActivity extends AppCompatActivity {
     public void onDestroy() {
         super.onDestroy();
         executor.shutdown();
+        unregisterReceiver(focusReceiver);
     }
         
 	public void _setSong(final int _position, final String _coverPath, final Uri _fileUri) {
+        progressAllowed = false;
+        binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(0));
+        binding.songSeekbar.setValue(0f);
+        binding.musicProgress.setProgressCompat(0, true);
         updateMaxValue(_position);
-        handler = new Handler(Looper.getMainLooper());
-        handler.postDelayed(() -> {
+        bgHandler.postDelayed(() -> {
             Intent playIntent = new Intent(this, PlayerService.class);
             playIntent.setAction("ACTION_PLAY");
             playIntent.putExtra("uri", _fileUri.toString());
@@ -473,29 +437,47 @@ public class MainActivity extends AppCompatActivity {
             binding.totalDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
         }, 120);
         if (!isPlaying) binding.toggleView.startAnimation();
-        isPlaying = true;    
+        isPlaying = true;
+        if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_COLLAPSED || bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_HIDDEN) {
+            binding.miniPlayerBottomSheet.setProgress(0f);
+        } else {
+            binding.miniPlayerBottomSheet.setProgress(1f);
+        }
+        bgHandler.postDelayed(() -> {
+            progressAllowed = true;
+        }, 250);
+        
 	}
 	
 	private final BroadcastReceiver multiReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
-			if ("PLAYER_PROGRESS".equals(action) && intent.hasExtra("progress")) {
-				int currentPosition = intent.getIntExtra("progress", 0);
-					if (currentPosition < binding.songSeekbar.getValueTo() && seekbarFree) {
-						binding.musicProgress.setProgressCompat(currentPosition, true);
-						binding.songSeekbar.setValue(currentPosition);
-                        binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(currentPosition));
-					}
-			} else if ("PLAYER_COLORS".equals(action)) {
-				updateColors();
-			} else if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(action)) {
+            if (progressAllowed) {
+			    if ("PLAYER_PROGRESS".equals(action) && intent.hasExtra("progress")) {
+				    int currentPosition = intent.getIntExtra("progress", 0);
+					    if (currentPosition < binding.songSeekbar.getValueTo() && seekbarFree) {
+						    binding.musicProgress.setProgressCompat(currentPosition, true);
+						    binding.songSeekbar.setValue(currentPosition);
+                            binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(currentPosition));
+					    }
+			    } else if ("PLAYER_COLORS".equals(action)) {
+				    updateColors();
+			    }
+            }
+		}
+	};
+    
+    private final BroadcastReceiver focusReceiver = new BroadcastReceiver() {
+        @Override
+		public void onReceive(Context context, Intent intent) {
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
 				Intent stopIntent = new Intent(c, PlayerService.class);
 				stopIntent.setAction("ACTION_PAUSE");
 				startService(stopIntent);
 			}
-		}
-	};
+        }
+    };
 	
     public void updateSongs(ArrayList<HashMap<String, Object>> s) {
 	    currentMap = s;
@@ -614,5 +596,16 @@ public class MainActivity extends AppCompatActivity {
         };
 
         getOnBackPressedDispatcher().addCallback(this, callback);
+    }
+
+    private void setupReceivers(boolean initial) {
+        if (initial) {
+            IntentFilter focusFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+            registerReceiver(focusReceiver, focusFilter, Context.RECEIVER_EXPORTED);
+        }
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("PLAYER_PROGRESS");
+        filter.addAction("PLAYER_COLORS");
+        registerReceiver(multiReceiver, filter, Context.RECEIVER_EXPORTED);
     }
 }

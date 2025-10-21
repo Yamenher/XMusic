@@ -202,6 +202,9 @@ public class PlayerService extends Service {
             XUtils.showMessage(getApplicationContext(), "no songs were found on this device");
         } else {
 			ExoPlayerHandler.post(() -> {
+                if (player.isPlaying()) {
+                    player.pause();
+                }
 				player.setRepeatMode(Player.REPEAT_MODE_ONE);
                 player.setMediaItems(mediaItems);
                 player.prepare();
