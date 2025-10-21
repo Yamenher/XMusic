@@ -14,6 +14,23 @@ android {
 		targetSdkVersion 36
 		versionCode 200
 		versionName "0.2 Alpha"
+        
+        android.buildFeatures.buildConfig true
+
+		def localProps = new Properties()
+		def localPropsFile = rootProject.file("local.properties")
+		if (localPropsFile.exists()) {
+			localProps.load(new FileInputStream(localPropsFile))
+		}
+
+		def getSecret = { key ->
+			if (localProps[key] != null) return localProps[key]
+			else if (System.getenv(key) != null) return System.getenv(key)
+			else return ""
+		}
+
+		buildConfigField "String", "TG_BOT_TOKEN", "\"${getSecret('TG_BOT_TOKEN')}\""
+		buildConfigField "String", "TG_CHAT_ID", "\"${getSecret('TG_CHAT_ID')}\""
 	}
 	
 	buildTypes {
@@ -55,5 +72,4 @@ dependencies {
         implementation 'androidx.navigation:navigation-fragment:2.9.5'
         implementation project(':vumeterlibrary')
 		implementation project(':fastui')
-
 }
