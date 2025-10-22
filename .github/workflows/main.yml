@@ -81,12 +81,6 @@ jobs:
           name: debug-armeabi
           path: .
 
-      - name: Get commit message
-        id: get_commit_msg
-        run: |
-          commit_message=$(git log -1 --pretty=format:'%s')
-          echo "message=$commit_message" >> $GITHUB_OUTPUT
-
       - name: Send arm64 APK to Telegram
         if: success()
         continue-on-error: true
@@ -95,7 +89,7 @@ jobs:
             -F chat_id="-1002951791106" \
             -F message_thread_id="4" \
             -F document=@"debug-arm64-v8a.apk" \
-            -F caption="ARM64 build: ${{ steps.get_commit_msg.outputs.message }} by ${{ github.actor }}"
+            -F caption="ARM64 build"
 
       - name: Send armeabi APK to Telegram
         if: success()
@@ -105,4 +99,4 @@ jobs:
             -F chat_id="-1002951791106" \
             -F message_thread_id="4" \
             -F document=@"debug-armeabi-v7a.apk" \
-            -F caption="ARMEABI build: ${{ steps.get_commit_msg.outputs.message }} by ${{ github.actor }}"
+            -F caption="ARMEABI build"
