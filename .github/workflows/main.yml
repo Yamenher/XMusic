@@ -28,7 +28,7 @@ jobs:
           topic_id: 4
           
   build_debug_apk:
-    name: Build App Debug APK
+    name: Build App Debug APKs
     runs-on: ubuntu-latest
 
     steps:
@@ -48,55 +48,61 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
-      - name: Build with Gradle
-        id: gradle_build_debug
-        env :
-            BOT_TOKEN: ${{ secrets.bot_token }}
-            CHAT_ID: ${{ secrets.chat_id }}
-        run: ./gradlew assembleDebug 
+      - name: Build both ABIs
+        run: ./gradlew assembleDebug
 
-      - name: Upload debug apk
+      - name: Upload debug arm64 apk
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: debug-arm64
+          path: app/build/outputs/apk/debug/debug-arm64-v8a.apk
+
+      - name: Upload debug armeabi apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-armeabi
+          path: app/build/outputs/apk/debug/debug-armeabi-v7a.apk
           
-  send_debug_apk:
-    name: Send Debug APK
+  send_debug_apks:
+    name: Send Debug APKs
     runs-on: ubuntu-latest
     needs: build_debug_apk
     
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          
-      - name: Download debug apk
+      - name: Download arm64 apk
         uses: actions/download-artifact@v4
         with:
-          name: app-debug
-          
-      - name: List repo contents
-        run: ls
-          
-      - name: Get the last commit message
+          name: debug-arm64
+          path: .
+
+      - name: Download armeabi apk
+        uses: actions/download-artifact@v4
+        with:
+          name: debug-armeabi
+          path: .
+
+      - name: Get commit message
         id: get_commit_msg
         run: |
           commit_message=$(git log -1 --pretty=format:'%s')
           echo "message=$commit_message" >> $GITHUB_OUTPUT
-          
-      - name: Rename file 
-        run: |
-          mv app-debug.apk xmusic-app-debug.apk
-          ls 
 
-      - name: Send APK to Debug Channel Telegram with Topic ID
+      - name: Send arm64 APK to Telegram
         if: success()
         continue-on-error: true
         run: |
           curl -X POST "https://api.telegram.org/bot${{ secrets.bot_token }}/sendDocument" \
             -F chat_id="-1002951791106" \
             -F message_thread_id="4" \
-            -F document=@"xmusic-app-debug.apk" \
-            -F caption="${{ github.event.head_commit.message }} by ${{ github.actor }}"
+            -F document=@"debug-arm64-v8a.apk" \
+            -F caption="ARM64 build: ${{ steps.get_commit_msg.outputs.message }} by ${{ github.actor }}"
+
+      - name: Send armeabi APK to Telegram
+        if: success()
+        continue-on-error: true
+        run: |
+          curl -X POST "https://api.telegram.org/bot${{ secrets.bot_token }}/sendDocument" \
+            -F chat_id="-1002951791106" \
+            -F message_thread_id="4" \
+            -F document=@"debug-armeabi-v7a.apk" \
+            -F caption="ARMEABI build: ${{ steps.get_commit_msg.outputs.message }} by ${{ github.actor }}"
