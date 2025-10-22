@@ -1,5 +1,6 @@
 package com.xapps.media.xmusic.application;
 
+import android.os.Process;
 import android.os.StrictMode;
 import android.os.Build;
 import android.app.Application;
@@ -18,7 +19,6 @@ public class XApplication extends Application {
     @Override
     public void onCreate() {
         
-        
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             String report = buildReport(thread, throwable);
 
@@ -31,6 +31,8 @@ public class XApplication extends Application {
             }
 
             Thread.getDefaultUncaughtExceptionHandler().uncaughtException(thread, throwable);
+            Process.killProcess(Process.myPid());
+            System.exit(1);
         });
         
         super.onCreate();
@@ -50,18 +52,27 @@ public class XApplication extends Application {
     }
 
     private void sendToTelegram(String text, long threadId) throws Exception {
-        if (text.length() > 1024) text = text.substring(0, 1021) + "...";
-        String urlStr = "https://api.telegram.org/bot" + BuildConfig.TG_BOT_TOKEN + "/sendMessage";
-        String payload = "chat_id=" + BuildConfig.TG_CHAT_ID +
-                     "&message_thread_id=" + threadId +
-                     "&text=" + URLEncoder.encode(text, "UTF-8");
-        HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
-        conn.setRequestMethod("POST");
-        conn.setDoOutput(true);
-        conn.getOutputStream().write(payload.getBytes());
-        conn.getResponseCode();
-        conn.disconnect();
-    }
+        int maxLen = 4096;
+        int start = 0;
+        while (start < text.length()) {
+            int end = Math.min(start + maxLen, text.length());
+            String chunk = text.substring(start, end);
+
+            String urlStr = "https://api.telegram.org/bot" + BuildConfig.TG_BOT_TOKEN + "/sendMessage";
+            String payload = "chat_id=" + BuildConfig.TG_CHAT_ID +
+                         "&message_thread_id=" + threadId +
+                         "&text=" + URLEncoder.encode(chunk, "UTF-8");
+
+            HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.getOutputStream().write(payload.getBytes());
+            conn.getResponseCode();
+            conn.disconnect();
+
+            start = end;
+        }
+    }    
 
     private String buildReport(Thread thread, Throwable t) {
         StringWriter sw = new StringWriter();

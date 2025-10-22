@@ -48,6 +48,24 @@ android {
          sourceCompatibility JavaVersion.VERSION_17
          targetCompatibility JavaVersion.VERSION_17
     }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include "armeabi-v7a", "arm64-v8a"
+            universalApk false
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def abi = output.getFilter(com.android.build.OutputFile.ABI)
+            if (abi != null) {
+                output.outputFileName = "${variant.name}-${abi}.apk"
+            }
+        }
+    }
 }
 
 dependencies {
@@ -70,6 +88,7 @@ dependencies {
         implementation 'com.github.bumptech.glide:recyclerview-integration:4.14.2'
         implementation 'androidx.navigation:navigation-ui-ktx:2.9.5'
         implementation 'androidx.navigation:navigation-fragment:2.9.5'
+        implementation 'org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1'
         implementation project(':vumeterlibrary')
 		implementation project(':fastui')
 }

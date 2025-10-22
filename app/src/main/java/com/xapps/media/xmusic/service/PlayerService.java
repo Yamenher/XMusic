@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.*;
 import androidx.media3.common.*;
 import androidx.media3.common.MediaMetadata;
+import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.session.*;
 import androidx.media3.session.MediaSession;
@@ -83,7 +84,15 @@ public class PlayerService extends Service {
         handlerThread.start();
         Looper backgroundLooper = handlerThread.getLooper();
 		ExoPlayerHandler = new Handler(backgroundLooper);
-		player = new ExoPlayer.Builder(this).setLooper(backgroundLooper).build();
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON);
+		player = new ExoPlayer.Builder(this, renderersFactory).setLooper(backgroundLooper).build();
+        androidx.media3.common.AudioAttributes attrs = new androidx.media3.common.AudioAttributes.Builder()
+        .setUsage(C.USAGE_MEDIA)
+        .setContentType(C.CONTENT_TYPE_MUSIC)
+        .build();
+        ExoPlayerHandler.post(() -> {
+            player.setAudioAttributes(attrs, true);
+        });
 		handler = new Handler(Looper.getMainLooper());  
         if (!isBuilt) {
 		    setupMediaSession();
@@ -212,11 +221,16 @@ public class PlayerService extends Service {
                 player.play();
                 player.addListener(new Player.Listener() {
                     @Override
+                    public void onRenderedFirstFrame() {
+                        Log.d("DecoderInfo", player.getAudioFormat().toString());
+                    }
+                    @Override
                     public void onPlaybackStateChanged(int state) {
                         if (state == Player.STATE_READY) {
                             long duration = player.getDuration();
                             lastMax = (int) duration;
                             startProgressUpdates();
+                            Log.d("DecoderInfo", player.getAudioFormat().toString());
                         }
                     }
                     @Override
