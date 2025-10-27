@@ -5,86 +5,78 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
-    <LinearLayout
-        android:id="@+id/deco_view"
+    <com.xapps.media.xmusic.widget.CheckableLinearLayout
+        android:id="@+id/item"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:paddingVertical="8dp"
+        android:layout_marginHorizontal="8dp"
         android:paddingHorizontal="8dp"
-        android:paddingTop="2dp"
         android:gravity="center_vertical"
-        android:orientation="vertical">
-        <com.xapps.media.xmusic.widget.CheckableLinearLayout
-            android:id="@+id/item"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingVertical="8dp"
-            android:paddingHorizontal="8dp"
-            android:gravity="center_vertical"
-            android:background="@drawable/rv_ripple"
-            android:orientation="horizontal">
-            <FrameLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/songCover"
-                    android:focusable="false"
-                    android:layout_width="45dp"
-                    android:layout_height="45dp"
-                    android:layout_marginRight="8dp"
-                    android:layout_marginLeft="12dp"
-                    android:src="@drawable/placeholder"
-                    app:shapeAppearanceOverlay="@style/SmallRoundedCornersImage" />
-                <LinearLayout
-                    android:id="@+id/song_bars"
-                    android:layout_height="45dp"
-                    android:layout_width="45dp"
-                    android:padding="8dp"
-                    android:visibility="invisible"
-                    android:layout_marginRight="8dp"
-                    android:layout_marginLeft="12dp"
-                    android:background="@drawable/active_item_scrim"
-                    android:gravity="center">
-                    <io.gresse.hugo.vumeterlibrary.VuMeterView
-                        android:id="@+id/vumeter"
-                        android:layout_height="match_parent"
-                        android:layout_width="match_parent"
-                        android:layout_gravity="center"
-                        app:vumeter_stopSize="1dp"
-                        app:vumeter_speed="4"
-                        app:vumeter_blockNumber="3"
-                        app:vumeter_blockSpacing="3dp"
-                        app:vumeter_backgroundColor="?colorPrimary" />
-                </LinearLayout>    
-            </FrameLayout>
+        android:background="@drawable/rv_ripple"
+        android:orientation="horizontal">
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/songCover"
+                android:focusable="false"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_marginRight="8dp"
+                android:layout_marginLeft="12dp"
+                android:src="@drawable/placeholder"
+                app:shapeAppearanceOverlay="@style/SmallRoundedCornersImage" />
             <LinearLayout
-                android:id="@+id/linear3"
+                android:id="@+id/song_bars"
+                android:layout_height="45dp"
+                android:layout_width="45dp"
+                android:padding="8dp"
+                android:visibility="invisible"
+                android:layout_marginRight="8dp"
+                android:layout_marginLeft="12dp"
+                android:background="@drawable/active_item_scrim"
+                android:gravity="center">
+                <io.gresse.hugo.vumeterlibrary.VuMeterView
+                    android:id="@+id/vumeter"
+                    android:layout_height="match_parent"
+                    android:layout_width="match_parent"
+                    android:layout_gravity="center"
+                    app:vumeter_stopSize="1dp"
+                    app:vumeter_speed="4"
+                    app:vumeter_blockNumber="3"
+                    app:vumeter_blockSpacing="3dp"
+                    app:vumeter_backgroundColor="?colorPrimary" />
+            </LinearLayout>
+        </FrameLayout>
+        <LinearLayout
+            android:id="@+id/linear3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/SongTitle"
+                android:focusable="false"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:orientation="vertical">
-                <TextView
-                    android:id="@+id/SongTitle"
-                    android:focusable="false"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="5dp"
-                    android:text="TextView"
-                    android:textSize="16sp"
-                    android:singleLine="true"
-                    android:lines="1"
-                    android:textColor="?colorOnSurface"
-                    android:ellipsize="end" />
-                <TextView
-                    android:id="@+id/SongArtist"
-                    android:focusable="false"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="TextView"
-                    android:textSize="12sp"
-                    android:singleLine="true"
-                    android:textColor="?colorOutline"
-                    android:ellipsize="end" />
-            </LinearLayout>
-        </com.xapps.media.xmusic.widget.CheckableLinearLayout>
-    </LinearLayout>
+                android:layout_marginBottom="5dp"
+                android:text="TextView"
+                android:textSize="16sp"
+                android:singleLine="true"
+                android:lines="1"
+                android:textColor="?colorOnSurface"
+                android:ellipsize="end" />
+            <TextView
+                android:id="@+id/SongArtist"
+                android:focusable="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TextView"
+                android:textSize="12sp"
+                android:singleLine="true"
+                android:textColor="?colorOutline"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </com.xapps.media.xmusic.widget.CheckableLinearLayout>
 </LinearLayout>

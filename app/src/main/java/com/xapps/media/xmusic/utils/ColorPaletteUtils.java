@@ -27,14 +27,21 @@ public class ColorPaletteUtils {
     public static void generateFromBitmap(Bitmap bitmap, ResultCallback callback) {
         executor.execute(() -> {
             try {
-                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 32, 32, false);
+                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 64, 64, false);
 
                 int[] pixels = new int[scaled.getWidth() * scaled.getHeight()];
                 scaled.getPixels(pixels, 0, scaled.getWidth(), 0, 0, scaled.getWidth(), scaled.getHeight());
 
-                Map<Integer, Integer> colorMap = QuantizerCelebi.quantize(pixels, 128);
-                List<Integer> ranked = Score.score(colorMap);
-                int seedColor = ranked.isEmpty() ? 0xFF326941 : ranked.get(0);
+                Map<Integer, Integer> colorMap = QuantizerCelebi.quantize(pixels, 16);
+                int seedColor = 0;
+                int maxCount = -1;
+
+                for (Map.Entry<Integer, Integer> entry : colorMap.entrySet()) {
+                    if (entry.getValue() > maxCount) {
+                        maxCount = entry.getValue();
+                        seedColor = entry.getKey();
+                    }
+                }
 
                 Hct h = Hct.fromInt(seedColor);
                 CorePalette core = CorePalette.of(seedColor);

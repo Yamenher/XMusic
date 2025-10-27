@@ -19,7 +19,7 @@
                      android:bottomLeftRadius="6dp"
                      android:topRightRadius="18dp"
                      android:topLeftRadius="18dp"/>
-            <solid android:color="?colorSurface"/>
+            <solid android:color="?colorSurfaceContainer"/>
         </shape>
     </item>
 

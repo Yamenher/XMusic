@@ -86,6 +86,8 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.*;
+import me.zhanghai.android.fastscroll.FastScroller;
+import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 import org.json.*;
 
 public class MusicListFragment extends BaseFragment {
@@ -117,6 +119,8 @@ public class MusicListFragment extends BaseFragment {
 	
 	private ArrayList<HashMap<String, Object>> SongsMap = new ArrayList<>();
     
+    private int lastSpacing;
+    
     private final BroadcastReceiver myReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -142,16 +146,16 @@ public class MusicListFragment extends BaseFragment {
         placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.placeholder_small);
         imageSize = XUtils.convertToPx(getActivity(), 45f);
 		activity = a.getBinding();
+        activity.bottomNavigation.post(() -> {
+            lastSpacing = XUtils.convertToPx(getActivity(), 5f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight();
+            binding.songsList.addItemDecoration(new BottomSpacingDecoration(lastSpacing));
+        });
 		Context context = getActivity();
 		int cores = Runtime.getRuntime().availableProcessors();
         binding.collapsingToolbar.setPadding(0, XUtils.getStatusBarHeight(getActivity()), 0, 0);
         binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
-        binding.searchView.addTransitionListener((searchView, previousState, newState) -> {
-            if (newState == SearchView.TransitionState.SHOWING) {
-                a.HideBNV(true);
-            } else if (newState == SearchView.TransitionState.HIDING) {
-                a.HideBNV(false);
-            }
+        activity.bottomNavigation.post(() -> {
+            new FastScrollerBuilder(binding.songsList).useMd2Style().setPadding(0, 0, 0, activity.bottomNavigation.getHeight()+XUtils.getNavigationBarHeight(getActivity())).build();
         });
         
         if (a.isPlaying) {
@@ -173,7 +177,7 @@ public class MusicListFragment extends BaseFragment {
                             HeaderAdapter headerAdapter = new HeaderAdapter();
                             ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
                             binding.songsList.setAdapter(concatAdapter);
-                            binding.songsList.animate().alpha(1f).translationY(0f).setDuration(300).start();
+                            XUtils.showMessage(getActivity(), String.valueOf(imageSize));
                             binding.emptyLayout.setVisibility(View.GONE);
                             a.Start(); 
                         }
@@ -199,7 +203,11 @@ public class MusicListFragment extends BaseFragment {
     @Override
     public void onStop() {
         super.onStop();
-        requireContext().unregisterReceiver(myReceiver);
+        try {
+            requireContext().unregisterReceiver(myReceiver);
+        } catch (Exception e) {
+            
+        }
     }
     
     @Override
@@ -218,10 +226,7 @@ public class MusicListFragment extends BaseFragment {
     }
     
     public void setUpListeners() {
-        binding.settingsIcon.setOnClickListener(v -> {
-            Fragment f = new SettingsFragment();
-            a.addFragmentWithTransition(f);
-        });
+    
     }
     
     public void hideFab(boolean v) {
@@ -248,7 +253,7 @@ public class MusicListFragment extends BaseFragment {
 		@Override
 		public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 			LayoutInflater _inflater = getActivity().getLayoutInflater();
-			View _v = _inflater.inflate(R.layout.songs_list_view, null);
+			View _v = _inflater.inflate(R.layout.songs_list_view, parent, false);
 			RecyclerView.LayoutParams _lp = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 			_v.setLayoutParams(_lp);
 			return new ViewHolder(_v);
@@ -258,20 +263,25 @@ public class MusicListFragment extends BaseFragment {
 		private Drawable bottom = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_bottom);
         private Drawable middle = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple);
         
+        private int spacing = XUtils.convertToPx(getContext(), 5f);
+        private int resId = R.drawable.placeholder;
+        private Uri uri = Uri.parse("android.resource://" + getActivity().getPackageName() + "/" + resId);
+        private String placeholderUri = uri.toString();
+        
 		@Override
 		public void onBindViewHolder(ViewHolder _holder, final int _position) {
 			View _view = _holder.itemView;
 			SongsListViewBinding binding = SongsListViewBinding.bind(_view);
             if (_position == 0) {
-                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_top));
+                binding.item.setBackground(top.getConstantState().newDrawable().mutate());
             } else if (_position == SongsMap.size() - 1) {
-                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_bottom));
+                binding.item.setBackground(bottom.getConstantState().newDrawable().mutate());
             } else {
-                binding.item.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple));
+                binding.item.setBackground(middle.getConstantState().newDrawable().mutate());
             }
             binding.songCover.setScaleType(ImageView.ScaleType.CENTER_CROP);
             boolean isLast = _position == getItemCount() - 1;
-            XUtils.setMargins(binding.item, 0, 0, 0, isLast? XUtils.convertToPx(getActivity(), 5f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight() : 0);
+            //XUtils.setMargins(binding.item, 0, 0, 0, isLast? lastSpacing : 0);
             if (_position == oldPos && isPlaying) {
                 if (!binding.item.isChecked()) binding.item.setChecked(true);
                 binding.SongTitle.setTextColor(c1);
@@ -283,7 +293,6 @@ public class MusicListFragment extends BaseFragment {
                 binding.SongArtist.setTextColor(c4);
                 binding.songBars.setVisibility(View.INVISIBLE);
             }
-            int spacing = XUtils.convertToPx(getContext(), 5f);
 			coverUri = _data.get(_position).get("thumbnail") == null? "invalid" : _data.get(_position).get("thumbnail").toString();
 			Title = _data.get(_position).get("title").toString();
 			Artitst = _data.get(_position).get("author").toString();
@@ -291,9 +300,9 @@ public class MusicListFragment extends BaseFragment {
 			.load(coverUri.equals("invalid")? placeholder : Uri.parse("file://"+coverUri))
 			.centerCrop()
             .fallback(placeholder)
-            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .diskCacheStrategy(DiskCacheStrategy.DATA)
             .placeholder(placeholder)
-            .override(size, size)
+            .override(imageSize, imageSize)
 			.into(binding.songCover);
 			if (Title == null || Title.equals("")) {
 				binding.SongTitle.setText("Unknown");
@@ -310,9 +319,6 @@ public class MusicListFragment extends BaseFragment {
                 activity.miniPlayerBottomSheet.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rounded_corners_bottom_sheet));
                 isPlaying = true;
                 int pos = _position;
-                int resId = R.drawable.placeholder;
-                Uri uri = Uri.parse("android.resource://" + getActivity().getPackageName() + "/" + resId);
-                String placeholderUri = uri.toString();
                 path = SongsMap.get(pos).get("path").toString();
                 Uri fileUri = Uri.parse("file://" + path);
                 MainActivity act = (MainActivity) getActivity();
@@ -376,6 +382,28 @@ public class MusicListFragment extends BaseFragment {
             int i = oldPos;
             oldPos = -1;
             songsAdapter.notifyItemChanged(i);
+        }
+    }
+
+    public class BottomSpacingDecoration extends RecyclerView.ItemDecoration {
+        private final int bottomSpacing;
+        private int spacing;
+        public BottomSpacingDecoration(int bottomSpacing) {
+            this.bottomSpacing = bottomSpacing;
+            spacing = XUtils.convertToPx(getActivity(), 2f);
+        }
+
+        @Override
+        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
+                               @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            int position = parent.getChildAdapterPosition(view);
+            if (position == RecyclerView.NO_POSITION) return;
+
+            if (position == state.getItemCount() -1 ) {
+                outRect.set(0, 0, 0, lastSpacing);
+            } else {
+                outRect.set(0, 0, 0, spacing);
+            }
         }
     }
 }

@@ -5,59 +5,42 @@
     android:id="@+id/coordinator"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?colorSurfaceContainer"
+    android:background="?colorSurface"
     android:orientation="vertical">
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?colorSurfaceContainer"
+        android:background="?colorSurface"
         app:liftOnScroll="false"
+        app:layout_collapseMode="pin"
         android:theme="@style/Widget.Material3.AppBarLayout">
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:id="@+id/collapsing_toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_scrollFlags="scroll|enterAlways"
+            android:background="?colorSurface"
             app:contentScrim="@android:color/transparent"
-            android:background="@android:color/transparent"
-            android:padding="0dp" >
+            app:layout_scrollFlags="scroll|enterAlwaysCollapsed|exitUntilCollapsed"
+            app:layout_collapseMode="pin">
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:background="@android:color/transparent"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="15dp">
+                android:gravity="bottom"
+                android:paddingHorizontal="15dp"
+                app:layout_collapseMode="pin">
                 <TextView
                     android:id="@+id/top_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/app_name"
                     android:textColor="?colorSurfaceInverse"
+                    android:paddingVertical="15dp"
                     android:layout_weight="1"
                     android:background="@null"
-                    android:textSize="35dp" />
-                <com.google.android.material.search.SearchBar
-                    android:id="@+id/search_bar"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_margin="0dp"
-                    android:hint="" />
-                <LinearLayout 
-                    android:id="@+id/settings_icon"
-                    android:layout_height="40dp"
-                    android:layout_width="40dp"
-                    android:gravity="center"
-                    android:background="@drawable/round_ripple_elevated"
-                    android:padding="5dp">
-                    <ImageView
-                        android:layout_height="24dp"
-                        android:layout_width="24dp"
-                        android:src="@drawable/ic_settings"
-                        android:tint="?colorOnSurfaceVariant"
-                        android:background="@null" />
-                </LinearLayout>    
+                    android:textSize="30dp" />
             </LinearLayout>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
@@ -89,19 +72,6 @@
             android:textSize="22sp"
             android:textColor="?colorOnSurface" />
     </LinearLayout>
-    <com.google.android.material.search.SearchView
-        android:id="@+id/search_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        app:autoShowKeyboard="false"
-        android:hint="Search your songs"
-        app:layout_anchor="@id/search_bar">
-        <LinearLayout
-            android:layout_height="match_parent"
-            android:layout_width="match_parent"
-            android:background="?colorSurface" />
-    </com.google.android.material.search.SearchView>
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
@@ -113,5 +83,9 @@
         android:layout_gravity="right|bottom"
         app:srcCompat="@drawable/ic_shuffle"
         style="@style/Widget.Material3.FloatingActionButton.Tertiary"
-        app:layout_behavior="@string/hide_bottom_view_on_scroll_behavior"/>
+        app:layout_behavior="@string/hide_bottom_view_on_scroll_behavior" />
+    <com.xapps.media.xmusic.widget.StatusBarScrimView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:scrimColor="?colorSurface" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

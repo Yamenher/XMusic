@@ -10,8 +10,11 @@ import android.net.Uri;
 import android.os.*;
 import android.service.controls.actions.CommandAction;
 import android.util.Log;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.*;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.IconCompat;
 import androidx.media3.common.*;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
@@ -34,7 +37,7 @@ import java.util.function.*;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Futures;
 
-public class PlayerService extends Service {
+public class PlayerService extends MediaSessionService {
 	
 	private static final String CHANNEL_ID = "music_channel";  
 	private static final int NOTIFICATION_ID = 1;  
@@ -77,10 +80,23 @@ public class PlayerService extends Service {
     
     private static final SessionCommand customCommandSeekBackward = new SessionCommand("custom_seek_backward", Bundle.EMPTY);
     private static final SessionCommand customCommandSeekForward = new SessionCommand("custom_seek_forward", Bundle.EMPTY);
+    
+    private final IBinder binder = new LocalBinder();
+    private Callback callback;
+    
+    private int resId = R.drawable.placeholder;
+    private Uri fallbackUri;
+    
+    @Nullable
+    @Override
+    public MediaSession onGetSession(@NonNull ControllerInfo controllerInfo) {
+        return mediaSession; 
+    }
 
 	@Override 
 	public void onCreate() {  
 		super.onCreate();  
+        fallbackUri = Uri.parse("android.resource://" + this.getPackageName() + "/" + resId);
         handlerThread.start();
         Looper backgroundLooper = handlerThread.getLooper();
 		ExoPlayerHandler = new Handler(backgroundLooper);
@@ -88,7 +104,7 @@ public class PlayerService extends Service {
 		player = new ExoPlayer.Builder(this, renderersFactory).setLooper(backgroundLooper).build();
         androidx.media3.common.AudioAttributes attrs = new androidx.media3.common.AudioAttributes.Builder()
         .setUsage(C.USAGE_MEDIA)
-        .setContentType(C.CONTENT_TYPE_MUSIC)
+        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
         .build();
         ExoPlayerHandler.post(() -> {
             player.setAudioAttributes(attrs, true);
@@ -102,12 +118,18 @@ public class PlayerService extends Service {
 		createNotificationChannel();  
 		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         setupAudioFocusRequest();
+        setMediaNotificationProvider(new CustomNotificationProvider(this));
+        if (Build.VERSION.SDK_INT >= 33) {  
+			startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", "") , ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
+		} else {  
+			startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
+		}  
 	}  
 	
 	@Nullable  
 	@Override  
 	public IBinder onBind(Intent intent) {  
-		return null;  
+		return binder;
 	}  
 	
 	@Override  
@@ -159,29 +181,18 @@ public class PlayerService extends Service {
             } else if (intent.getAction().equals("ACTION_UPDATE")) {
                 mediaItems = new ArrayList<>();
                 ArrayList<HashMap<String, Object>> song = MainActivity.currentMap;
-                    executor.execute(() -> {
-                for (int i = 0; i < song.size(); i++) {
-                    if (song.get(i).get("thumbnail") != null) {
-                        try {
+                executor.execute(() -> {
+                    for (int i = 0; i < song.size(); i++) {
+                        if (song.get(i).get("thumbnail") != null) {
                             mt = new MediaMetadata.Builder().setTitle(song.get(i).get("title").toString()).setArtist(song.get(i).get("author").toString()).setArtworkUri(Uri.parse("file://"+song.get(i).get("thumbnail").toString())).build();
-                            final int tmp_i = i;
-                                Glide.with(c)
-                                .load(Uri.parse("file://"+ song.get(tmp_i).get("thumbnail").toString()))
-                                .apply(new RequestOptions()
-                                .centerCrop()
-                                .override(500, 500)
-                                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                                .skipMemoryCache(false))
-                                .preload();
-                        } catch (Exception e) { }
-                    } else {
-                        mt = new MediaMetadata.Builder().setTitle(song.get(i).get("title").toString()).setArtist(song.get(i).get("author").toString()).setArtworkData(tb).build();
+                        } else {
+                            mt = new MediaMetadata.Builder().setTitle(song.get(i).get("title").toString()).setArtist(song.get(i).get("author").toString()).setArtworkUri(fallbackUri).build();
+                        }
+                        String path = song.get(i).get("path").toString();
+                        Uri uri2 = Uri.fromFile(new File(path));
+                        MediaItem mediaItem = new MediaItem.Builder().setMediaMetadata(mt).setUri(uri2).build();
+                        mediaItems.add(mediaItem);
                     }
-                    String path = song.get(i).get("path").toString();
-                    Uri uri2 = Uri.fromFile(new File(path));
-                    MediaItem mediaItem = new MediaItem.Builder().setMediaMetadata(mt).setUri(uri2).build();
-                    mediaItems.add(mediaItem);
-                }
                 });
             }
 		}     
@@ -190,12 +201,7 @@ public class PlayerService extends Service {
 
     private void playMedia(String uri, String title, String artist, String coverUri, int position) {
         
-		if (Build.VERSION.SDK_INT >= 33) {  
-			startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
-		} else {  
-			startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
-		}  
-        updateNotification(title, artist, coverUri);
+        //updateNotification(title, artist, coverUri);*/
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             isColorChanged = true;
@@ -203,8 +209,7 @@ public class PlayerService extends Service {
             tb = toByteArray(transparentBitmap);
             Bitmap bmp = MainActivity.currentMap.get(position).get("thumbnail") == null? transparentBitmap : loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
             ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
-                Intent progressIntent = new Intent("PLAYER_COLORS");
-                sendBroadcast(progressIntent);
+                sendDataToActivity("colors");
             });
         });
         if (mediaItems == null) {
@@ -216,14 +221,10 @@ public class PlayerService extends Service {
                 }
 				player.setRepeatMode(Player.REPEAT_MODE_ONE);
                 player.setMediaItems(mediaItems);
-                player.prepare();
                 player.seekTo(position, 0);
+                player.prepare();
                 player.play();
                 player.addListener(new Player.Listener() {
-                    @Override
-                    public void onRenderedFirstFrame() {
-                        Log.d("DecoderInfo", player.getAudioFormat().toString());
-                    }
                     @Override
                     public void onPlaybackStateChanged(int state) {
                         if (state == Player.STATE_READY) {
@@ -236,20 +237,19 @@ public class PlayerService extends Service {
                     @Override
                     public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
                         if (mediaItem != null) {
-                            updateNotification(currentTitle, currentArtist, currentCover);
+                            //updateNotification(currentTitle, currentArtist, currentCover);
                             currentPosition = player.getCurrentMediaItemIndex();
-                            if (!isColorChanged) {
-                                ExecutorService executor = Executors.newSingleThreadExecutor();
-                                executor.execute(() -> {
-                                    Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
-                                    tb = toByteArray(transparentBitmap);
-                                    Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
-                                    ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
-                                        Intent progressIntent = new Intent("PLAYER_COLORS");
-                                        sendBroadcast(progressIntent);
-                                    });
+                        }
+                        if (!isColorChanged) {
+                            ExecutorService executor = Executors.newSingleThreadExecutor();
+                            executor.execute(() -> {
+                                Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
+                                tb = toByteArray(transparentBitmap);
+                                Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
+                                ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
+                                    sendDataToActivity("colors");
                                 });
-                            }
+                            });
                         }
                     }
                 });
@@ -316,21 +316,17 @@ public class PlayerService extends Service {
         if (mediaSession == null) {
             setupMediaSession();
         }
-        MediaStyleNotificationHelper.MediaStyle mediaStyle = new MediaStyleNotificationHelper.MediaStyle(mediaSession);
+        MediaStyleNotificationHelper.MediaStyle mediaStyle = new MediaStyleNotificationHelper.MediaStyle(mediaSession).setShowCancelButton(true);
         Intent resumeIntent = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
         PendingIntent contentIntent = PendingIntent.getActivity(c, 0, resumeIntent, PendingIntent.FLAG_IMMUTABLE);
-	    int iconRes = isPlaying ? R.drawable.ic_pause : R.drawable.ic_play;
-	    String actionText = isPlaying ? "Pause" : "Play";
-	    String actionIntent = isPlaying ? "ACTION_PAUSE" : "ACTION_RESUME";
         return new NotificationCompat.Builder(this, CHANNEL_ID)
 		.setSmallIcon(R.mipmap.ic_launcher_foreground)
 		.setContentTitle(title)
 		.setContentText(artist)
 		.setLargeIcon(current)
-		.setStyle(mediaStyle)
+    	.setStyle(mediaStyle)
 		.setOngoing(true)
         .setContentIntent(contentIntent)
-		.setOnlyAlertOnce(true)
 		.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 		.build();
     }
@@ -447,7 +443,33 @@ public class PlayerService extends Service {
 		if (mediaSession != null) {
 			return;
 		}
-        mediaSession = new androidx.media3.session.MediaSession.Builder(this, player).setId("XMusicMediaSessionPrivate").build();
+        mediaSession = new androidx.media3.session.MediaSession.Builder(this, player).setId("XMusicMediaSessionPrivate").setCallback(new CustomCallback()).build();
+    }
+    
+    public class CustomCallback implements MediaSession.Callback {
+        
+        final SessionCommand TEST = new SessionCommand("TEST_ACTION", Bundle.EMPTY);
+        final CommandButton TEST_BUTTON = new CommandButton.Builder(R.drawable.ic_shuffle).setDisplayName("shuffle").setSessionCommand(TEST).setSlots(CommandButton.SLOT_FORWARD_SECONDARY).build();
+        List<CommandButton> list = ImmutableList.of(TEST_BUTTON);
+        Player.Commands pcs = new Player.Commands.Builder().addAllCommands().add(Player.COMMAND_SET_SHUFFLE_MODE).build();
+        private SessionCommands sc = SessionCommands.EMPTY.buildUpon().add(TEST).build();
+        @Override
+            public ConnectionResult onConnect(MediaSession mediaSession, ControllerInfo controllerInfo) {
+                //return new ConnectionResult.AcceptedResultBuilder(mediaSession).setCustomLayout(list).setAvailableSessionCommands(sc).setMediaButtonPreferences(ImmutableList.of(TEST_BUTTON)).build();
+                return ConnectionResult.accept(sc, pcs);
+            }
+            
+            @Override
+            public void onPostConnect(MediaSession mediaSession, ControllerInfo controllerInfo) {
+                mediaSession.setAvailableCommands(controllerInfo, sc, pcs);
+                mediaSession.setCustomLayout(controllerInfo, list);
+            }
+            
+            @Override
+            public ListenableFuture<SessionResult> onCustomCommand(MediaSession mediaSession, ControllerInfo controllerInfo, SessionCommand sessionCommand, Bundle bundle) {
+                return Futures.immediateFuture(new SessionResult(-6));
+            }
+        
     }
 
     private void setupAudioFocusRequest() {
@@ -508,5 +530,23 @@ public class PlayerService extends Service {
 
     public void abandonAudioFocus() {
         audioManager.abandonAudioFocusRequest(audioFocusRequest);
+    }
+
+    public interface Callback {
+        void onData(String data);
+    }
+
+    public class LocalBinder extends Binder {
+        public PlayerService getService() {
+            return PlayerService.this;
+        }
+    }
+
+    public void setCallback(Callback callback) {
+        this.callback = callback;
+    }
+
+    public void sendDataToActivity(String data) {
+        if (callback != null) callback.onData(data);
     }
 }

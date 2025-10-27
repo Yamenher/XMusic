@@ -94,7 +94,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import org.json.*;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements PlayerService.Callback {
 	
 	private MainBinding binding;
     private final Context c = this;
@@ -131,6 +131,24 @@ public class MainActivity extends AppCompatActivity {
     
     private NavHostFragment navHostFragment;
     private NavController navController;
+    
+    private PlayerService playerService;
+    private boolean bound = false;
+    private final ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            PlayerService.LocalBinder binder = (PlayerService.LocalBinder) service;
+            playerService = binder.getService();
+            playerService.setCallback(MainActivity.this);
+            bound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            bound = false;
+            playerService = null;
+        }
+    };
 	
 	@Override
 	protected void onCreate(Bundle _savedInstanceState) {
@@ -386,6 +404,22 @@ public class MainActivity extends AppCompatActivity {
 	}
     
     @Override
+        public void onStop() {
+        if (bound) {
+            playerService.setCallback(null);
+            unbindService(connection);
+            bound = false;
+        }
+        super.onStop();
+    }
+    
+    @Override
+    public void onStart() {
+        super.onStart();
+        bindService(new Intent(this, PlayerService.class), connection, Context.BIND_AUTO_CREATE);
+    }
+    
+    @Override
     public void onDestroy() {
         super.onDestroy();
         executor.shutdown();
@@ -446,24 +480,27 @@ public class MainActivity extends AppCompatActivity {
         bgHandler.postDelayed(() -> {
             progressAllowed = true;
         }, 250);
-        
 	}
 	
 	private final BroadcastReceiver multiReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
-            if (progressAllowed) {
-			    if ("PLAYER_PROGRESS".equals(action) && intent.hasExtra("progress")) {
-				    int currentPosition = intent.getIntExtra("progress", 0);
-					    if (currentPosition < binding.songSeekbar.getValueTo() && seekbarFree) {
-						    binding.musicProgress.setProgressCompat(currentPosition, true);
-						    binding.songSeekbar.setValue(currentPosition);
-                            binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(currentPosition));
-					    }
-			    } else if ("PLAYER_COLORS".equals(action)) {
-				    updateColors();
-			    }
+            if ("PLAYER_PROGRESS".equals(action) && intent.hasExtra("progress") && progressAllowed) {
+                int currentPosition = intent.getIntExtra("progress", 0);
+                if (currentPosition < binding.songSeekbar.getValueTo() && seekbarFree) {
+                    binding.musicProgress.setProgressCompat(currentPosition, true);
+                    binding.songSeekbar.setValue(currentPosition);
+                    binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(currentPosition));
+                }
+            }
+            if ("PLAYER_COLORS".equals(action)) {
+                Log.i("PlayerColors", "Received broadcast from the service");
+                handler.post(() -> {
+                    Log.i("PlayerColors", "update colors started");
+                    updateColors();
+                    Log.i("PlayerColors", "colors updates executed");
+                });
             }
 		}
 	};
@@ -515,31 +552,47 @@ public class MainActivity extends AppCompatActivity {
     }
     
 	public void updateColors() {
-        if (ColorPaletteUtils.lightColors != null || ColorPaletteUtils.darkColors != null) {
-            binding.toggleView.setShapeColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onPrimary") : ColorPaletteUtils.lightColors.get("onPrimary"));
-		    playerSurface = XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("surface") : ColorPaletteUtils.lightColors.get("surface");
-		    binding.toggleView.setIconColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("primary") : ColorPaletteUtils.lightColors.get("primary"));
-            binding.nextButton.getBackground().setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
-            binding.favoriteButton.getBackground().setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
-            binding.saveButton.getBackground().setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
-            binding.previousButton.getBackground().setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onTertiary") : ColorPaletteUtils.lightColors.get("onTertiary"), PorterDuff.Mode.SRC_IN);
-            binding.nextButton.setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("tertiary") : ColorPaletteUtils.lightColors.get("tertiary"), PorterDuff.Mode.SRC_IN);
-            binding.favoriteButton.setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("tertiary") : ColorPaletteUtils.lightColors.get("tertiary"), PorterDuff.Mode.SRC_IN);
-            binding.saveButton.setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("tertiary") : ColorPaletteUtils.lightColors.get("tertiary"), PorterDuff.Mode.SRC_IN);
-            binding.previousButton.setColorFilter(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("tertiary") : ColorPaletteUtils.lightColors.get("tertiary"), PorterDuff.Mode.SRC_IN);
-            Slider slider = binding.songSeekbar;
-            slider.setTrackInactiveTintList(ColorStateList.valueOf(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("outline") : ColorPaletteUtils.lightColors.get("outline")));
-            slider.setTrackActiveTintList(ColorStateList.valueOf(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("primary") : ColorPaletteUtils.lightColors.get("primary")));
-            slider.setThumbTintList(ColorStateList.valueOf(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("primary") : ColorPaletteUtils.lightColors.get("primary")));
-            slider.setHaloTintList(ColorStateList.valueOf(Color.TRANSPARENT));
-            binding.artistBigTitle.setTextColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onSurfaceContainer") : ColorPaletteUtils.lightColors.get("onSurfaceContainer"));
-            binding.songBigTitle.setTextColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onSurface") : ColorPaletteUtils.lightColors.get("onSurface"));
-            binding.currentDurationText.setTextColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onSurfaceContainer") : ColorPaletteUtils.lightColors.get("onSurfaceContainer"));
-            binding.totalDurationText.setTextColor(XUtils.isDarkMode(c)? ColorPaletteUtils.darkColors.get("onSurfaceContainer") : ColorPaletteUtils.lightColors.get("onSurfaceContainer"));
-            Drawable background = binding.miniPlayerBottomSheet.getBackground();
-		    tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
-		    ((GradientDrawable) background).setColor(tmpColor);
-        }
+        if (ColorPaletteUtils.lightColors == null && ColorPaletteUtils.darkColors == null) return;
+
+        Map<String, Integer> colors = XUtils.isDarkMode(c) ? ColorPaletteUtils.darkColors : ColorPaletteUtils.lightColors;
+
+        playerSurface = colors.get("surface");
+
+        binding.toggleView.setShapeColor(colors.get("onPrimary"));
+        binding.toggleView.setIconColor(colors.get("primary"));
+
+        Drawable nextBg = binding.nextButton.getBackground();
+        Drawable favBg = binding.favoriteButton.getBackground();
+        Drawable saveBg = binding.saveButton.getBackground();
+        Drawable prevBg = binding.previousButton.getBackground();
+
+        int onTertiary = colors.get("onTertiary");
+        int tertiary = colors.get("tertiary");
+
+        nextBg.setColorFilter(onTertiary, PorterDuff.Mode.SRC_IN);
+        favBg.setColorFilter(onTertiary, PorterDuff.Mode.SRC_IN);
+        saveBg.setColorFilter(onTertiary, PorterDuff.Mode.SRC_IN);
+        prevBg.setColorFilter(onTertiary, PorterDuff.Mode.SRC_IN);
+
+        binding.nextButton.setColorFilter(tertiary, PorterDuff.Mode.SRC_IN);
+        binding.favoriteButton.setColorFilter(tertiary, PorterDuff.Mode.SRC_IN);
+        binding.saveButton.setColorFilter(tertiary, PorterDuff.Mode.SRC_IN);
+        binding.previousButton.setColorFilter(tertiary, PorterDuff.Mode.SRC_IN);
+
+        Slider slider = binding.songSeekbar;
+        slider.setTrackInactiveTintList(ColorStateList.valueOf(colors.get("outline")));
+        slider.setTrackActiveTintList(ColorStateList.valueOf(colors.get("primary")));
+        slider.setThumbTintList(ColorStateList.valueOf(colors.get("primary")));
+        slider.setHaloTintList(ColorStateList.valueOf(Color.TRANSPARENT));
+
+        binding.artistBigTitle.setTextColor(colors.get("onSurfaceContainer"));
+        binding.songBigTitle.setTextColor(colors.get("onSurface"));
+        binding.currentDurationText.setTextColor(colors.get("onSurfaceContainer"));
+        binding.totalDurationText.setTextColor(colors.get("onSurfaceContainer"));
+    
+        GradientDrawable background = (GradientDrawable) binding.miniPlayerBottomSheet.getBackground();
+        tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
+        background.setColor(tmpColor);
     }
     
     public void updateTexts(int pos) {
@@ -608,4 +661,13 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction("PLAYER_COLORS");
         registerReceiver(multiReceiver, filter, Context.RECEIVER_EXPORTED);
     }
-}
+
+    @Override
+    public void onData(String data) {
+        switch (data) {
+            case "colors":
+                updateColors();
+                break;
+        }
+    }
+}

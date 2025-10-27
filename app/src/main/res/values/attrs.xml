@@ -1,0 +1,5 @@
+<resources>
+    <declare-styleable name="StatusBarScrimView">
+        <attr name="scrimColor" format="color|reference" />
+    </declare-styleable>
+</resources>
