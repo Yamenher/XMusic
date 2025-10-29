@@ -1,102 +1,105 @@
 name: Android CI
+
 on:
-push:
-branches: [ "" ]
-paths-ignore:
-- '/.md'
-pull_request:
-branches: [ "" ]
-paths-ignore:
-- '/.md'
-workflow_dispatch:
+  push:
+    branches: [ "**" ]
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    branches: [ "**" ]
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+
 jobs:
-init:
-name: Init
-runs-on: ubuntu-latest
-environment: Release
-steps:
-- name: Checkout code
-uses: actions/checkout@v4
-  - name: notify telegram
-    if: github.event_name != 'pull_request'
-    uses: EverythingSuckz/github-telegram-notify@main
-    continue-on-error: true
-    with:
-      bot_token: ${{ secrets.TG_BOT_TOKEN }}
-      chat_id: -1002951791106
-      topic_id: 4
+  init:
+    name: Init
+    runs-on: ubuntu-latest
+    environment: Release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-build_debug_apk:
-name: Build App Debug APKs
-runs-on: ubuntu-latest
-environment: MainEnv
-steps:
-- name: Check out repository
-uses: actions/checkout@v4
-  - name: Set up JDK 17
-    uses: actions/setup-java@v4
-    with:
-      java-version: '17'
-      distribution: 'oracle'
-      cache: gradle
+      - name: notify telegram
+        if: github.event_name != 'pull_request'
+        uses: EverythingSuckz/github-telegram-notify@main
+        continue-on-error: true
+        with:
+          bot_token: ${{ secrets.TG_BOT_TOKEN }}
+          chat_id: -1002951791106
+          topic_id: 4
 
-  - name: Grant execute permission for gradlew
-    run: chmod +x gradlew
+  build_debug_apk:
+    name: Build App Debug APKs
+    runs-on: ubuntu-latest
+    environment: MainEnv
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-  - name: Validate Gradle wrapper
-    uses: gradle/actions/wrapper-validation@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'oracle'
+          cache: gradle
 
-  - name: Build both ABIs
-    if: github.event_name != 'pull_request'
-    run: ./gradlew assembleDebug -PTG_BOT_TOKEN="${{ secrets.TG_BOT_TOKEN }}" -PTG_CHAT_ID="${{ secrets.TG_CHAT_ID }}"
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-  - name: Upload debug arm64 apk
-    uses: actions/upload-artifact@v4
-    with:
-      name: debug-arm64
-      path: app/build/outputs/apk/debug/debug-arm64-v8a.apk
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
 
-  - name: Upload debug armeabi apk
-    uses: actions/upload-artifact@v4
-    with:
-      name: debug-armeabi
-      path: app/build/outputs/apk/debug/debug-armeabi-v7a.apk
+      - name: Build both ABIs
+        if: github.event_name != 'pull_request'
+        run: ./gradlew assembleDebug -PTG_BOT_TOKEN="${{ secrets.TG_BOT_TOKEN }}" -PTG_CHAT_ID="${{ secrets.TG_CHAT_ID }}"
 
-send_debug_apks:
-name: Send Debug APKs
-runs-on: ubuntu-latest
-needs: build_debug_apk
-environment: Release
-steps:
-  - name: Download arm64 apk
-    uses: actions/download-artifact@v4
-    with:
-      name: debug-arm64
-      path: .
+      - name: Upload debug arm64 apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-arm64
+          path: app/build/outputs/apk/debug/debug-arm64-v8a.apk
 
-  - name: Download armeabi apk
-    uses: actions/download-artifact@v4
-    with:
-      name: debug-armeabi
-      path: .
+      - name: Upload debug armeabi apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-armeabi
+          path: app/build/outputs/apk/debug/debug-armeabi-v7a.apk
 
-  - name: Send arm64 APK to Telegram
-    if: success() && github.event_name != 'pull_request'
-    continue-on-error: true
-    run: |
-      curl -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendDocument" \
-        -F chat_id="-1002951791106" \
-        -F message_thread_id="4" \
-        -F document=@"debug-arm64-v8a.apk" \
-        -F caption="ARM64 build"
+  send_debug_apks:
+    name: Send Debug APKs
+    runs-on: ubuntu-latest
+    needs: build_debug_apk
+    environment: Release
+    steps:
+      - name: Download arm64 apk
+        uses: actions/download-artifact@v4
+        with:
+          name: debug-arm64
+          path: .
 
-  - name: Send armeabi APK to Telegram
-    if: success() && github.event_name != 'pull_request'
-    continue-on-error: true
-    run: |
-      # --- FIX: Updated secret name to match environment secret ---
-      curl -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendDocument" \
-        -F chat_id="-1002951791106" \
-        -F message_thread_id="4" \
-        -F document=@"debug-armeabi-v7a.apk" \
-        -F caption="ARMEABI build"
+      - name: Download armeabi apk
+        uses: actions/download-artifact@v4
+        with:
+          name: debug-armeabi
+          path: .
+
+      - name: Send arm64 APK to Telegram
+        if: success() && github.event_name != 'pull_request'
+        continue-on-error: true
+        run: |
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendDocument" \
+            -F chat_id="-1002951791106" \
+            -F message_thread_id="4" \
+            -F document=@"debug-arm64-v8a.apk" \
+            -F caption="ARM64 build"
+
+      - name: Send armeabi APK to Telegram
+        if: success() && github.event_name != 'pull_request'
+        continue-on-error: true
+        run: |
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendDocument" \
+            -F chat_id="-1002951791106" \
+            -F message_thread_id="4" \
+            -F document=@"debug-armeabi-v7a.apk" \
+            -F caption="ARMEABI build"
