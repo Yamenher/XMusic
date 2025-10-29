@@ -347,7 +347,7 @@ public class FastScroller {
         int scrollY = mView.getScrollY();
         return isInTouchTarget(x, view.getLeft() - scrollX, view.getRight() - scrollX, 0,
                 mView.getWidth())
-                && isInTouchTarget(y, view.getTop() - scrollY, view.getBottom() - scrollY, 0,
+                && isInTouchTarget(y, mThumbView.getTop() - scrollY, mThumbView.getBottom() - scrollY, 0,
                 mView.getHeight());
     }
 

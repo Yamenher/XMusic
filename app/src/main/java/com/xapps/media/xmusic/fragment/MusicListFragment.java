@@ -71,12 +71,16 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.util.FixedPreloadSizeProvider;
 import com.google.android.material.*;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.bottomsheet.BottomSheetDragHandleView;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.search.*;
 import com.xapps.media.xmusic.common.SongLoadListener;
 import com.xapps.media.xmusic.activity.MainActivity;
 import com.xapps.media.xmusic.R;
+import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.helper.SongMetadataHelper;
 import com.xapps.media.xmusic.databinding.*;
 import com.xapps.media.xmusic.databinding.MainBinding;
@@ -97,7 +101,7 @@ import org.json.*;
 
 public class MusicListFragment extends BaseFragment {
 	
-	private MusicListFragmentBinding binding;
+	public MusicListFragmentBinding binding;
     private int oldPos = -1;
 	public final Fragment f = this;
 	private String Title = "";
@@ -125,6 +129,7 @@ public class MusicListFragment extends BaseFragment {
 	private ArrayList<HashMap<String, Object>> SongsMap = new ArrayList<>();
     
     private int lastSpacing;
+    private int defaultFabMargin;
     
     private final BroadcastReceiver myReceiver = new BroadcastReceiver() {
         @Override
@@ -137,20 +142,21 @@ public class MusicListFragment extends BaseFragment {
 	@NonNull
 	@Override
 	public View onCreateView(@NonNull LayoutInflater _inflater, @Nullable ViewGroup _container, @Nullable Bundle _savedInstanceState) {
+        setRetainInstance(true);
+        a = (MainActivity) getActivity();
 		binding = MusicListFragmentBinding.inflate(_inflater, _container, false);
         mainHandler = new Handler(Looper.getMainLooper());
+        
 		initializeLogic();
         setUpListeners(); 
 		return binding.getRoot();
 	}
 	
 	private void initializeLogic() {
-        fab = binding.fab;
-        XUtils.increaseMargins(binding.fab, 0, 0, 0, Math.round((getActivity().getResources().getDimensionPixelSize(getResources().getIdentifier("navigation_bar_height", "dimen", "android"))*1.4f)));
         a = (MainActivity) getActivity();
+        activity = a.getBinding();
         placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.placeholder_small);
         imageSize = XUtils.convertToPx(getActivity(), 45f);
-		activity = a.getBinding();
         activity.bottomNavigation.post(() -> {
             lastSpacing = XUtils.convertToPx(getActivity(), 5f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight();
             binding.songsList.addItemDecoration(new BottomSpacingDecoration(lastSpacing));
@@ -161,10 +167,7 @@ public class MusicListFragment extends BaseFragment {
             new FastScrollerBuilder(binding.songsList).useMd2Style().setPadding(0, 0, 0, activity.bottomNavigation.getHeight()+XUtils.getNavigationBarHeight(getActivity())).build();
         });
         
-        if (a.isPlaying) {
-            XUtils.increaseMargins(binding.fab, 0, 0, 0, (activity.coversPager.getHeight() + activity.miniPlayerBottomSheet.getPaddingTop()*2));
-        }
-        
+        binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
         executor.execute(() -> {
             SongMetadataHelper.getAllSongs(getActivity(), new SongLoadListener() {
                 @Override
@@ -173,13 +176,11 @@ public class MusicListFragment extends BaseFragment {
                     size = SongsMap.size();
                     songsAdapter = new SongsListAdapter(SongsMap);
                     MainActivity act = (MainActivity) getActivity();
+                    HeaderAdapter headerAdapter = new HeaderAdapter();
+                    ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
                     mainHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            binding.songsList.setItemViewCacheSize(30);
-                            binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
-                            HeaderAdapter headerAdapter = new HeaderAdapter();
-                            ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
                             binding.songsList.setAdapter(concatAdapter);
                             binding.emptyLayout.setVisibility(View.GONE);
                             a.Start(); 
@@ -188,7 +189,7 @@ public class MusicListFragment extends BaseFragment {
                 }
                     
                 @Override
-                public void onProgress(int count) {
+                public void onProgress(ArrayList<HashMap<String, Object>> map, int count) {
                         
                 }
             });
@@ -198,14 +199,14 @@ public class MusicListFragment extends BaseFragment {
     
     @Override
     public void onResume() {
-        super.onResume();
         IntentFilter filter = new IntentFilter("ACTION_STOP_FRAGMENT");
         requireContext().registerReceiver(myReceiver, filter, Context.RECEIVER_EXPORTED);
+        super.onResume();
     }
     
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onPause() {
+        super.onPause();
         try {
             requireContext().unregisterReceiver(myReceiver);
         } catch (Exception e) {
@@ -229,15 +230,10 @@ public class MusicListFragment extends BaseFragment {
     }
     
     public void setUpListeners() {
-    
-    }
-    
-    public void hideFab(boolean v) {
-        if (v) {
-            binding.fab.hide();
-        } else {
-            binding.fab.show();
-        }
+        binding.topTitle.setOnClickListener(v -> {
+            songsAdapter.notifyDataSetChanged();
+            XUtils.showMessage(getActivity(), "done");
+        });
     }
 	
 	public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ViewHolder> {
@@ -249,7 +245,6 @@ public class MusicListFragment extends BaseFragment {
         int c4 = MaterialColorUtils.colorOutline;
         
 		public SongsListAdapter(ArrayList<HashMap<String, Object>> _arr) {
-            setHasStableIds(true);
 			_data = _arr;
 		}
 		
@@ -262,9 +257,9 @@ public class MusicListFragment extends BaseFragment {
 			return new ViewHolder(_v);
 		}
         
-        private Drawable top = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_top);
-		private Drawable bottom = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_bottom);
-        private Drawable middle = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple);
+        public Drawable top = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_top);
+		public Drawable bottom = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple_bottom);
+        public Drawable middle = ContextCompat.getDrawable(getActivity(), R.drawable.rv_ripple);
         
         private int spacing = XUtils.convertToPx(getContext(), 5f);
         private int resId = R.drawable.placeholder;
@@ -283,9 +278,8 @@ public class MusicListFragment extends BaseFragment {
                 binding.item.setBackground(middle.getConstantState().newDrawable().mutate());
             }
             boolean isLast = _position == getItemCount() - 1;
-            //XUtils.setMargins(binding.item, 0, 0, 0, isLast? lastSpacing : 0);
             if (_position == oldPos && isPlaying) {
-                if (!binding.item.isChecked()) binding.item.setChecked(true);
+                binding.item.setChecked(true);
                 binding.SongTitle.setTextColor(c1);
                 binding.SongArtist.setTextColor(c2);
                 binding.songBars.setVisibility(View.VISIBLE);
@@ -314,6 +308,7 @@ public class MusicListFragment extends BaseFragment {
 				binding.SongArtist.setText(Artitst);
 			}
 			binding.item.setOnClickListener(v -> {
+                if (a.bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_SETTLING || a.bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_DRAGGING) return;
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - lastClickTime < DEBOUNCE_MS) {
                     return;
@@ -326,12 +321,21 @@ public class MusicListFragment extends BaseFragment {
                 Uri fileUri = Uri.parse("file://" + path);
                 MainActivity act = (MainActivity) getActivity();
                 String pth = _data.get(pos).get("thumbnail") == null ? placeholderUri : _data.get(pos).get("thumbnail").toString();
+                if (_position != PlayerService.currentPosition) {
+                    notifyItemChanged(oldPos, "color");
+                    oldPos = pos;
+                    notifyItemChanged(oldPos, "color");
+                }
                 act._setSong(pos, pth, fileUri);
-                notifyItemChanged(oldPos/*, "color"*/);
-                oldPos = pos;
-                notifyItemChanged(pos/*, "color"*/);
             });
-			
+            binding.optionsIcon.setOnClickListener(v -> {
+                BottomSheetDragHandleView drag = new BottomSheetDragHandleView(getActivity());
+                LinearLayout bsl = (LinearLayout)getActivity().getLayoutInflater().inflate(R.layout.options_bottom_sheet, null);
+                bsl.addView(drag, 0);
+                BottomSheetDialog bsd = new BottomSheetDialog(getActivity());
+                bsd.setContentView(bsl, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                bsd.show();
+            });
 		}
 		
 		@Override
@@ -385,13 +389,14 @@ public class MusicListFragment extends BaseFragment {
 	}
 
     public void adjustUI() {
-        isPlaying = PlayerService.isPlaying;
-        if (!isPlaying && (XUtils.getMargin(binding.fab, "bottom") >= XUtils.convertToPx(getActivity(), 150f)) && songsAdapter != null ) {
-            XUtils.increaseMarginsSmoothly(binding.fab, 0, 0, 0, -(activity.coversPager.getHeight() + activity.miniPlayerBottomSheet.getPaddingTop()*2), 200);
-            int i = oldPos;
-            oldPos = -1;
-            songsAdapter.notifyItemChanged(i);
-        }
+            if (isPlaying && songsAdapter != null && oldPos != PlayerService.currentPosition) {
+                songsAdapter.notifyItemChanged(oldPos, "color");
+                oldPos = PlayerService.currentPosition;
+                songsAdapter.notifyItemChanged(oldPos, "color");
+            } else {
+                int i = -1;
+                songsAdapter.notifyItemChanged(i, "color");
+            }
     }
 
     public class BottomSpacingDecoration extends RecyclerView.ItemDecoration {
@@ -414,5 +419,27 @@ public class MusicListFragment extends BaseFragment {
                 outRect.set(0, 0, 0, spacing);
             }
         }
+    }
+
+    public void shuffle() {
+        Uri uri = Uri.parse("android.resource://" + getActivity().getPackageName() + "/" + R.drawable.placeholder);
+            String placeholderUri = uri.toString();
+            int r = new Random().nextInt((SongsMap.size()-1 - 0) + 1) + 0;
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastClickTime < DEBOUNCE_MS) {
+                return;
+            }
+            lastClickTime = currentTime;
+            activity.miniPlayerBottomSheet.setBackground(ContextCompat.getDrawable(getActivity(), R.drawable.rounded_corners_bottom_sheet));
+            isPlaying = true;
+            int pos = r;
+            path = SongsMap.get(pos).get("path").toString();
+            Uri fileUri = Uri.parse("file://" + path);
+            MainActivity act = (MainActivity) getActivity();
+            String pth = SongsMap.get(pos).get("thumbnail") == null ? placeholderUri : SongsMap.get(pos).get("thumbnail").toString();
+            act._setSong(pos, pth, fileUri);
+            songsAdapter.notifyItemChanged(oldPos, "color");
+            oldPos = pos;
+            songsAdapter.notifyItemChanged(pos, "color");
     }
 }

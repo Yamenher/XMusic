@@ -12,12 +12,25 @@
 
         <action
             android:id="@+id/action_open_settings"
-            app:destination="@id/settingsFragment"/>
+            app:destination="@id/settingsFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="false" />
+            
+        <action
+            android:id="@+id/action_open_search"
+            app:destination="@+id/searchFragment" 
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="false" />
     </fragment>
 
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.xapps.media.xmusic.fragment.SettingsFragment"
-        android:label="Detail Fragment"
-        tools:layout="@layout/fragment_detail" />
+        android:label="Settings Fragment">
+    </fragment>
+        
+     <fragment
+        android:id="@+id/searchFragment"
+        android:name="com.xapps.media.xmusic.fragment.SearchFragment"
+        android:label="Search Fragment"/>
 </navigation>

@@ -6,11 +6,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
+    android:clipChildren="false"
     android:elevation="2dp">
     <com.appbroker.roundedimageview.RoundedImageView
         android:id="@+id/miniPlayerThumbnail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:scaleX="0.93"
+        android:scaleY="0.93"
         android:src="@drawable/placeholder"
-        app:radius="40dp" />
+        app:radius="28dp" />
 </LinearLayout>

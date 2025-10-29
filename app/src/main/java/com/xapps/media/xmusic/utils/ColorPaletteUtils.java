@@ -3,13 +3,18 @@ package com.xapps.media.xmusic.utils;
 import android.graphics.Bitmap;
 
 import com.google.android.material.color.utilities.CorePalette;
+import com.google.android.material.color.utilities.DynamicScheme;
 import com.google.android.material.color.utilities.Hct;
 import com.google.android.material.color.utilities.QuantizerCelebi;
+import com.google.android.material.color.utilities.Scheme;
 import com.google.android.material.color.utilities.Score;
+import com.google.android.material.color.utilities.TonalPalette;
+import com.google.android.material.color.utilities.Variant;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -44,7 +49,6 @@ public class ColorPaletteUtils {
                 }
 
                 Hct h = Hct.fromInt(seedColor);
-                CorePalette core = CorePalette.of(seedColor);
 
                 lightColors = generateMaterialTones(h, false);
                 darkColors = generateMaterialTones(h, true);
@@ -66,23 +70,31 @@ public class ColorPaletteUtils {
 
         double hue = hct.getHue();
         double chroma = hct.getChroma();
+        
+        boolean chromaTooLow = chroma < 10;
 
-        tones.put("primary", Hct.from(hue, chroma, isDark ? 80 : 30).toInt());
-        tones.put("onPrimary", Hct.from(hue, chroma, isDark ? 20 : 80).toInt());
-        tones.put("tertiary", Hct.from(hue + 25, chroma, isDark ? 80 : 40).toInt());
-        tones.put("onTertiary", Hct.from(hue + 25, chroma, isDark ? 20 : 80).toInt());
+        tones.put("primary", Hct.from(hue, chromaTooLow? chroma : 40, isDark ? 80 : 30).toInt());
+        tones.put("onPrimary", Hct.from(hue, chromaTooLow? chroma : 40, isDark ? 20 : 80).toInt());
+        tones.put("tertiary", Hct.from(hue + 25, chromaTooLow? chroma : 40, isDark ? 80 : 40).toInt());
+        tones.put("onTertiary", Hct.from(hue + 25, chromaTooLow? chroma : 40, isDark ? 20 : 80).toInt());
         tones.put("primaryContainer", Hct.from(hue, chroma, isDark ? 30 : 90).toInt());
         tones.put("onPrimaryContainer", Hct.from(hue, chroma, isDark ? 90 : 10).toInt());
 
-        tones.put("surface", Hct.from(hue, chroma * 0.75, isDark ? 6 : 96).toInt());
-        tones.put("onSurface", Hct.from(hue, chroma * 0.3, isDark ? 83 : 10).toInt());
-        tones.put("surfaceContainer", Hct.from(hue, chroma * 0.15, isDark ? 12 : 94).toInt());
-        tones.put("onSurfaceContainer", Hct.from(hue, chroma * 0.35, isDark ? 60 : 10).toInt());
-
-        tones.put("background", Hct.from(hue, chroma * 0.1, isDark ? 6 : 98).toInt());
-        tones.put("onBackground", Hct.from(hue, chroma * 0.2, isDark ? 90 : 10).toInt());
-        tones.put("outline", Hct.from(hue, chroma * 0.6, isDark ? 30 : 70).toInt());
+        tones.put("surface", Hct.from(hue, chromaTooLow? chroma : 25, isDark ? 7 : 95).toInt());
+        tones.put("onSurface", Hct.from(hue, chromaTooLow? chroma : 30, isDark ? 75 : 10).toInt());
+        tones.put("surfaceContainer", Hct.from(hue, chromaTooLow? chroma : 25, isDark ? 12 : 94).toInt());
+        tones.put("onSurfaceContainer", Hct.from(hue, chromaTooLow? chroma : 30, isDark ? 60 : 10).toInt());
+        
+        tones.put("outline", Hct.from(hue, chromaTooLow? chroma : 25, isDark ? 30 : 70).toInt());
 
         return tones;
+    }
+
+    public static Scheme generateCustomScheme(int seedColor, boolean isDarkMode) {
+        if (isDarkMode) {
+            return Scheme.dark(seedColor);
+        } else {
+            return Scheme.light(seedColor);
+        }
     }
 }

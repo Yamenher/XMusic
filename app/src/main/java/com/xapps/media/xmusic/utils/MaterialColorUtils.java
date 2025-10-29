@@ -32,8 +32,6 @@ public class MaterialColorUtils {
     public static int colorOutline = Color.WHITE;
 
     public static void initColors(Context c) {
-        if (isAlreadyInitialized) return;
-
         colorPrimary = MaterialColors.getColor(c, android.R.attr.colorPrimary, Color.WHITE);
         colorOnPrimary = MaterialColors.getColor(c, com.google.android.material.R.attr.colorOnPrimary, Color.WHITE);
         colorPrimaryContainer = MaterialColors.getColor(c, com.google.android.material.R.attr.colorPrimaryContainer, Color.WHITE);
@@ -56,6 +54,5 @@ public class MaterialColorUtils {
         colorSurfaceContainerHighest = MaterialColors.getColor(c, com.google.android.material.R.attr.colorSurfaceContainerHighest, Color.WHITE);
         colorSurfaceContainerLowest = MaterialColors.getColor(c, com.google.android.material.R.attr.colorSurfaceContainerLowest, Color.WHITE);
         colorOutline = MaterialColors.getColor(c, com.google.android.material.R.attr.colorOutline, Color.WHITE);
-        isAlreadyInitialized = true;
     }
 }

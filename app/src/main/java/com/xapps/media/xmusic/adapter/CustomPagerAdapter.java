@@ -51,7 +51,7 @@ public class CustomPagerAdapter extends RecyclerView.Adapter<CustomPagerAdapter.
                     .load(Uri.parse(path))
                     .apply(new RequestOptions()
                     .centerCrop()
-                    .override(1000, 1000)
+                    .override(750, 750)
                     .priority(Priority.LOW)
                     .skipMemoryCache(false))
                     .into(holder.thumbnail);
@@ -60,7 +60,7 @@ public class CustomPagerAdapter extends RecyclerView.Adapter<CustomPagerAdapter.
                     .load(R.drawable.placeholder)
                     .apply(new RequestOptions()
                     .centerCrop()
-                    .override(1000, 1000)
+                    .override(750, 750)
                     .priority(Priority.LOW)
                     .skipMemoryCache(false))
                     .into(holder.thumbnail);

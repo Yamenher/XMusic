@@ -14,16 +14,6 @@
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:orientation="vertical">
-            <com.google.android.material.progressindicator.LinearProgressIndicator
-                android:id="@+id/progress_bar"
-                android:layout_height="wrap_content"
-                android:layout_width="match_parent"
-                android:layout_marginTop="16dp"
-                app:trackStopIndicatorSize="0dp"
-                app:trackColor="@android:color/transparent"
-                app:waveAmplitude="2dp"
-                app:wavelength="30dp"
-                app:waveSpeed="30dp" />
         </LinearLayout>
         <LinearLayout
             android:layout_height="match_parent"
@@ -43,7 +33,7 @@
                     android:layout_marginLeft="15dp"
                     android:textSize="35sp"
                     android:textColor="?colorOnSurface"
-                    android:text="XMusic" />
+                    android:text="XMusic"/>
                 <TextView
                     android:id="@+id/top_subtitle"
                     android:layout_height="wrap_content"
@@ -51,14 +41,14 @@
                     android:layout_marginLeft="15dp"
                     android:textSize="25sp"
                     android:textColor="?colorOutline"
-                    android:text="Materialize your playback" />
+                    android:text="Materialize your playback"/>
                 <ImageView
                     android:id="@+id/illustration"
                     android:layout_height="wrap_content"
                     android:layout_width="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_gravity="center_vertical"
                     android:src="@drawable/intro_illustration"
-                    android:layout_margin="50dp" />
+                    android:layout_margin="50dp"/>
                 <TextView
                     android:id="@+id/small_tip"
                     android:layout_height="wrap_content"
@@ -67,86 +57,129 @@
                     android:layout_marginBottom="15dp"
                     android:textSize="14sp"
                     android:textColor="?colorOutline"
-                    android:text="Let's get things ready for you!" />
+                    android:text="Let's get things ready for you!"/>
             </LinearLayout>
             <LinearLayout
                 android:id="@+id/second_screen"
                 android:layout_height="match_parent"
                 android:layout_width="match_parent"
                 android:visibility="gone"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:gravity="center">
+                <TextView
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_marginLeft="15dp"
+                    android:textSize="25sp"
+                    android:textColor="?colorOnSurface"
+                    android:text="Grant permissions"/>
+                <TextView
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_marginLeft="15dp"
+                    android:textSize="20sp"
+                    android:textColor="?colorOutline"
+                    android:text="We only use these to manage your songs"/>
+                <ImageView
+                    android:id="@+id/illustration2"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:src="@drawable/intro_illustration_2"
+                    android:adjustViewBounds="true"
+                    android:layout_margin="50dp"/>
                 <LinearLayout
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_width="match_parent"
                     android:layout_weight="1"
                     android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageView
-                        android:id="@+id/music_icon"
-                        android:layout_height="175dp"
-                        android:layout_width="175dp"
-                        android:padding="25dp"
-                        android:src="@drawable/icon_library_music_round"
-                        android:tint="?colorPrimary"
-                        android:background="@drawable/pic_bg"
-                        android:layout_marginHorizontal="70dp" />
-                    <TextView
-                        android:id="@+id/permission1_text"
+                    android:gravity="top">
+                    <LinearLayout
+                        android:id="@+id/first_item"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_width="wrap_content"
-                        android:gravity="center_horizontal"
-                        android:layout_marginVertical="30dp"
-                        android:layout_marginHorizontal="30dp"
-                        android:textSize="16dp"
-                        android:textColor="?colorOnSurface"
-                        android:text="XMusic needs audio access permission in order to be able of listing your songs" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/permission1_button"
+                        android:layout_marginHorizontal="16dp"
+                        android:paddingVertical="16dp"
+                        android:paddingHorizontal="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/checkable_background_top">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/firstTitle"
+                                android:layout_height="wrap_content"
+                                android:layout_width="wrap_content"
+                                android:text="Grant media access"
+                                android:textSize="20sp"
+                                android:layout_marginBottom="4dp"
+                                android:textColor="?colorOnSurface"/>
+
+                            <TextView
+                                android:id="@+id/firstDesc"
+                                android:layout_height="wrap_content"
+                                android:layout_width="wrap_content"
+                                android:text="Needed to find media on your device"
+                                android:textSize="14sp"
+                                android:textColor="?colorOutline"/>
+
+                        </LinearLayout>
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/first_grant_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Grant" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/second_item"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_width="wrap_content"
-                        android:text="Grant permission" />
+                        android:layout_marginTop="2dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:paddingVertical="16dp"
+                        android:paddingHorizontal="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/checkable_background_bottom">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/secondTitle"
+                                android:layout_height="wrap_content"
+                                android:layout_width="wrap_content"
+                                android:text="Grant media access"
+                                android:textSize="20sp"
+                                android:layout_marginBottom="4dp"
+                                android:textColor="?colorOnSurface"/>
+
+                            <TextView
+                                android:id="@+id/secondDesc"
+                                android:layout_height="wrap_content"
+                                android:layout_width="wrap_content"
+                                android:text="Needed to find media on your device"
+                                android:textSize="14sp"
+                                android:textColor="?colorOutline"/>
+
+                        </LinearLayout>
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/second_grant_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Grant" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
             <LinearLayout
                 android:id="@+id/third_screen"
-                android:layout_height="match_parent"
-                android:layout_width="match_parent"
-                android:visibility="gone"
-                android:orientation="vertical">
-                <LinearLayout
-                    android:layout_height="match_parent"
-                    android:layout_width="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageView
-                        android:id="@+id/notification_icon"
-                        android:layout_height="175dp"
-                        android:layout_width="175dp"
-                        android:padding="25dp"
-                        android:src="@drawable/icon_notification"
-                        android:tint="?colorPrimary"
-                        android:background="@drawable/pic_bg"
-                        android:layout_marginHorizontal="70dp" />
-                    <TextView
-                        android:id="@+id/permission2_text"
-                        android:layout_height="wrap_content"
-                        android:layout_width="wrap_content"
-                        android:gravity="center_horizontal"
-                        android:layout_marginVertical="30dp"
-                        android:layout_marginHorizontal="30dp"
-                        android:textSize="16dp"
-                        android:textColor="?colorOnSurface"
-                        android:text="XMusic needs notifications post permission in order to display playback notification correctly" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/permission2_button"
-                        android:layout_height="wrap_content"
-                        android:layout_width="wrap_content"
-                        android:text="Grant permission" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout
-                android:id="@+id/fourth_screen"
                 android:layout_height="match_parent"
                 android:layout_width="match_parent"
                 android:visibility="gone"
@@ -159,13 +192,12 @@
                     android:gravity="center">
                     <ImageView
                         android:id="@+id/tg_icon"
-                        android:layout_height="175dp"
-                        android:layout_width="175dp"
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
                         android:padding="25dp"
-                        android:src="@drawable/icon_telegram"
-                        android:tint="?colorPrimary"
-                        android:background="@drawable/pic_bg"
-                        android:layout_marginHorizontal="70dp" />
+                        android:src="@drawable/intro_illustration_3"
+                        android:adjustViewBounds="true"
+                        android:layout_marginHorizontal="70dp"/>
                     <TextView
                         android:id="@+id/tip_text"
                         android:layout_height="wrap_content"
@@ -175,12 +207,12 @@
                         android:layout_marginHorizontal="30dp"
                         android:textSize="16dp"
                         android:textColor="?colorOnSurface"
-                        android:text="Join our telegram group for support, community chat, sneak peaks and more!" />
+                        android:text="Join our telegram group for support, community chat, sneak peaks and more!"/>
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/join_button"
                         android:layout_height="wrap_content"
                         android:layout_width="wrap_content"
-                        android:text="Join community" />
+                        android:text="Join community"/>
                 </LinearLayout>
             </LinearLayout>
             <LinearLayout
@@ -197,13 +229,12 @@
                     android:gravity="center">
                     <ImageView
                         android:id="@+id/done_icon"
-                        android:layout_height="175dp"
-                        android:layout_width="175dp"
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
                         android:padding="25dp"
-                        android:src="@drawable/icon_done_all"
-                        android:tint="?colorPrimary"
-                        android:background="@drawable/pic_bg"
-                        android:layout_marginHorizontal="70dp" />
+                        android:adjustViewBounds="true"
+                        android:src="@drawable/intro_illustration_4"
+                        android:layout_marginHorizontal="70dp"/>
                     <TextView
                         android:id="@+id/final_text"
                         android:layout_height="wrap_content"
@@ -213,37 +244,37 @@
                         android:layout_marginHorizontal="30dp"
                         android:textSize="16dp"
                         android:textColor="?colorOnSurface"
-                        android:text="Now that eveything is ready, XMusic will perform an initial songs data load to improve future experience, Click on the start button when you're ready" />
+                        android:text="XMusic now will preload songs for better experience, ready to go?"/>
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/start_button"
                         android:layout_height="wrap_content"
                         android:layout_width="wrap_content"
-                        android:text="Start" />
+                        android:text="Start"/>
                 </LinearLayout>
             </LinearLayout>
-             <LinearLayout
-                    android:id="@+id/part_2_view"
-                    android:layout_height="match_parent"
-                    android:layout_width="match_parent"
-                    android:orientation="vertical"
-                    android:visibility="gone"
-                    android:gravity="center">
-                    <com.google.android.material.loadingindicator.LoadingIndicator
-                        android:layout_height="wrap_content"
-                        android:layout_width="wrap_content"
-                        app:indicatorSize="70dp"
-                        style="@style/Widget.Material3.LoadingIndicator.Contained" />
-                    <TextView
-                        android:id="@+id/loading_text"
-                        android:layout_height="wrap_content"
-                        android:layout_width="wrap_content"
-                        android:gravity="center_horizontal"
-                        android:layout_marginTop="15dp"
-                        android:layout_marginHorizontal="30dp"
-                        android:textSize="16dp"
-                        android:textColor="?colorOnSurface"
-                        android:text="Loading songs...(x loaded)" />
-             </LinearLayout>
+            <LinearLayout
+                android:id="@+id/part_2_view"
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:gravity="center">
+                <com.google.android.material.loadingindicator.LoadingIndicator
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    app:indicatorSize="70dp"
+                    style="@style/Widget.Material3.LoadingIndicator.Contained"/>
+                <TextView
+                    android:id="@+id/loading_text"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_marginTop="15dp"
+                    android:layout_marginHorizontal="30dp"
+                    android:textSize="16dp"
+                    android:textColor="?colorOnSurface"
+                    android:text="Loading songs...(x loaded)"/>
+            </LinearLayout>
         </LinearLayout>
         <LinearLayout
             android:id="@+id/bottom_window"
@@ -277,7 +308,7 @@
                         android:elevation="0dp"
                         app:pressedTranslationZ="0dp"
                         app:useCompatPadding="false"
-                        android:stateListAnimator="@null" />
+                        android:stateListAnimator="@null"/>
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -291,7 +322,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:gravity="center"
-                            android:layout_gravity="center" />
+                            android:layout_gravity="center"/>
                     </FrameLayout>
                     <com.google.android.material.floatingactionbutton.FloatingActionButton
                         android:id="@+id/fab_next"
@@ -307,7 +338,7 @@
                         android:elevation="0dp"
                         app:pressedTranslationZ="0dp"
                         app:useCompatPadding="false"
-                        android:stateListAnimator="@null" />
+                        android:stateListAnimator="@null"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

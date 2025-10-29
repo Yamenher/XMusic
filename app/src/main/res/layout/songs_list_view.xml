@@ -51,9 +51,9 @@
             </LinearLayout>
         </FrameLayout>
         <LinearLayout
-            android:id="@+id/linear3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:padding="8dp"
             android:orientation="vertical">
             <TextView
@@ -79,5 +79,11 @@
                 android:textColor="?colorOutline"
                 android:ellipsize="end" />
         </LinearLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/options_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.Material3Expressive.Button.IconButton.Standard"
+            app:icon="@drawable/ic_dots_vertical" />
     </com.xapps.media.xmusic.widget.CheckableLinearLayout>
 </LinearLayout>

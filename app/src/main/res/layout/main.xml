@@ -19,7 +19,7 @@
             app:navGraph="@navigation/nav_graph"
             app:defaultNavHost="true"
             android:transitionGroup="true"
-            android:layout_weight="1" />
+            android:layout_weight="1"/>
         <View
             android:id="@+id/Scrim"
             android:padding="8dp"
@@ -27,7 +27,7 @@
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:background="#000000"
-            android:alpha="0" />
+            android:alpha="0"/>
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:id="@+id/bottomMixer"
             android:layout_width="match_parent"
@@ -45,8 +45,7 @@
                 app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
                 android:background="@drawable/rounded_corners_bottom_sheet"
                 app:layoutDescription="@xml/motion_scene"
-                tools:showPaths="true"
-                app:behavior_peekHeight="145dp">
+                app:behavior_peekHeight="140dp">
                 <androidx.viewpager2.widget.ViewPager2
                     android:id="@+id/covers_pager"
                     android:layout_width="match_parent"
@@ -69,7 +68,7 @@
                         android:marqueeRepeatLimit="marquee_forever"
                         android:focusable="true"
                         android:focusableInTouchMode="true"
-                        android:scrollHorizontally="true" />
+                        android:scrollHorizontally="true"/>
                     <TextView
                         android:id="@+id/currentSongArtist"
                         android:layout_width="wrap_content"
@@ -83,7 +82,7 @@
                         android:marqueeRepeatLimit="marquee_forever"
                         android:focusable="true"
                         android:focusableInTouchMode="true"
-                        android:scrollHorizontally="true" />
+                        android:scrollHorizontally="true"/>
                 </LinearLayout>
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     android:id="@+id/musicProgress"
@@ -98,7 +97,7 @@
                     app:indicatorColor="?colorPrimary"
                     app:trackThickness="2dp"
                     app:layout_constraintTop_toBottomOf="@+id/covers_pager"
-                    android:elevation="0dp" />
+                    android:elevation="0dp"/>
                 <LinearLayout
                     android:id="@+id/controls_layout"
                     android:layout_width="match_parent"
@@ -129,12 +128,12 @@
                                 android:scaleType="fitCenter"
                                 android:background="@drawable/circle_ripple"
                                 android:src="@drawable/ic_favorite_outlined"
-                                android:tint="?attr/colorOnSurface" />
+                                android:tint="?attr/colorOnSurface"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:orientation="horizontal" >
+                                android:orientation="horizontal">
                                 <LinearLayout
                                     android:id="@+id/texts_layout"
                                     android:layout_width="match_parent"
@@ -157,7 +156,7 @@
                                         android:focusable="true"
                                         android:focusableInTouchMode="true"
                                         android:scrollHorizontally="true"
-                                        android:textColor="?colorOnSurface" />
+                                        android:textColor="?colorOnSurface"/>
                                     <TextView
                                         android:id="@+id/artist_big_title"
                                         android:layout_width="wrap_content"
@@ -173,7 +172,7 @@
                                         android:marqueeRepeatLimit="marquee_forever"
                                         android:scrollHorizontally="true"
                                         android:singleLine="true"
-                                        android:textColor="?colorOutline" />
+                                        android:textColor="?colorOutline"/>
                                 </LinearLayout>
                             </LinearLayout>
                             <ImageView
@@ -185,7 +184,7 @@
                                 android:scaleType="fitCenter"
                                 android:background="@drawable/circle_ripple"
                                 android:src="@drawable/ic_playlist_add"
-                                android:tint="?attr/colorOnSurface" />
+                                android:tint="?attr/colorOnSurface"/>
                         </LinearLayout>
                     </LinearLayout>
                     <com.google.android.material.slider.Slider
@@ -200,7 +199,7 @@
                         app:trackStopIndicatorSize="0dp"
                         app:thumbWidth="4dp"
                         app:thumbHeight="25dp"
-                        app:labelBehavior="gone" />
+                        app:labelBehavior="gone"/>
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -212,14 +211,14 @@
                             android:textSize="13sp"
                             android:layout_marginLeft="12dp"
                             android:textColor="?colorOutline"
-                            android:layout_weight="1" />
+                            android:layout_weight="1"/>
                         <TextView
                             android:id="@+id/total_duration_text"
                             android:layout_height="wrap_content"
                             android:layout_width="wrap_content"
                             android:textSize="13sp"
                             android:layout_marginRight="12dp"
-                            android:textColor="?colorOutline" />
+                            android:textColor="?colorOutline"/>
                     </LinearLayout>
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -236,14 +235,14 @@
                             android:scaleType="fitCenter"
                             android:background="@drawable/circle_ripple"
                             android:src="@drawable/icon_skip_previous_outline"
-                            android:tint="?attr/colorOnSurface" />
+                            android:tint="?attr/colorOnSurface"/>
                         <com.xapps.media.xmusic.widget.PlayerToggle
                             android:id="@+id/toggle_view"
                             android:layout_width="125dp"
                             android:layout_height="125dp"
                             android:layout_marginTop="15dp"
                             android:gravity="center"
-                            android:orientation="vertical" />
+                            android:orientation="vertical"/>
                         <ImageView
                             android:id="@+id/next_button"
                             android:layout_width="60dp"
@@ -254,9 +253,45 @@
                             android:layout_marginStart="10dp"
                             android:background="@drawable/circle_ripple"
                             android:src="@drawable/icon_skip_next_outline"
-                            android:tint="?attr/colorOnSurface" />
+                            android:tint="?attr/colorOnSurface"/>
                     </LinearLayout>
                 </LinearLayout>
+                <androidx.coordinatorlayout.widget.CoordinatorLayout
+                    android:id="@+id/second_coordinator"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <LinearLayout
+                        android:id="@+id/extendable_layout"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:layout_height="match_parent"
+                        android:layout_width="match_parent"
+                        android:orientation="vertical"
+                        app:behavior_peekHeight="85dp"
+                        android:background="@drawable/rounded_corners_bottom_sheet"
+                        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior" 
+                        android:forceHasOverlappingRendering="true" >
+                        <LinearLayout
+                            android:id="@+id/drag_handle"
+                            android:layout_width="65dp"
+                            android:layout_height="4dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_gravity="center_horizontal" 
+                            android:background="@drawable/drag_shape" />
+                        <LinearLayout
+                            android:id="@+id/quick_actions_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/placeholder_1"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checkable="true"
+                                style="@style/Widget.Material3Expressive.Button.IconButton.Standard"
+                                app:icon="@drawable/ic_lyrics_selector" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </androidx.coordinatorlayout.widget.CoordinatorLayout>
             </androidx.constraintlayout.motion.widget.MotionLayout>
             <com.google.android.material.bottomnavigation.BottomNavigationView
                 android:id="@+id/bottomNavigation"

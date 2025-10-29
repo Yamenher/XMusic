@@ -1,0 +1,12 @@
+<resources>
+    <string-array name="material_colors">
+        <item>@color/grad_1</item>
+        <item>@color/grad_2</item>
+        <item>@color/grad_3</item>
+        <item>@color/grad_4</item>
+        <item>@color/grad_5</item>
+        <item>@color/grad_6</item>
+        <item>@color/grad_7</item>
+        <item>@color/grad_8</item>
+    </string-array>
+</resources>

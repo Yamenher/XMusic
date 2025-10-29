@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/nav_songs"
+        android:id="@+id/homeFragment"
         android:icon="@drawable/ic_music_selector"
         android:title="Songs" />
     
     <item
-        android:id="@+id/nav_search"
+        android:id="@+id/searchFragment"
         android:icon="@drawable/ic_search_black_24"
         android:title="Search" />
 
     <item
-        android:id="@+id/nav_settings"
+        android:id="@+id/settingsFragment"
         android:icon="@drawable/ic_settings_selector"
         android:title="Settings" />
     

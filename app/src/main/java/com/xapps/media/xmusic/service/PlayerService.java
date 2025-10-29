@@ -47,7 +47,7 @@ public class PlayerService extends MediaSessionService {
     private final Context c = this;
 	
 	private Bitmap icon;  
-	public static boolean isPlaying;  
+	public static boolean isPlaying, isRunning;  
 	private int currentState;
 	public static String currentTitle;  
 	public static String currentArtist;  
@@ -58,7 +58,7 @@ public class PlayerService extends MediaSessionService {
     public static int currentPosition = 0;
     private boolean isBuilt = false;
     private boolean isNotifDead = true;
-    public static boolean isColorChanged = false;
+    private boolean isColorChanged = false;
     private byte tb[];
     private MediaMetadata mt;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -82,6 +82,9 @@ public class PlayerService extends MediaSessionService {
     private int resId = R.drawable.placeholder;
     private Uri fallbackUri;
     
+    public static Map<String, Integer> lightColors;
+    public static Map<String, Integer> darkColors;
+    
     Player.Commands playerCommands = new Player.Commands.Builder().addAllCommands().build();
     
     @Nullable
@@ -92,7 +95,6 @@ public class PlayerService extends MediaSessionService {
     
     @Override
     public void onTaskRemoved(Intent i) {
-        XUtils.showMessage(this, "okay?");
         ExoPlayerHandler.post(() -> {
             if (!player.isPlaying()) stopSelf();
         });
@@ -100,14 +102,14 @@ public class PlayerService extends MediaSessionService {
 
 	@Override 
 	public void onCreate() {  
-		super.onCreate();  
+		super.onCreate();   
         CustomNotificationProvider cnp = new CustomNotificationProvider(this);
         cnp.setSmallIcon(R.drawable.service_icon);
         setMediaNotificationProvider(cnp);
         handlerThread.start();
         Looper backgroundLooper = handlerThread.getLooper();
 		ExoPlayerHandler = new Handler(backgroundLooper);
-        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON);
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
 		player = new ExoPlayer.Builder(this, renderersFactory).setLooper(backgroundLooper).build();
         if (!isBuilt) {
 		    setupMediaSession();
@@ -140,23 +142,23 @@ public class PlayerService extends MediaSessionService {
 	@Override  
 	public int onStartCommand(Intent intent, int flags, int startId) {  
 		if (intent != null && intent.getAction() != null ) {  
-            if (Build.VERSION.SDK_INT >= 33) {  
-                startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", "") , ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
-            } else {  
-                startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
-            }  
 			if (intent.getAction().equals("ACTION_PLAY")) {  
+                if (Build.VERSION.SDK_INT >= 33) {  
+                    startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", "") , ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
+                } else {  
+                    startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
+                }  
 				isPlaying = true;  
 				String uri = intent.getStringExtra("uri");  
 				String title = intent.getStringExtra("title");  
 				String artist = intent.getStringExtra("artist");  
                 int position = intent.getIntExtra("position", 0);
 				String coverUri = intent.getStringExtra("cover");  
-                currentPosition = position;
 				if (uri != null) {   
 					requestAudioFocus(uri, title, artist, coverUri, position);
 				}  
             } else if (intent.getAction().equals("ACTION_STOP")) {  
+                isPlaying = false;
                 stopForeground(Service.STOP_FOREGROUND_REMOVE);
 				ExoPlayerHandler.post(() -> {
 				    if (player != null && player.isPlaying()) {  
@@ -210,21 +212,13 @@ public class PlayerService extends MediaSessionService {
                 player.pause();
             }
         });
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        executor.execute(() -> {
-            isColorChanged = true;
-            Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
-            tb = toByteArray(transparentBitmap);
-            Bitmap bmp = MainActivity.currentMap.get(position).get("thumbnail") == null? transparentBitmap : loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
-            ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
-                sendDataToActivity("colors");
-            });
-        });
+        currentPosition = position;
+        sendUpdate(false);
         if (mediaItems == null) {
             XUtils.showMessage(getApplicationContext(), "no songs were found on this device");
         } else {
 			ExoPlayerHandler.post(() -> {
-                player.setPlayWhenReady(false);
+                player.setPlayWhenReady(true);
                 player.setMediaItems(mediaItems);
                 player.seekTo(position, 0);
                 player.prepare();
@@ -234,27 +228,18 @@ public class PlayerService extends MediaSessionService {
                     public void onPlaybackStateChanged(int state) {
                         if (state == Player.STATE_READY) {
                             long duration = player.getDuration();
+                            if (!isRunning) {
+                                startUpdates();
+                                isRunning = true;
+                            }
                             lastMax = (int) duration;
-                            startProgressUpdates();
-                            Log.d("DecoderInfo", player.getAudioFormat().toString());
                         }
                     }
+                    
                     @Override
                     public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-                        if (mediaItem != null) {
-                            currentPosition = player.getCurrentMediaItemIndex();
-                        }
-                        if (!isColorChanged) {
-                            ExecutorService executor = Executors.newSingleThreadExecutor();
-                            executor.execute(() -> {
-                                Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
-                                tb = toByteArray(transparentBitmap);
-                                Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(position).get("thumbnail").toString());
-                                ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
-                                    sendDataToActivity("colors");
-                                });
-                            });
-                        }
+                        currentPosition = player.getCurrentMediaItemIndex();
+                        sendUpdate(true);
                     }
                 });
 		    });
@@ -262,6 +247,24 @@ public class PlayerService extends MediaSessionService {
         currentTitle = title;
         currentArtist = artist;
         currentCover = coverUri;
+    }
+    
+    private ExecutorService executor_ = Executors.newSingleThreadExecutor();
+    private long lastUpdate = 0;
+    
+    private void sendUpdate(boolean isFromNotif) {
+        if (System.currentTimeMillis() - lastUpdate < 150) return;
+        lastUpdate = System.currentTimeMillis();
+        executor_.execute(() -> {
+            Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
+            tb = toByteArray(transparentBitmap);
+            Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(currentPosition).get("thumbnail").toString());
+            ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
+                lightColors = light;
+                darkColors = dark;
+                if (isFromNotif) sendDataToActivity("update-cover"); else sendDataToActivity("update"); 
+            });
+        });
     }
     
     private Bitmap loadBitmapFromPath(String uri) {
@@ -293,13 +296,7 @@ public class PlayerService extends MediaSessionService {
         }
     }
 
-    private void startProgressUpdates() {
-        if (isExecutorStarted) {
-            if (currentTask != null && !currentTask.isCancelled()) {
-                currentTask.cancel(true);
-            }
-        }
-
+    private void startUpdates() {
         ExoPlayerHandler.postDelayed(new Runnable() {
             @Override
             public void run(){
@@ -309,10 +306,10 @@ public class PlayerService extends MediaSessionService {
                     Intent progressIntent = new Intent("PLAYER_PROGRESS");
                     progressIntent.putExtra("progress", (int) pos);
                     sendBroadcast(progressIntent);
-                    ExoPlayerHandler.postDelayed(this, 125);
                 }
+                ExoPlayerHandler.postDelayed(this, 50);
             }
-        }, 125);
+        }, 50);
 
         isExecutorStarted = true;
     }
@@ -576,6 +573,12 @@ public class PlayerService extends MediaSessionService {
     }
 
     public void sendDataToActivity(String data) {
-        if (callback != null) callback.onData(data);
+        mainHandler.post(() -> {
+            if (callback != null) callback.onData(data);
+        });
+    }
+
+    public static int getCurrentPos() {
+        return currentPosition;
     }
 }

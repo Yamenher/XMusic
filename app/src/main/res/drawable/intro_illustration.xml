@@ -11,7 +11,7 @@
             android:translateY="-0.134">
             <path
                 android:pathData="M312.471 78.134a32.036 32.036 0 0 0 -32 32V788.562a32.036 32.036 0 0 0 32 32h297a32.037 32.037 0 0 0 32 -32V110.134a32.036 32.036 0 0 0 -32 -32Z"
-                android:fillColor="?colorSurfaceContainerHigh" />
+                android:fillColor="?colorSurfaceVariant" /> <!-- entire phone frame -->
         </group>
         <group
             android:translateX="-0.018"
@@ -46,63 +46,63 @@
             android:translateY="-0.134">
             <path
                 android:pathData="M601.63 610.915h-270a5.006 5.006 0 0 1 -5 -5V538.94a5.006 5.006 0 0 1 5 -5h270a5.006 5.006 0 0 1 5 5v66.976A5.006 5.006 0 0 1 601.63 610.915Zm-270 -74.976a3 3 0 0 0 -3 3v66.976a3 3 0 0 0 3 3h270a3 3 0 0 0 3 -3V538.94a3 3 0 0 0 -3 -3Z"
-                android:fillColor="?colorOutline" />
+                android:fillColor="?colorOutline" /> <!-- item 1 outline -->
         </group>
         <group
             android:translateX="345.611"
             android:translateY="551.293">
             <path
                 android:pathData="M42 21A21 21 0 0 1 0 21A21 21 0 0 1 42 21Z"
-                android:fillColor="?colorSurfaceContainerHigh" />
+                android:fillColor="?colorOutline" /> <!-- item 1 circle -->
         </group>
         <group
             android:translateX="-0.018"
             android:translateY="-0.134">
             <path
                 android:pathData="M415.129 558.427a3.5 3.5 0 0 0 0 7h165a3.5 3.5 0 1 0 0 -7Z"
-                android:fillColor="?colorOutline" />
+                android:fillColor="?colorOutline" /> <!-- item 1 first line -->
         </group>
         <group
             android:translateX="-0.018"
             android:translateY="-0.134">
             <path
                 android:pathData="M415.129 579.427a3.5 3.5 0 0 0 0 7h165a3.5 3.5 0 1 0 0 -7Z"
-                android:fillColor="?colorOutline" />
+                android:fillColor="?colorOutline" /> <!-- item 1 second line -->
         </group>
         <group
             android:translateX="-0.018"
             android:translateY="-0.134">
             <path
                 android:pathData="M601.63 722.915h-270a5.006 5.006 0 0 1 -5 -5V650.94a5.006 5.006 0 0 1 5 -5h270a5.006 5.006 0 0 1 5 5v66.976A5.006 5.006 0 0 1 601.63 722.915Zm-270 -74.976a3 3 0 0 0 -3 3v66.976a3 3 0 0 0 3 3h270a3 3 0 0 0 3 -3V650.94a3 3 0 0 0 -3 -3Z"
-                android:fillColor="?colorOutline" />
+                android:fillColor="?colorOutline" /> <!-- item 2 outline -->
         </group>
         <group
             android:translateX="345.611"
             android:translateY="663.293">
             <path
                 android:pathData="M42 21A21 21 0 0 1 0 21A21 21 0 0 1 42 21Z"
-                android:fillColor="?colorSurfaceContainerHigh" />
+                android:fillColor="?colorOutline" /> <!-- item 2 circle -->
         </group>
         <group
             android:translateX="-0.018"
             android:translateY="-0.134">
             <path
                 android:pathData="M415.129 670.427a3.5 3.5 0 0 0 0 7h165a3.5 3.5 0 1 0 0 -7Z"
-                android:fillColor="?colorOutline" />
+                android:fillColor="?colorOutline" /> <!-- item 2 first line -->
         </group>
         <group
             android:translateX="-0.018"
             android:translateY="-0.134">
             <path
                 android:pathData="M415.129 691.427a3.5 3.5 0 0 0 0 7h165a3.5 3.5 0 1 0 0 -7Z"
-                android:fillColor="?colorOutline" />
+                android:fillColor="?colorOutline" /> <!-- item 2 second line -->
         </group>
         <group
             android:translateX="-0.018"
             android:translateY="0.07">
             <path
                 android:pathData="M460.947 471.93a94.96 94.96 0 0 1 -95 -95c0 -0.2 0 -0.408 0.012 -0.607 0.291 -52.025 42.9 -94.393 94.988 -94.393a95 95 0 1 1 0 190Zm0 -188a93.2 93.2 0 0 0 -92.99 92.456c-0.011 0.212 -0.01 0.383 -0.01 0.544a93.012 93.012 0 1 0 93 -93Z"
-                android:fillColor="?colorSurfaceContainerHigh" />
+                android:fillColor="?colorOutline" /> <!-- play button outline -->
         </group>
         <group
             android:translateX="-0.018"
@@ -116,7 +116,7 @@
             android:translateY="78">
             <path
                 android:pathData="M757.569 743.732H0v-2.181H757.964Z"
-                android:fillColor="?colorSurfaceContainerHigh" />
+                android:fillColor="?colorOutline" />
         </group>
         <group
             android:translateX="-869.284"
@@ -147,7 +147,7 @@
                 android:translateY="-396.88">
                 <path
                     android:pathData="M812.885 719.943l-46.1 0V718.8a18.069 18.069 0 0 1 18.07 -18.069h28.031Z"
-                    android:fillColor="?colorSurfaceContainerHigh" />
+                    android:fillColor="?colorOutlineVariant" />
             </group>
             <group
                 android:translateX="1098.774"
@@ -161,14 +161,14 @@
                 android:translateY="-406.599">
                 <path
                     android:pathData="M848.632 729.873l-0.582 -0.977a18.07 18.07 0 0 1 6.281 -24.77l24.085 -14.341 9.826 16.5Z"
-                    android:fillColor="?colorSurfaceContainerHigh" />
+                    android:fillColor="?colorOutlineVariant" />
             </group>
             <group
                 android:translateX="832.083"
                 android:translateY="-525.133">
                 <path
                     android:pathData="M780.531 810.423c-9.341 -109.994 -14.9 -212.178 19.25 -253.862l0.264 -0.323 57.468 22.988 0.095 0.205c0.194 0.422 19.306 42.463 14.848 70.741l14.175 65.206 46.219 77.391a5.12 5.12 0 0 1 -2.333 7.311l-20.086 8.837a5.142 5.142 0 0 1 -6.424 -2.008L853.73 724.923l-28.4 -62.883a1.706 1.706 0 0 0 -3.252 0.522L806.338 810.535a5.109 5.109 0 0 1 -5.089 4.577H785.633A5.153 5.153 0 0 1 780.531 810.423Z"
-                    android:fillColor="?colorSurfaceContainerHigh" />
+                    android:fillColor="?colorOutlineVariant" />
             </group>
             <group
                 android:translateX="844.072"
@@ -189,14 +189,14 @@
                 android:translateY="-595.791">
                 <path
                     android:pathData="M795.454 500.188h44.359V480.852c-9.736 -3.868 -19.264 -7.158 -25.023 0a19.336 19.336 0 0 0 -19.336 19.336Z"
-                    android:fillColor="?colorSurfaceContainerHigh" />
+                    android:fillColor="#2B3137" />
             </group>
             <group
                 android:translateX="857.69"
                 android:translateY="-595.41">
                 <path
                     android:pathData="M836.215 477.059c26.519 0 33.941 33.24 33.941 51.993 0 10.458 -4.729 14.2 -12.162 15.464l-2.625 -14 -6.147 14.6c-2.088 0.01 -4.281 -0.03 -6.555 -0.072l-2.084 -4.292 -4.648 4.215c-18.616 0.028 -33.661 2.741 -33.661 -15.917C802.274 510.3 808.784 477.059 836.215 477.059Z"
-                    android:fillColor="?colorSurfaceContainerHigh" />
+                    android:fillColor="#2B3137" />
             </group>
         </group>
         <group

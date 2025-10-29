@@ -5,14 +5,12 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.transition.MaterialSharedAxis;
 
 public class BaseFragment extends Fragment {
-
     @Override
     public void onCreate(Bundle b) {
-        super.onCreate(b);
-        setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
+        super.onCreate(null);
+        setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
         setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
         setExitTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        setReenterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
+        setReenterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
     }
-
 }

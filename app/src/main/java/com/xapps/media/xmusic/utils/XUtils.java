@@ -164,4 +164,8 @@ public class XUtils {
             break;
         }
     }
+
+    public static int normalizeColor(int color) {
+        return color | 0xFF000000;
+    }
 }

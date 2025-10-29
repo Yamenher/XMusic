@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 public class SongMetadataHelper {
 	
 	private static final String CACHE_DIR_NAME = "covers";
-    private static final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	
 	public static void getAllSongs(Context context, SongLoadListener listener) {
 
@@ -98,9 +98,7 @@ public class SongMetadataHelper {
             }));
 
             count++;
-            if (listener != null) {
-                listener.onProgress(count);
-            }
+            
         }
         cursor.close();
 
@@ -109,7 +107,7 @@ public class SongMetadataHelper {
                 HashMap<String, Object> songMap = future.get();
                 songListMap.add(songMap);
                 if (listener != null) {
-                    listener.onProgress(songListMap.size());
+                    listener.onProgress(songListMap, songListMap.size());
                 }
             } catch (ExecutionException | InterruptedException e) {
                 Log.e("SongMetadataHelper", "Error processing song", e);
@@ -137,7 +135,7 @@ public class SongMetadataHelper {
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inJustDecodeBounds = true;
                 BitmapFactory.decodeByteArray(coverArt, 0, coverArt.length, options);
-                options.inSampleSize = calculateInSampleSize(options, 1000, 1000);
+                options.inSampleSize = calculateInSampleSize(options, 750, 750);
                 options.inJustDecodeBounds = false;
                 Bitmap bitmap = BitmapFactory.decodeByteArray(coverArt, 0, coverArt.length, options);
                 if (bitmap != null) {

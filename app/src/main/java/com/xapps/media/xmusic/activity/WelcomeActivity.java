@@ -13,6 +13,7 @@ import android.widget.FrameLayout;
 import android.widget.TextSwitcher;
 import android.widget.TextView;
 import androidx.activity.BackEventCompat;
+import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -46,7 +47,7 @@ public class WelcomeActivity extends AppCompatActivity {
     
     private ActivityWelcomeBinding binding;
     private int currentPage = 1;
-    private int MAX_PAGE_COUNT = 5;
+    private int MAX_PAGE_COUNT = 4;
     private OnBackPressedCallback callback1, callback2, callback3, callback4, nullcallback;
     private boolean notificationsAllowed, audiAccessAllowed, storageReadAllowed;
     private TransitionSeekController seekController;
@@ -58,8 +59,9 @@ public class WelcomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityWelcomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        binding.progressBar.setProgress(0);
+        EdgeToEdge.enable(this);
         MaterialColorUtils.initColors(this);
+        checkSDK();
         setupInsets();
         setupClickListeners();
         setupCallbacks();
@@ -67,25 +69,11 @@ public class WelcomeActivity extends AppCompatActivity {
         setupPermsLaunchers();
     }
     
+    
     @Override
     public void onResume() {
         super.onResume();
-        if (Build.VERSION.SDK_INT >= 33) {
-            boolean b1 = checkPermissionAllowed(this, Manifest.permission.READ_MEDIA_AUDIO);
-            boolean b2 = checkPermissionAllowed(this, Manifest.permission.POST_NOTIFICATIONS);
-            audiAccessAllowed = b1;
-            binding.permission1Button.setEnabled(!b1);
-            binding.permission1Button.setText(b1? "Permission Granted" : "Grant permission");
-            notificationsAllowed = b2;
-            binding.permission2Button.setEnabled(!b2);
-            binding.permission2Button.setText(b2? "Permission Granted" : "Grant permission");
-        } else {
-            boolean b3 = checkPermissionAllowed(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-            storageReadAllowed = b3;
-            binding.permission1Button.setEnabled(!b3);
-            binding.permission1Button.setText(b3? "Permission Granted" : "Grant permission");
-            
-        }
+        checkPerms();
     }
 
     private void setupInsets() {
@@ -110,7 +98,7 @@ public class WelcomeActivity extends AppCompatActivity {
                 executor.execute(() -> {
                     SongMetadataHelper.getAllSongs(this, new SongLoadListener(){
                         @Override
-                        public void onProgress(int count) {
+                        public void onProgress(java.util.ArrayList<HashMap<String, Object>> songs, int count) {
                             runOnUiThread(() -> {
                                 binding.loadingText.setText("Loading songs...($1 loaded)".replace("$1", String.valueOf(count)));
                             });
@@ -148,7 +136,7 @@ public class WelcomeActivity extends AppCompatActivity {
             startActivity(i);
         });
         
-        binding.permission1Button.setOnClickListener(v -> {
+        binding.firstGrantButton.setOnClickListener(v -> {
             if (Build.VERSION.SDK_INT >= 33) { 
                 requestPermissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO);
             } else {
@@ -156,7 +144,7 @@ public class WelcomeActivity extends AppCompatActivity {
             }     
         });
         
-        binding.permission2Button.setOnClickListener(v -> {
+        binding.secondGrantButton.setOnClickListener(v -> {
             if (Build.VERSION.SDK_INT >= 33) { 
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
             }
@@ -169,29 +157,19 @@ public class WelcomeActivity extends AppCompatActivity {
             switch (currentPage) {
                 case 2:
                 binding.progressText.setText("Step 1/3");
-                binding.progressBar.setProgressCompat(15, true);
                 binding.firstScreen.setVisibility(View.GONE);
                 binding.secondScreen.setVisibility(View.VISIBLE);
                 break;
                 
                 case 3:
                 binding.progressText.setText("Step 2/3");
-                binding.progressBar.setProgressCompat(40, true);
                 binding.secondScreen.setVisibility(View.GONE);
                 binding.thirdScreen.setVisibility(View.VISIBLE);
                 break;
                 
                 case 4:
                 binding.progressText.setText("Step 3/3");
-                binding.progressBar.setProgressCompat(70, true);
                 binding.thirdScreen.setVisibility(View.GONE);
-                binding.fourthScreen.setVisibility(View.VISIBLE);
-                break;
-                
-                case 5:
-                binding.progressText.setText("All set!");
-                binding.progressBar.setProgressCompat(100, true);
-                binding.fourthScreen.setVisibility(View.GONE);
                 binding.finalScreen.setVisibility(View.VISIBLE);
                 break;
             }
@@ -207,28 +185,18 @@ public class WelcomeActivity extends AppCompatActivity {
                 binding.progressText.setText("Let's start!");
                 binding.firstScreen.setVisibility(View.VISIBLE);
                 binding.secondScreen.setVisibility(View.GONE);
-                binding.progressBar.setProgressCompat(0, true);
                 break;
                 
                 case 2:
                 binding.progressText.setText("Step 1/3");
                 binding.secondScreen.setVisibility(View.VISIBLE);
                 binding.thirdScreen.setVisibility(View.GONE);
-                binding.progressBar.setProgressCompat(15, true);
                 break;
                 
                 case 3:
                 binding.progressText.setText("Step 2/3");
                 binding.thirdScreen.setVisibility(View.VISIBLE);
-                binding.fourthScreen.setVisibility(View.GONE);
-                binding.progressBar.setProgressCompat(40, true);
-                break;
-                
-                case 4:
-                binding.progressText.setText("Step 3/3");
-                binding.fourthScreen.setVisibility(View.VISIBLE);
                 binding.finalScreen.setVisibility(View.GONE);
-                binding.progressBar.setProgressCompat(70, true);
                 break;
             }
             checkPage();
@@ -250,28 +218,19 @@ public class WelcomeActivity extends AppCompatActivity {
         if (currentPage == 1) {
             callback1.setEnabled(false);
             callback2.setEnabled(false);
-            callback3.setEnabled(false);
             callback4.setEnabled(false);
         } else if (currentPage == 2) {
             callback1.setEnabled(true);
             callback2.setEnabled(false);
-            callback3.setEnabled(false);
             callback4.setEnabled(false);
         } else if (currentPage == 3) {
             callback2.setEnabled(true);
             callback1.setEnabled(false);
-            callback3.setEnabled(false);
             callback4.setEnabled(false);
         } else if (currentPage == 4) {
-            callback3.setEnabled(true);
-            callback2.setEnabled(false);
-            callback1.setEnabled(false);
-            callback4.setEnabled(false);
-        } else if (currentPage == 5) {
-            callback3.setEnabled(false);
-            callback2.setEnabled(false);
-            callback1.setEnabled(false);
             callback4.setEnabled(true);
+            callback2.setEnabled(false);
+            callback1.setEnabled(false);
         }
     }
 
@@ -291,7 +250,6 @@ public class WelcomeActivity extends AppCompatActivity {
                 if (seekController != null && seekController.isReady() && backEvent.getProgress() > 0.01f) {
                     float progress = backEvent.getProgress();
                     seekController.setCurrentFraction(progress);
-                    binding.progressBar.setProgressCompat(Math.round(15-15*2*progress), true);
                 }
             }
 
@@ -306,14 +264,12 @@ public class WelcomeActivity extends AppCompatActivity {
                 currentPage--;
                 checkPage();
                 callback1.setEnabled(false);
-                binding.progressBar.setProgressCompat(0, true);
                 binding.progressText.setText("Let's start!");
             }
 
             @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
             @Override
             public void handleOnBackCancelled() {
-                binding.progressBar.setProgressCompat(15, true);
                 binding.firstScreen.setVisibility(View.INVISIBLE);
                 MaterialSharedAxis msa = new MaterialSharedAxis(MaterialSharedAxis.X, false);
                 msa.setDuration(0);
@@ -340,7 +296,6 @@ public class WelcomeActivity extends AppCompatActivity {
                 if (seekController != null && seekController.isReady() && backEvent.getProgress() > 0.01f) {
                     float progress = backEvent.getProgress();
                     seekController.setCurrentFraction(progress);
-                    binding.progressBar.setProgressCompat(Math.round(40-25*progress), true);
                 }
             }
 
@@ -355,7 +310,6 @@ public class WelcomeActivity extends AppCompatActivity {
                 currentPage--;
                 checkPage();
                 callback2.setEnabled(false);
-                binding.progressBar.setProgressCompat(15, true);
                 binding.progressText.setText("Step 1/3");
                     
             }
@@ -363,7 +317,6 @@ public class WelcomeActivity extends AppCompatActivity {
             @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
             @Override
             public void handleOnBackCancelled() {
-                binding.progressBar.setProgressCompat(40, true);
                 binding.secondScreen.setVisibility(View.INVISIBLE);
                 MaterialSharedAxis msa = new MaterialSharedAxis(MaterialSharedAxis.X, false);
                 msa.setDuration(0);
@@ -380,7 +333,7 @@ public class WelcomeActivity extends AppCompatActivity {
             @Override
             public void handleOnBackStarted(BackEventCompat backEvent) {
                 seekController = TransitionManager.controlDelayedTransition(binding.coordinator, new MaterialSharedAxis(MaterialSharedAxis.X, false));
-                binding.fourthScreen.setVisibility(View.VISIBLE);
+                binding.thirdScreen.setVisibility(View.VISIBLE);
                 binding.finalScreen.setVisibility(View.GONE);
             }
 
@@ -390,7 +343,6 @@ public class WelcomeActivity extends AppCompatActivity {
                 if (seekController != null && seekController.isReady() && backEvent.getProgress() > 0.01f) {
                     float progress = backEvent.getProgress();
                     seekController.setCurrentFraction(progress);
-                    binding.progressBar.setProgressCompat(Math.round(100-30*progress), true);
                 }
             }
 
@@ -405,7 +357,6 @@ public class WelcomeActivity extends AppCompatActivity {
                 currentPage--;
                 checkPage();
                 callback4.setEnabled(false);
-                binding.progressBar.setProgressCompat(70, true);
                 binding.progressText.setText("Step 3/3");
                     
             }
@@ -413,67 +364,16 @@ public class WelcomeActivity extends AppCompatActivity {
             @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
             @Override
             public void handleOnBackCancelled() {
-                binding.progressBar.setProgressCompat(100, true);
-                binding.fourthScreen.setVisibility(View.INVISIBLE);
-                MaterialSharedAxis msa = new MaterialSharedAxis(MaterialSharedAxis.X, false);
-                msa.setDuration(0);
-                TransitionManager.beginDelayedTransition(binding.coordinator, msa);
-                binding.fourthScreen.setVisibility(View.GONE);
-                binding.finalScreen.setVisibility(View.VISIBLE);
-            }
-        };
-
-        getOnBackPressedDispatcher().addCallback(this, callback4);
-        
-        callback3 = new OnBackPressedCallback(false) {
-            @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-            @Override
-            public void handleOnBackStarted(BackEventCompat backEvent) {
-                seekController = TransitionManager.controlDelayedTransition(binding.coordinator, new MaterialSharedAxis(MaterialSharedAxis.X, false));
-                binding.thirdScreen.setVisibility(View.VISIBLE);
-                binding.fourthScreen.setVisibility(View.GONE);
-            }
-
-            @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-            @Override
-            public void handleOnBackProgressed(BackEventCompat backEvent) {
-                if (seekController != null && seekController.isReady() && backEvent.getProgress() > 0.01f) {
-                    float progress = backEvent.getProgress();
-                    seekController.setCurrentFraction(progress);
-                    binding.progressBar.setProgressCompat(Math.round(70-30*progress), true);
-                }
-            }
-
-            @Override
-            public void handleOnBackPressed() {
-                if (seekController != null) {
-                    seekController.animateToEnd();
-                    seekController = null;
-                }
-                MaterialSharedAxis msa = new MaterialSharedAxis(MaterialSharedAxis.X, false);
-                TransitionManager.beginDelayedTransition(binding.coordinator, msa);
-                currentPage--;
-                checkPage();
-                callback3.setEnabled(false);
-                binding.progressBar.setProgressCompat(40, true);
-                binding.progressText.setText("Step 2/3");
-                    
-            }
-
-            @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-            @Override
-            public void handleOnBackCancelled() {
-                binding.progressBar.setProgressCompat(40, true);
                 binding.thirdScreen.setVisibility(View.INVISIBLE);
                 MaterialSharedAxis msa = new MaterialSharedAxis(MaterialSharedAxis.X, false);
                 msa.setDuration(0);
                 TransitionManager.beginDelayedTransition(binding.coordinator, msa);
                 binding.thirdScreen.setVisibility(View.GONE);
-                binding.fourthScreen.setVisibility(View.VISIBLE);
+                binding.finalScreen.setVisibility(View.VISIBLE);
             }
         };
 
-        getOnBackPressedDispatcher().addCallback(this, callback3);
+        getOnBackPressedDispatcher().addCallback(this, callback4);
         
         nullcallback = new OnBackPressedCallback(false) {
             @Override
@@ -496,22 +396,7 @@ public class WelcomeActivity extends AppCompatActivity {
 
     public void setupPermsLaunchers() {
         requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-            if (Build.VERSION.SDK_INT >= 33) {
-                boolean b1 = checkPermissionAllowed(this, Manifest.permission.READ_MEDIA_AUDIO);
-                boolean b2 = checkPermissionAllowed(this, Manifest.permission.POST_NOTIFICATIONS);
-                audiAccessAllowed = b1;
-                binding.permission1Button.setEnabled(!b1);
-                binding.permission1Button.setText(b1? "Permission Granted" : "Grant permission");
-                notificationsAllowed = b2;
-                binding.permission2Button.setEnabled(!b2);
-                binding.permission2Button.setText(b2? "Permission Granted" : "Grant permission");
-            } else {
-                boolean b3 = checkPermissionAllowed(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-                storageReadAllowed = b3;
-                binding.permission1Button.setEnabled(!b3);
-                binding.permission1Button.setText(b3? "Permission Granted" : "Grant permission");
-            
-            }
+            checkPerms();
         });
     }
 
@@ -521,6 +406,44 @@ public class WelcomeActivity extends AppCompatActivity {
             return true;
         } else {
             return false;
+        }
+    }
+
+    public void checkPerms() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            boolean b1 = checkPermissionAllowed(this, Manifest.permission.READ_MEDIA_AUDIO);
+            boolean b2 = checkPermissionAllowed(this, Manifest.permission.POST_NOTIFICATIONS);
+            audiAccessAllowed = b1;
+            binding.firstGrantButton.setEnabled(!b1);
+            binding.firstGrantButton.setText(b1? "Granted" : "Grant");
+            notificationsAllowed = b2;
+            binding.secondGrantButton.setEnabled(!b2);
+            binding.secondGrantButton.setText(b2? "Granted" : "Grant");
+        } else {
+            boolean b3 = checkPermissionAllowed(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+            storageReadAllowed = b3;
+            binding.firstGrantButton.setEnabled(!b3);
+            binding.firstGrantButton.setText(b3? "Granted" : "Grant");
+            
+        }
+    }
+
+    public void checkSDK() {
+        if (Build.VERSION.SDK_INT <= 29) {
+            binding.firstTitle.setText("Allow reading storage");
+            binding.firstDesc.setText("Needed to find media on your device");
+            binding.secondTitle.setText("Allow writing to storage");
+            binding.secondDesc.setText("Needed to manage your songs");
+        } else if (30 <= Build.VERSION.SDK_INT && Build.VERSION.SDK_INT <= 32) {
+            binding.firstTitle.setText("allow all files access");
+            binding.firstDesc.setText("Needed to read and manage your songs");
+            binding.firstItem.setBackground(ContextCompat.getDrawable(this, R.drawable.checkable_background_round));
+            binding.secondItem.setVisibility(View.GONE);
+        } else {
+            binding.firstTitle.setText("Allow media access");
+            binding.firstDesc.setText("Needed to find media on your device");
+            binding.secondTitle.setText("Allow notification permission");
+            binding.secondDesc.setText("Needed to make Playback notification accessible via lock screen");
         }
     }
 }
