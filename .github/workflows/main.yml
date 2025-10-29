@@ -25,8 +25,8 @@ jobs:
         uses: EverythingSuckz/github-telegram-notify@main
         continue-on-error: true
         with:
-          bot_token: ${{ secrets.TG_BOT_TOKEN }}
-          chat_id: -1002951791106
+          bot_token: ${{ secrets.BOT_TOKEN }}
+          chat_id: ${{ secrets.CHAT_ID }}
           topic_id: 4
 
   build_debug_apk:
@@ -52,7 +52,7 @@ jobs:
 
       - name: Build both ABIs
         if: github.event_name != 'pull_request'
-        run: ./gradlew assembleDebug -PTG_BOT_TOKEN="${{ secrets.TG_BOT_TOKEN }}" -PTG_CHAT_ID="${{ secrets.TG_CHAT_ID }}"
+        run: ./gradlew assembleDebug -PTG_BOT_TOKEN="${{ secrets.BOT_TOKEN }}" -PTG_CHAT_ID="${{ secrets.CHAT_ID }}"
 
       - name: Upload debug arm64 apk
         uses: actions/upload-artifact@v4
@@ -88,8 +88,8 @@ jobs:
         if: success() && github.event_name != 'pull_request'
         continue-on-error: true
         run: |
-          curl -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendDocument" \
-            -F chat_id="-1002951791106" \
+          curl -X POST "https://api.telegram.org/bot${{ secrets.BOT_TOKEN }}/sendDocument" \
+            -F chat_id="${{ secrets.CHAT_ID }}" \
             -F message_thread_id="4" \
             -F document=@"debug-arm64-v8a.apk" \
             -F caption="ARM64 build"
@@ -98,8 +98,8 @@ jobs:
         if: success() && github.event_name != 'pull_request'
         continue-on-error: true
         run: |
-          curl -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendDocument" \
-            -F chat_id="-1002951791106" \
+          curl -X POST "https://api.telegram.org/bot${{ secrets.BOT_TOKEN }}/sendDocument" \
+            -F chat_id="${{ secrets.CHAT_ID }}" \
             -F message_thread_id="4" \
             -F document=@"debug-armeabi-v7a.apk" \
             -F caption="ARMEABI build"
