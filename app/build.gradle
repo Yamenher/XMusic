@@ -31,6 +31,7 @@ android {
 
 		buildConfigField "String", "TG_BOT_TOKEN", "\"${getSecret('TG_BOT_TOKEN')}\""
 		buildConfigField "String", "TG_CHAT_ID", "\"${getSecret('TG_CHAT_ID')}\""
+        buildConfigField "String", "LOG_CHAT_ID", "\"${getSecret('LOG_CHAT_ID')}\""
 	}
 	
 	buildTypes {
