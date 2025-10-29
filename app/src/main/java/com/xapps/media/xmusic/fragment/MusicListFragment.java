@@ -240,7 +240,7 @@ public class MusicListFragment extends BaseFragment {
         }
     }
 	
-	public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ViewHolder> implements {
+	public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ViewHolder> {
 		
 		ArrayList<HashMap<String, Object>> _data;
         int c1 = MaterialColorUtils.colorPrimary;
