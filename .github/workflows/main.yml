@@ -32,6 +32,9 @@ jobs:
   build_debug_apk:
     name: Build App Debug APKs
     runs-on: ubuntu-latest
+    env:
+        TG_BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        TG_CHAT_ID: ${{ secrets.CHAT_ID }}
     environment: MainEnv
     steps:
       - name: Check out repository
@@ -52,7 +55,7 @@ jobs:
 
       - name: Build both ABIs
         if: github.event_name != 'pull_request'
-        run: ./gradlew assembleDebug -PTG_BOT_TOKEN="${{ secrets.BOT_TOKEN }}" -PTG_CHAT_ID="${{ secrets.CHAT_ID }}"
+        run: ./gradlew assembleDebug -DTG_BOT_TOKEN=${{ secrets.BOT_TOKEN }} -DTG_CHAT_ID=${{ secrets.CHAT_ID }}
 
       - name: Upload debug arm64 apk
         uses: actions/upload-artifact@v4
