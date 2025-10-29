@@ -25,9 +25,7 @@ public class XApplication extends Application {
             try {
                 sendToTelegram(report, 634);
             } catch (Exception e) {
-                new Thread(() -> 
-                    Toast.makeText(getApplicationContext(), "Crash report failed", Toast.LENGTH_SHORT).show()
-                ).start();
+                    Toast.makeText(getApplicationContext(), "Crash report failed", Toast.LENGTH_SHORT).show();
             }
 
             Thread.getDefaultUncaughtExceptionHandler().uncaughtException(thread, throwable);

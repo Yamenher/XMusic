@@ -4,12 +4,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/_coordinator"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="?colorSurface">
+    android:layout_height="match_parent">
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:background="?colorSurface">
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/fragmentsContainer"
             android:layout_width="match_parent"

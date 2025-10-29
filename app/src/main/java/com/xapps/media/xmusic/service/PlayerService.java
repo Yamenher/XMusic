@@ -41,9 +41,7 @@ public class PlayerService extends MediaSessionService {
 	
 	private static final String CHANNEL_ID = "music_channel";  
 	private static final int NOTIFICATION_ID = 1;  
-	private static final String ACTION_PLAY = "ACTION_PLAY";  
-	
-	public static ExoPlayer player;  
+	public static ExoPlayer player;   
 	private Handler handler;  
 	private Runnable updateProgressRunnable;  
     private final Context c = this;
@@ -78,30 +76,44 @@ public class PlayerService extends MediaSessionService {
     private android.media.AudioFocusRequest audioFocusRequest;
     private boolean wasPausedDueToFocus = false;
     
-    private static final SessionCommand customCommandSeekBackward = new SessionCommand("custom_seek_backward", Bundle.EMPTY);
-    private static final SessionCommand customCommandSeekForward = new SessionCommand("custom_seek_forward", Bundle.EMPTY);
-    
     private final IBinder binder = new LocalBinder();
     private Callback callback;
     
     private int resId = R.drawable.placeholder;
     private Uri fallbackUri;
     
+    Player.Commands playerCommands = new Player.Commands.Builder().addAllCommands().build();
+    
     @Nullable
     @Override
     public MediaSession onGetSession(@NonNull ControllerInfo controllerInfo) {
         return mediaSession; 
     }
+    
+    @Override
+    public void onTaskRemoved(Intent i) {
+        XUtils.showMessage(this, "okay?");
+        ExoPlayerHandler.post(() -> {
+            if (!player.isPlaying()) stopSelf();
+        });
+    }
 
 	@Override 
 	public void onCreate() {  
 		super.onCreate();  
-        fallbackUri = Uri.parse("android.resource://" + this.getPackageName() + "/" + resId);
+        CustomNotificationProvider cnp = new CustomNotificationProvider(this);
+        cnp.setSmallIcon(R.drawable.service_icon);
+        setMediaNotificationProvider(cnp);
         handlerThread.start();
         Looper backgroundLooper = handlerThread.getLooper();
 		ExoPlayerHandler = new Handler(backgroundLooper);
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON);
 		player = new ExoPlayer.Builder(this, renderersFactory).setLooper(backgroundLooper).build();
+        if (!isBuilt) {
+		    setupMediaSession();
+            isBuilt = true;
+        }
+        fallbackUri = Uri.parse("android.resource://" + this.getPackageName() + "/" + resId);
         androidx.media3.common.AudioAttributes attrs = new androidx.media3.common.AudioAttributes.Builder()
         .setUsage(C.USAGE_MEDIA)
         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
@@ -110,31 +122,29 @@ public class PlayerService extends MediaSessionService {
             player.setAudioAttributes(attrs, true);
         });
 		handler = new Handler(Looper.getMainLooper());  
-        if (!isBuilt) {
-		    setupMediaSession();
-            isBuilt = true;
-        }
         isNotifDead = false;
 		createNotificationChannel();  
 		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         setupAudioFocusRequest();
-        setMediaNotificationProvider(new CustomNotificationProvider(this));
-        if (Build.VERSION.SDK_INT >= 33) {  
-			startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", "") , ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
-		} else {  
-			startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
-		}  
 	}  
 	
 	@Nullable  
 	@Override  
 	public IBinder onBind(Intent intent) {  
+        if (intent.getAction() == MediaSessionService.SERVICE_INTERFACE) {
+            return super.onBind(intent);
+        }
 		return binder;
 	}  
 	
 	@Override  
 	public int onStartCommand(Intent intent, int flags, int startId) {  
 		if (intent != null && intent.getAction() != null ) {  
+            if (Build.VERSION.SDK_INT >= 33) {  
+                startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", "") , ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
+            } else {  
+                startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
+            }  
 			if (intent.getAction().equals("ACTION_PLAY")) {  
 				isPlaying = true;  
 				String uri = intent.getStringExtra("uri");  
@@ -147,18 +157,13 @@ public class PlayerService extends MediaSessionService {
 					requestAudioFocus(uri, title, artist, coverUri, position);
 				}  
             } else if (intent.getAction().equals("ACTION_STOP")) {  
+                stopForeground(Service.STOP_FOREGROUND_REMOVE);
 				ExoPlayerHandler.post(() -> {
 				    if (player != null && player.isPlaying()) {  
 					    player.stop();  
 					    player.clearMediaItems();
 				    }  
 				});
-				if (mediaSession != null) {
-                        mediaSession.release();
-                        mediaSession = null;
-                }
-                isPlaying = false;
-				stopForeground(Service.STOP_FOREGROUND_REMOVE);
 			} else if (intent.getAction().equals("ACTION_PAUSE")) {  
 				isPlaying = false;  
                 ExoPlayerHandler.post(() -> {
@@ -200,9 +205,12 @@ public class PlayerService extends MediaSessionService {
 	} 
 
     private void playMedia(String uri, String title, String artist, String coverUri, int position) {
-        
-        //updateNotification(title, artist, coverUri);*/
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExoPlayerHandler.post(() -> {
+            if (player.isPlaying()) {
+                player.pause();
+            }
+        });
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         executor.execute(() -> {
             isColorChanged = true;
             Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
@@ -216,10 +224,7 @@ public class PlayerService extends MediaSessionService {
             XUtils.showMessage(getApplicationContext(), "no songs were found on this device");
         } else {
 			ExoPlayerHandler.post(() -> {
-                if (player.isPlaying()) {
-                    player.pause();
-                }
-				player.setRepeatMode(Player.REPEAT_MODE_ONE);
+                player.setPlayWhenReady(false);
                 player.setMediaItems(mediaItems);
                 player.seekTo(position, 0);
                 player.prepare();
@@ -237,7 +242,6 @@ public class PlayerService extends MediaSessionService {
                     @Override
                     public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
                         if (mediaItem != null) {
-                            //updateNotification(currentTitle, currentArtist, currentCover);
                             currentPosition = player.getCurrentMediaItemIndex();
                         }
                         if (!isColorChanged) {
@@ -296,17 +300,19 @@ public class PlayerService extends MediaSessionService {
             }
         }
 
-        currentTask = executor2.scheduleAtFixedRate(() -> {
-            ExoPlayerHandler.post(() -> {
+        ExoPlayerHandler.postDelayed(new Runnable() {
+            @Override
+            public void run(){
                 if (player != null && player.isPlaying()) {
                     long pos = player.getCurrentPosition();
                     lastProgress = (int) pos;
                     Intent progressIntent = new Intent("PLAYER_PROGRESS");
                     progressIntent.putExtra("progress", (int) pos);
                     sendBroadcast(progressIntent);
+                    ExoPlayerHandler.postDelayed(this, 125);
                 }
-            });
-        }, 0, 100, java.util.concurrent.TimeUnit.MILLISECONDS);
+            }
+        }, 125);
 
         isExecutorStarted = true;
     }
@@ -316,11 +322,11 @@ public class PlayerService extends MediaSessionService {
         if (mediaSession == null) {
             setupMediaSession();
         }
-        MediaStyleNotificationHelper.MediaStyle mediaStyle = new MediaStyleNotificationHelper.MediaStyle(mediaSession).setShowCancelButton(true);
+        MediaStyleNotificationHelper.MediaStyle mediaStyle = new MediaStyleNotificationHelper.MediaStyle(mediaSession).setShowActionsInCompactView(3 , 2 , 1, 0);
         Intent resumeIntent = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
         PendingIntent contentIntent = PendingIntent.getActivity(c, 0, resumeIntent, PendingIntent.FLAG_IMMUTABLE);
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-		.setSmallIcon(R.mipmap.ic_launcher_foreground)
+		.setSmallIcon(R.drawable.service_icon)
 		.setContentTitle(title)
 		.setContentText(artist)
 		.setLargeIcon(current)
@@ -378,14 +384,6 @@ public class PlayerService extends MediaSessionService {
         super.onDestroy();  
 		abandonAudioFocus();
 	}  
-	
-	private void updateNotification(String title, String artist, String cover) {
-		Notification notification = buildNotification(title, artist, cover);
-		NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		if (manager != null) {
-			manager.notify(NOTIFICATION_ID, notification);
-		}
-	}
 	
 	private PendingIntent getServiceIntent(Context context, String action) {  
 		Intent intent = new Intent(context, PlayerService.class);  
@@ -447,27 +445,58 @@ public class PlayerService extends MediaSessionService {
     }
     
     public class CustomCallback implements MediaSession.Callback {
-        
-        final SessionCommand TEST = new SessionCommand("TEST_ACTION", Bundle.EMPTY);
-        final CommandButton TEST_BUTTON = new CommandButton.Builder(R.drawable.ic_shuffle).setDisplayName("shuffle").setSessionCommand(TEST).setSlots(CommandButton.SLOT_FORWARD_SECONDARY).build();
-        List<CommandButton> list = ImmutableList.of(TEST_BUTTON);
-        Player.Commands pcs = new Player.Commands.Builder().addAllCommands().add(Player.COMMAND_SET_SHUFFLE_MODE).build();
-        private SessionCommands sc = SessionCommands.EMPTY.buildUpon().add(TEST).build();
+        private int loopIcon = R.drawable.ic_repeat_one;
+        private String loopMode = "LOOP_ONCE";
+        private String shuffleMode = "SHUFFLE_ON";
+        private String nextLoopAction = "LOOP_OFF";
+     
+        SessionCommand loopCommand = new SessionCommand(nextLoopAction, Bundle.EMPTY);
+        CommandButton loopButton = new CommandButton.Builder().setIconResId(loopIcon).setDisplayName("repeat").setSessionCommand(loopCommand).setSlots(CommandButton.SLOT_FORWARD_SECONDARY).build();
+        List<CommandButton> commandsList = ImmutableList.of(loopButton);
+        SessionCommands sessionCommands = SessionCommands.EMPTY.buildUpon().add(new SessionCommand("LOOP_ALL", Bundle.EMPTY)).add(new SessionCommand("LOOP_ONCE", Bundle.EMPTY)).add(new SessionCommand("LOOP_OFF", Bundle.EMPTY)).build();
         @Override
             public ConnectionResult onConnect(MediaSession mediaSession, ControllerInfo controllerInfo) {
-                //return new ConnectionResult.AcceptedResultBuilder(mediaSession).setCustomLayout(list).setAvailableSessionCommands(sc).setMediaButtonPreferences(ImmutableList.of(TEST_BUTTON)).build();
-                return ConnectionResult.accept(sc, pcs);
+                return ConnectionResult.accept(sessionCommands, playerCommands);
             }
             
             @Override
             public void onPostConnect(MediaSession mediaSession, ControllerInfo controllerInfo) {
-                mediaSession.setAvailableCommands(controllerInfo, sc, pcs);
-                mediaSession.setCustomLayout(controllerInfo, list);
+                mediaSession.setAvailableCommands(controllerInfo, sessionCommands, playerCommands);
+                mediaSession.setCustomLayout(controllerInfo, commandsList);
             }
             
             @Override
             public ListenableFuture<SessionResult> onCustomCommand(MediaSession mediaSession, ControllerInfo controllerInfo, SessionCommand sessionCommand, Bundle bundle) {
-                return Futures.immediateFuture(new SessionResult(-6));
+                ExoPlayerHandler.post(() -> {
+                    nextLoopAction = switch (sessionCommand.customAction) {
+                        case "LOOP_ALL" -> {
+                            loopIcon = R.drawable.ic_repeat_one;
+                            player.setRepeatMode(Player.REPEAT_MODE_ONE);
+                            yield "LOOP_ONCE"; 
+                        }
+                        case "LOOP_ONCE" -> {
+                            player.setPauseAtEndOfMediaItems(true);
+                            loopIcon = R.drawable.ic_repeat_off;
+                            player.setRepeatMode(Player.REPEAT_MODE_OFF);
+                            yield "LOOP_OFF";
+                        }
+                        case "LOOP_OFF" -> {
+                            player.setPauseAtEndOfMediaItems(false);
+                            player.setRepeatMode(Player.REPEAT_MODE_ALL);
+                            loopIcon = R.drawable.ic_repeat;
+                            yield "LOOP_ALL"; 
+                        }
+                        default -> {
+                            loopIcon = R.drawable.ic_repeat_one;
+                            yield "LOOP_ONCE";
+                        }
+                    };
+                });
+                loopCommand = new SessionCommand(nextLoopAction, Bundle.EMPTY);
+                loopButton = new CommandButton.Builder().setIconResId(loopIcon).setDisplayName("repeat").setSessionCommand(loopCommand).setSlots(CommandButton.SLOT_FORWARD_SECONDARY).build();
+                commandsList = ImmutableList.of(loopButton);
+                mediaSession.setCustomLayout(controllerInfo, commandsList);
+                return Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS));
             }
         
     }

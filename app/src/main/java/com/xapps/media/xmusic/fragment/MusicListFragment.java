@@ -62,8 +62,13 @@ import androidx.startup.*;
 import androidx.transition.*;
 import com.appbroker.roundedimageview.*;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.ListPreloader;
 import com.bumptech.glide.Priority;
+import com.bumptech.glide.RequestBuilder;
+import com.bumptech.glide.integration.recyclerview.RecyclerViewPreloader;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.util.FixedPreloadSizeProvider;
 import com.google.android.material.*;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.color.MaterialColors;
@@ -150,8 +155,6 @@ public class MusicListFragment extends BaseFragment {
             lastSpacing = XUtils.convertToPx(getActivity(), 5f) + activity.miniPlayerDetailsLayout.getHeight()*2 + activity.bottomNavigation.getHeight();
             binding.songsList.addItemDecoration(new BottomSpacingDecoration(lastSpacing));
         });
-		Context context = getActivity();
-		int cores = Runtime.getRuntime().availableProcessors();
         binding.collapsingToolbar.setPadding(0, XUtils.getStatusBarHeight(getActivity()), 0, 0);
         binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
         activity.bottomNavigation.post(() -> {
@@ -173,11 +176,11 @@ public class MusicListFragment extends BaseFragment {
                     mainHandler.post(new Runnable() {
                         @Override
                         public void run() {
+                            binding.songsList.setItemViewCacheSize(30);
                             binding.songsList.setLayoutManager(new LinearLayoutManager(getContext()));
                             HeaderAdapter headerAdapter = new HeaderAdapter();
                             ConcatAdapter concatAdapter = new ConcatAdapter(headerAdapter, songsAdapter);
                             binding.songsList.setAdapter(concatAdapter);
-                            XUtils.showMessage(getActivity(), String.valueOf(imageSize));
                             binding.emptyLayout.setVisibility(View.GONE);
                             a.Start(); 
                         }
@@ -237,7 +240,7 @@ public class MusicListFragment extends BaseFragment {
         }
     }
 	
-	public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ViewHolder> {
+	public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ViewHolder> implements {
 		
 		ArrayList<HashMap<String, Object>> _data;
         int c1 = MaterialColorUtils.colorPrimary;
@@ -279,7 +282,6 @@ public class MusicListFragment extends BaseFragment {
             } else {
                 binding.item.setBackground(middle.getConstantState().newDrawable().mutate());
             }
-            binding.songCover.setScaleType(ImageView.ScaleType.CENTER_CROP);
             boolean isLast = _position == getItemCount() - 1;
             //XUtils.setMargins(binding.item, 0, 0, 0, isLast? lastSpacing : 0);
             if (_position == oldPos && isPlaying) {
@@ -300,7 +302,8 @@ public class MusicListFragment extends BaseFragment {
 			.load(coverUri.equals("invalid")? placeholder : Uri.parse("file://"+coverUri))
 			.centerCrop()
             .fallback(placeholder)
-            .diskCacheStrategy(DiskCacheStrategy.DATA)
+            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .transition(DrawableTransitionOptions.withCrossFade())
             .placeholder(placeholder)
             .override(imageSize, imageSize)
 			.into(binding.songCover);
@@ -340,6 +343,12 @@ public class MusicListFragment extends BaseFragment {
         public long getItemId(int position) {
             String path = SongsMap.get(position).get("path").toString();
             return path.hashCode();
+        }
+        
+        @Override
+        public void onViewRecycled(@NonNull ViewHolder holder) {
+            super.onViewRecycled(holder);
+            Glide.with(holder.itemView.getContext()).clear((View)holder.itemView.findViewById(R.id.songCover));
         }
 		
 		public class ViewHolder extends RecyclerView.ViewHolder {

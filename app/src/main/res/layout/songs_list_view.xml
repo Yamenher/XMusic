@@ -25,6 +25,7 @@
                 android:layout_height="45dp"
                 android:layout_marginRight="8dp"
                 android:layout_marginLeft="12dp"
+                android:scaleType="centerCrop"
                 android:src="@drawable/placeholder"
                 app:shapeAppearanceOverlay="@style/SmallRoundedCornersImage" />
             <LinearLayout

@@ -49,6 +49,8 @@ import androidx.media.*;
 import androidx.media3.common.*;
 import androidx.media3.exoplayer.*;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.session.MediaController;
+import androidx.media3.session.SessionToken;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.Navigation;
@@ -75,8 +77,11 @@ import com.google.android.material.slider.Slider;
 import com.google.android.material.transition.MaterialFadeThrough;
 import com.google.android.material.transition.MaterialSharedAxis;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.helper.SongMetadataHelper;
 import com.xapps.media.xmusic.adapter.CustomPagerAdapter;
 import com.xapps.media.xmusic.common.SongLoadListener;
@@ -132,8 +137,12 @@ public class MainActivity extends AppCompatActivity implements PlayerService.Cal
     private NavHostFragment navHostFragment;
     private NavController navController;
     
+    private MediaController mediaController;
+    private SessionToken sessionToken;
+    
     private PlayerService playerService;
     private boolean bound = false;
+    private ListenableFuture<MediaController> controllerFuture;
     private final ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -152,6 +161,15 @@ public class MainActivity extends AppCompatActivity implements PlayerService.Cal
 	
 	@Override
 	protected void onCreate(Bundle _savedInstanceState) {
+        DataManager.init(this);
+        if (Build.VERSION.SDK_INT >= 31) SplashScreen.installSplashScreen(this);
+        if (!DataManager.isDataLoaded()) {
+            startActivity(new Intent(this, WelcomeActivity.class));
+            finish();
+            return;
+        }
+        Intent i = new Intent(this, PlayerService.class);
+        startService(i);
         handlerThread.start();
         Looper l = handlerThread.getLooper();
         bgHandler = new Handler(l);
@@ -198,15 +216,17 @@ public class MainActivity extends AppCompatActivity implements PlayerService.Cal
 			@Override
 			public void onClick(View _view) {
 				if (!binding.toggleView.isAnimating()) {
-					Intent playIntent = new Intent(c, PlayerService.class);
-					playIntent.setAction("ACTION_PAUSE");
+					/*Intent playIntent = new Intent(c, PlayerService.class);
+					playIntent.setAction("ACTION_PAUSE");*/
                     isPlaying = false; 
-					startService(playIntent);
+                    mediaController.pause();
+					//startService(playIntent);
 				} else {
-					Intent playIntent = new Intent(c, PlayerService.class);
-					playIntent.setAction("ACTION_RESUME");
+					/*Intent playIntent = new Intent(c, PlayerService.class);
+					playIntent.setAction("ACTION_RESUME");*/
                     isPlaying = true;
-					startService(playIntent);
+                    mediaController.play();
+					//startService(playIntent);
 				}
 			}
 		});
@@ -417,6 +437,17 @@ public class MainActivity extends AppCompatActivity implements PlayerService.Cal
     public void onStart() {
         super.onStart();
         bindService(new Intent(this, PlayerService.class), connection, Context.BIND_AUTO_CREATE);
+        if (sessionToken == null) sessionToken = new SessionToken(c, new ComponentName(c, PlayerService.class));
+        if (controllerFuture == null && mediaController == null) {
+            controllerFuture = new MediaController.Builder(this, sessionToken).buildAsync();
+                controllerFuture.addListener(() -> {
+                try {
+                    mediaController = controllerFuture.get();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }, MoreExecutors.directExecutor());
+        }
     }
     
     @Override
