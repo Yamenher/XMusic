@@ -57,17 +57,23 @@ jobs:
         if: github.event_name != 'pull_request'
         run: ./gradlew assembleDebug -DTG_BOT_TOKEN=${{ secrets.BOT_TOKEN }} -DTG_CHAT_ID=${{ secrets.CHAT_ID }}
 
+      - name: Rename APKs with commit hash
+        run: |
+          HASH=${GITHUB_SHA::8}
+          mv app/build/outputs/apk/debug/debug-arm64-v8a.apk app/build/outputs/apk/debug/debug-arm64-v8a-${HASH}.apk
+          mv app/build/outputs/apk/debug/debug-armeabi-v7a.apk app/build/outputs/apk/debug/debug-armeabi-v7a-${HASH}.apk
+
       - name: Upload debug arm64 apk
         uses: actions/upload-artifact@v4
         with:
           name: debug-arm64
-          path: app/build/outputs/apk/debug/debug-arm64-v8a.apk
+          path: app/build/outputs/apk/debug/debug-arm64-v8a-*.apk
 
       - name: Upload debug armeabi apk
         uses: actions/upload-artifact@v4
         with:
           name: debug-armeabi
-          path: app/build/outputs/apk/debug/debug-armeabi-v7a.apk
+          path: app/build/outputs/apk/debug/debug-armeabi-v7a-*.apk
 
   send_debug_apks:
     name: Send Debug APKs
@@ -91,18 +97,20 @@ jobs:
         if: success() && github.event_name != 'pull_request'
         continue-on-error: true
         run: |
+          HASH=${GITHUB_SHA::8}
           curl -X POST "https://api.telegram.org/bot${{ secrets.BOT_TOKEN }}/sendDocument" \
             -F chat_id="${{ secrets.CHAT_ID }}" \
             -F message_thread_id="4" \
-            -F document=@"debug-arm64-v8a.apk" \
+            -F document=@"debug-arm64-v8a-${HASH}.apk" \
             -F caption="ARM64 build"
 
       - name: Send armeabi APK to Telegram
         if: success() && github.event_name != 'pull_request'
         continue-on-error: true
         run: |
+          HASH=${GITHUB_SHA::8}
           curl -X POST "https://api.telegram.org/bot${{ secrets.BOT_TOKEN }}/sendDocument" \
             -F chat_id="${{ secrets.CHAT_ID }}" \
             -F message_thread_id="4" \
-            -F document=@"debug-armeabi-v7a.apk" \
+            -F document=@"debug-armeabi-v7a-${HASH}.apk" \
             -F caption="ARMEABI build"

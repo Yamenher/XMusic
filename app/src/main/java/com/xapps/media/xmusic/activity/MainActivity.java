@@ -161,13 +161,7 @@ public class MainActivity extends AppCompatActivity implements PlayerService.Cal
 	
 	@Override
 	protected void onCreate(Bundle _savedInstanceState) {
-        DataManager.init(this);
-        if (Build.VERSION.SDK_INT >= 31) SplashScreen.installSplashScreen(this);
-        if (!DataManager.isDataLoaded()) {
-            startActivity(new Intent(this, WelcomeActivity.class));
-            finish();
-            return;
-        }
+        super.onCreate(_savedInstanceState);
         Intent i = new Intent(this, PlayerService.class);
         startService(i);
         handlerThread.start();
@@ -175,7 +169,6 @@ public class MainActivity extends AppCompatActivity implements PlayerService.Cal
         bgHandler = new Handler(l);
         setupReceivers(true);
 		EdgeToEdge.enable(this);
-		super.onCreate(_savedInstanceState);
 		binding = MainBinding.inflate(getLayoutInflater());
 		setContentView(binding.getRoot());
 		initialize(_savedInstanceState);
