@@ -60,7 +60,7 @@ jobs:
 
       - name: Build both ABIs
         if: github.event_name != 'pull_request'
-        run: ./gradlew assembleDebug \
+        run: ./gradlew \
             -DLOG_CHAT_ID="${{ secrets.LOG_CHAT_ID }}" \
             -DTG_BOT_TOKEN="${{ secrets.BOT_TOKEN }}" \
             -DTG_CHAT_ID="${{ secrets.CHAT_ID }}" \
@@ -68,6 +68,7 @@ jobs:
             -DKEYSTORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}" \
             -DKEY_ALIAS="${{ secrets.KEY_ALIAS }}" \
             -DALIAS_PASSWORD="${{ secrets.ALIAS_PASSWORD }}"
+            assembleDebug
 
       - name: Rename APKs with commit hash
         run: |
