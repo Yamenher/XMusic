@@ -36,6 +36,10 @@ jobs:
         TG_BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         TG_CHAT_ID: ${{ secrets.CHAT_ID }}
         LOG_CHAT_ID: ${{ secrets.LOG_CHAT_ID }}
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        ALIAS_PASSWORD: ${{ secrets.ALIAS_PASSWORD }}
     environment: MainEnv
     steps:
       - name: Check out repository
@@ -56,7 +60,14 @@ jobs:
 
       - name: Build both ABIs
         if: github.event_name != 'pull_request'
-        run: ./gradlew assembleDebug -DLOG_CHAT_ID=${{ secrets.LOG_CHAT_ID}} -DTG_BOT_TOKEN=${{ secrets.BOT_TOKEN }} -DTG_CHAT_ID=${{ secrets.CHAT_ID }}
+        run: ./gradlew assembleDebug \
+            -DLOG_CHAT_ID="${{ secrets.LOG_CHAT_ID }}" \
+            -DTG_BOT_TOKEN="${{ secrets.BOT_TOKEN }}" \
+            -DTG_CHAT_ID="${{ secrets.CHAT_ID }}" \
+            -DKEYSTORE_BASE64="${{ secrets.KEYSTORE_BASE64 }}" \
+            -DKEYSTORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -DKEY_ALIAS="${{ secrets.KEY_ALIAS }}" \
+            -DALIAS_PASSWORD="${{ secrets.ALIAS_PASSWORD }}"
 
       - name: Rename APKs with commit hash
         run: |
