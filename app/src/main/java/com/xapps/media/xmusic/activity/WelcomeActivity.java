@@ -83,7 +83,7 @@ public class WelcomeActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         binding.startButton.setOnClickListener(v -> {
-            if (notificationsAllowed && audiAccessAllowed) {
+            if (/*notificationsAllowed && audiAccessAllowed || Build.VERSION.SDK_INT <= 31 && audiAccessAllowed*/ true) {
                 nullcallback.setEnabled(true);
                 callback4.setEnabled(false);
                 binding.topWindow.animate().translationYBy(-binding.topWindow.getHeight()).setDuration(200).start();

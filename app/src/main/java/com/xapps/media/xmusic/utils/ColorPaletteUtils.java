@@ -30,40 +30,55 @@ public class ColorPaletteUtils {
     }
 
     public static void generateFromBitmap(Bitmap bitmap, ResultCallback callback) {
-        executor.execute(() -> {
-            try {
-                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 64, 64, false);
+    executor.execute(() -> {
+        try {
+            Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 128, 128, false);
 
-                int[] pixels = new int[scaled.getWidth() * scaled.getHeight()];
-                scaled.getPixels(pixels, 0, scaled.getWidth(), 0, 0, scaled.getWidth(), scaled.getHeight());
+            int[] pixels = new int[scaled.getWidth() * scaled.getHeight()];
+            scaled.getPixels(pixels, 0, scaled.getWidth(), 0, 0, scaled.getWidth(), scaled.getHeight());
 
-                Map<Integer, Integer> colorMap = QuantizerCelebi.quantize(pixels, 16);
-                int seedColor = 0;
-                int maxCount = -1;
+            Map<Integer, Integer> colorMap = QuantizerCelebi.quantize(pixels, 16);
+            int totalPixels = scaled.getWidth() * scaled.getHeight();
 
-                for (Map.Entry<Integer, Integer> entry : colorMap.entrySet()) {
-                    if (entry.getValue() > maxCount) {
-                        maxCount = entry.getValue();
-                        seedColor = entry.getKey();
-                    }
-                }
+            int bestColor = 0;
+            double bestScore = -1;
 
-                Hct h = Hct.fromInt(seedColor);
+            for (Map.Entry<Integer, Integer> e : colorMap.entrySet()) {
+                int color = e.getKey();
+                int count = e.getValue();
 
-                lightColors = generateMaterialTones(h, false);
-                darkColors = generateMaterialTones(h, true);
+                Hct h = Hct.fromInt(color);
 
-                if (callback != null) {
-                    callback.onResult(lightColors, darkColors);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                if (callback != null) {
-                    callback.onResult(new HashMap<>(), new HashMap<>());
+                double dominance = (double) count / totalPixels;
+                double chroma = h.getChroma();
+                double tone = h.getTone();
+
+                double penalty = chroma > 50 ? (chroma - 30) * 0.4 : 0;
+
+                double score =
+                        (dominance * 100) +
+                        (chroma * 0.4) -
+                        penalty +
+                        (20 - Math.abs(tone - 60));
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestColor = color;
                 }
             }
-        });
-    }
+
+            Hct seed = Hct.fromInt(bestColor);
+
+            lightColors = generateMaterialTones(seed, false);
+            darkColors = generateMaterialTones(seed, true);
+
+            if (callback != null) callback.onResult(lightColors, darkColors);
+
+        } catch (Exception e) {
+            if (callback != null) callback.onResult(new HashMap<>(), new HashMap<>());
+        }
+    });
+}
 
     private static Map<String, Integer> generateMaterialTones(Hct hct, boolean isDark) {
         Map<String, Integer> tones = new HashMap<>();

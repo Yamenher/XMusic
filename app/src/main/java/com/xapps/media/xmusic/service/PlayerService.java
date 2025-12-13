@@ -29,6 +29,8 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.common.collect.ImmutableList;
 import com.xapps.media.xmusic.activity.*;
 import com.xapps.media.xmusic.R;
+import com.xapps.media.xmusic.data.RuntimeData;
+import com.xapps.media.xmusic.helper.ServiceCallback;
 import com.xapps.media.xmusic.utils.*;
 import java.io.*;
 import java.util.*;
@@ -68,22 +70,25 @@ public class PlayerService extends MediaSessionService {
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
 	private ScheduledFuture<?> currentTask;
 	private MediaSession mediaSession;  
-    private List<MediaItem> mediaItems;
+    public static List<MediaItem> mediaItems;
     public static boolean isReceiving = false;
     HandlerThread handlerThread = new HandlerThread("ExoPlayerThread");
 	private static Handler ExoPlayerHandler;
 	private android.media.AudioManager audioManager;
     private android.media.AudioFocusRequest audioFocusRequest;
     private boolean wasPausedDueToFocus = false;
+    private boolean isInForeground = false;
     
     private final IBinder binder = new LocalBinder();
     private Callback callback;
     
     private int resId = R.drawable.placeholder;
-    private Uri fallbackUri;
+    public static Uri fallbackUri;
     
     public static Map<String, Integer> lightColors;
     public static Map<String, Integer> darkColors;
+    
+    public static ArrayList<HashMap<String, Object>> songsMap = new ArrayList();
     
     Player.Commands playerCommands = new Player.Commands.Builder().addAllCommands().build();
     
@@ -142,52 +147,9 @@ public class PlayerService extends MediaSessionService {
 	@Override  
 	public int onStartCommand(Intent intent, int flags, int startId) {  
 		if (intent != null && intent.getAction() != null ) {  
-			if (intent.getAction().equals("ACTION_PLAY")) {  
-                if (Build.VERSION.SDK_INT >= 33) {  
-                    startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", "") , ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
-                } else {  
-                    startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
-                }  
-				isPlaying = true;  
-				String uri = intent.getStringExtra("uri");  
-				String title = intent.getStringExtra("title");  
-				String artist = intent.getStringExtra("artist");  
-                int position = intent.getIntExtra("position", 0);
-				String coverUri = intent.getStringExtra("cover");  
-				if (uri != null) {   
-					requestAudioFocus(uri, title, artist, coverUri, position);
-				}  
-            } else if (intent.getAction().equals("ACTION_STOP")) {  
-                isPlaying = false;
-                stopForeground(Service.STOP_FOREGROUND_REMOVE);
-				ExoPlayerHandler.post(() -> {
-				    if (player != null && player.isPlaying()) {  
-					    player.stop();  
-					    player.clearMediaItems();
-				    }  
-				});
-			} else if (intent.getAction().equals("ACTION_PAUSE")) {  
-				isPlaying = false;  
-                ExoPlayerHandler.post(() -> {
-				    if (player != null && player.isPlaying()) {  
-					    player.pause();  
-				    }
-                });
-			} else if (intent.getAction().equals("ACTION_RESUME")) {  
-				isPlaying = true;  
-				ExoPlayerHandler.post(() -> {
-				    if (player != null && player.getPlaybackState() == ExoPlayer.STATE_READY && !player.isPlaying()) {  
-					    player.play();
-				    }  
-				});
-			} else if (intent.getAction().equals("ACTION_SEEK")) {
-                int position = intent.getIntExtra("progress", 0);
-				ExoPlayerHandler.post(() -> {
-                    player.seekTo(position);
-				});
-            } else if (intent.getAction().equals("ACTION_UPDATE")) {
+			if (intent.getAction().equals("ACTION_UPDATE")) {
                 mediaItems = new ArrayList<>();
-                ArrayList<HashMap<String, Object>> song = MainActivity.currentMap;
+                ArrayList<HashMap<String, Object>> song = RuntimeData.songsMap;
                 executor.execute(() -> {
                     for (int i = 0; i < song.size(); i++) {
                         if (song.get(i).get("thumbnail") != null) {
@@ -200,69 +162,71 @@ public class PlayerService extends MediaSessionService {
                         MediaItem mediaItem = new MediaItem.Builder().setMediaMetadata(mt).setUri(uri2).build();
                         mediaItems.add(mediaItem);
                     }
-                });
+                    ExoPlayerHandler.post(() -> {
+                        if (player.getMediaItemCount() == 0) {
+                            player.addListener(new Player.Listener() {
+                            @Override
+                            public void onPlaybackStateChanged(int state) {
+                                sendUpdate(true);
+                                if (state == Player.STATE_READY) {
+                                    long duration = player.getDuration();
+                                    if (!isRunning) {
+                                        startUpdates();
+                                        isRunning = true;
+                                    }
+                                    lastMax = (int) duration;
+                                }
+                            }
+                                
+                            @Override
+                            public void onIsPlayingChanged(boolean playing) {
+                                isPlaying = playing;
+                                if (playing && !isInForeground) {
+                                    if (Build.VERSION.SDK_INT >= 33) {  
+                                        startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", "") , ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
+                                    } else {  
+                                        startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
+                                    }  
+                                    isInForeground = true;
+                                } else {
+                                    if (player.getMediaItemCount() == 0) stopForeground(Service.STOP_FOREGROUND_REMOVE);
+                                }
+                            }
+                    
+                            @Override
+                            public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
+                                currentPosition = player.getCurrentMediaItemIndex();
+                                sendUpdate(true);
+                            }
+                        });
+                        }
+                    });
+                    });
             }
 		}     
 		return START_STICKY;  
 	} 
-
-    private void playMedia(String uri, String title, String artist, String coverUri, int position) {
-        ExoPlayerHandler.post(() -> {
-            if (player.isPlaying()) {
-                player.pause();
-            }
-        });
-        currentPosition = position;
-        sendUpdate(false);
-        if (mediaItems == null) {
-            XUtils.showMessage(getApplicationContext(), "no songs were found on this device");
-        } else {
-			ExoPlayerHandler.post(() -> {
-                player.setPlayWhenReady(true);
-                player.setMediaItems(mediaItems);
-                player.seekTo(position, 0);
-                player.prepare();
-                player.play();
-                player.addListener(new Player.Listener() {
-                    @Override
-                    public void onPlaybackStateChanged(int state) {
-                        if (state == Player.STATE_READY) {
-                            long duration = player.getDuration();
-                            if (!isRunning) {
-                                startUpdates();
-                                isRunning = true;
-                            }
-                            lastMax = (int) duration;
-                        }
-                    }
-                    
-                    @Override
-                    public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-                        currentPosition = player.getCurrentMediaItemIndex();
-                        sendUpdate(true);
-                    }
-                });
-		    });
-        }
-        currentTitle = title;
-        currentArtist = artist;
-        currentCover = coverUri;
-    }
     
-    private ExecutorService executor_ = Executors.newSingleThreadExecutor();
+    private ExecutorService executor_ = Executors.newFixedThreadPool(2);
     private long lastUpdate = 0;
     
     private void sendUpdate(boolean isFromNotif) {
-        if (System.currentTimeMillis() - lastUpdate < 150) return;
+        if (System.currentTimeMillis() - lastUpdate < 150 || currentPosition == -1) return;
         lastUpdate = System.currentTimeMillis();
         executor_.execute(() -> {
             Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
-            tb = toByteArray(transparentBitmap);
-            Bitmap bmp = loadBitmapFromPath(MainActivity.currentMap.get(currentPosition).get("thumbnail").toString());
+            Bitmap bmp;
+            if (RuntimeData.songsMap == null) {
+                bmp = transparentBitmap;
+            } else {
+                Object thumb = RuntimeData.songsMap.get(currentPosition).get("thumbnail");
+                bmp = thumb == null? transparentBitmap : loadBitmapFromPath(thumb.toString());
+            }
             ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
                 lightColors = light;
                 darkColors = dark;
-                if (isFromNotif) sendDataToActivity("update-cover"); else sendDataToActivity("update"); 
+                ServiceCallback.Hub.send(ServiceCallback.CALLBACK_COLORS_UPDATE);
+                //if (isFromNotif) sendDataToActivity("update-cover"); else sendDataToActivity("update"); 
             });
         });
     }
@@ -300,16 +264,17 @@ public class PlayerService extends MediaSessionService {
         ExoPlayerHandler.postDelayed(new Runnable() {
             @Override
             public void run(){
-                if (player != null && player.isPlaying()) {
-                    long pos = player.getCurrentPosition();
-                    lastProgress = (int) pos;
-                    Intent progressIntent = new Intent("PLAYER_PROGRESS");
-                    progressIntent.putExtra("progress", (int) pos);
-                    sendBroadcast(progressIntent);
+                try {
+                    if (player != null && player.isPlaying()) {
+                        RuntimeData.currentProgress = player.getContentPosition();
+                        ServiceCallback.Hub.send(ServiceCallback.CALLBACK_PROGRESS_UPDATE);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                ExoPlayerHandler.postDelayed(this, 50);
+                ExoPlayerHandler.postDelayed(this, 100);
             }
-        }, 50);
+        }, 100);
 
         isExecutorStarted = true;
     }
@@ -509,50 +474,52 @@ public class PlayerService extends MediaSessionService {
     }
 
     private void handleAudioFocusChange(int focusChange) {
-        switch (focusChange) {
-            case AudioManager.AUDIOFOCUS_GAIN:
-                ExoPlayerHandler.post(() -> {
-				    player.setVolume(1.0f);
-                    if (wasPausedDueToFocus) {
-                        player.play();
-                        wasPausedDueToFocus = false;
-                    }
-			    });
+        /*if (isPlaying) {
+            switch (focusChange) {
+                case AudioManager.AUDIOFOCUS_GAIN:
+                    ExoPlayerHandler.post(() -> {
+                        player.setVolume(1.0f);
+                        if (wasPausedDueToFocus) {
+                            player.play();
+                            wasPausedDueToFocus = false;
+                        }
+                    });
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS:
+                    ExoPlayerHandler.post(() -> {
+                        if (player.isPlaying()) {
+                            player.pause();
+                            wasPausedDueToFocus = true;
+                        }
+                    });
                 break;
-            case AudioManager.AUDIOFOCUS_LOSS:
-                ExoPlayerHandler.post(() -> {
-                    if (player.isPlaying()) {
-                        player.pause();
-                        wasPausedDueToFocus = true;
-                    }
-			    });
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                    ExoPlayerHandler.post(() -> {
+                        if (player.isPlaying()) {
+                            player.pause();
+                            wasPausedDueToFocus = true;
+                        }
+                    });
                 break;
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                ExoPlayerHandler.post(() -> {
-                    if (player.isPlaying()) {
-                        player.pause();
-                        wasPausedDueToFocus = true;
-                    }
-			    });
-                break;
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                ExoPlayerHandler.post(() -> {
-                    if (player.isPlaying()) {
-                        player.setVolume(0.2f);
-                    }
-			    });
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                    ExoPlayerHandler.post(() -> {
+                        if (player.isPlaying()) {
+                            player.setVolume(0.2f);
+                        }    
+                    });
 			    break;
-        }
+            }
+        }*/
     }
 
-    public void requestAudioFocus(String uri, String title, String artist, String coverUri, int position) {
+    /*public void requestAudioFocus(String uri, String title, String artist, String coverUri, int position) {
         int result = audioManager.requestAudioFocus(audioFocusRequest);
         if (result == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             playMedia(uri, title, artist, coverUri, position);   
         } else {
 			XUtils.showMessage(getApplicationContext(), "Unable to play songs at the moment");
 		}
-    }
+    }*/
 
     public void abandonAudioFocus() {
         audioManager.abandonAudioFocusRequest(audioFocusRequest);

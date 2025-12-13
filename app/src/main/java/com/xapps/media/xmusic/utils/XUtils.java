@@ -1,5 +1,6 @@
 package com.xapps.media.xmusic.utils;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -8,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.Settings;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +17,12 @@ import android.animation.ValueAnimator;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatDelegate;
+
+import com.google.android.material.color.DynamicColors;
+import com.google.android.material.color.DynamicColorsOptions;
+import com.xapps.media.xmusic.data.DataManager;
+import com.xapps.media.xmusic.R;
+
 import java.lang.reflect.Field;
 
 public class XUtils {
@@ -168,4 +176,32 @@ public class XUtils {
     public static int normalizeColor(int color) {
         return color | 0xFF000000;
     }
+
+    public static void updateTheme() {
+        switch(DataManager.getThemeMode()) {
+            case 0:
+                setThemeMode("auto");
+            break;
+            case 1:
+                setThemeMode("dark");
+            break;
+            case 2:
+                setThemeMode("light");
+            break;
+        }
+    }
+    
+    public static void applyDynamicColors(Activity c) {
+        if (DataManager.isDynamicColorsOn() && Build.VERSION.SDK_INT >= 31) {
+            if (DataManager.isCustomColorsOn()) {
+                DynamicColorsOptions.Builder options = new DynamicColorsOptions.Builder();
+                options.setContentBasedSource(DataManager.getCustomColor());
+                options.setThemeOverlay(R.style.AppTheme);
+                DynamicColors.applyToActivityIfAvailable(c, options.build());
+            } else {
+                DynamicColors.applyToActivityIfAvailable(c);
+            }
+        }
+    }
+
 }

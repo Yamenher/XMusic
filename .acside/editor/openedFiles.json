@@ -1,0 +1,65 @@
+{
+  "allFiles": [
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/activity/MainActivity.java",
+      "selection": {
+        "end": {
+          "column": 19,
+          "index": 6495,
+          "line": 147
+        },
+        "start": {
+          "column": 19,
+          "index": 6495,
+          "line": 147
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/fragment/MusicListFragment.java",
+      "selection": {
+        "end": {
+          "column": 105,
+          "index": 11039,
+          "line": 263
+        },
+        "start": {
+          "column": 105,
+          "index": 11039,
+          "line": 263
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/service/PlayerService.java",
+      "selection": {
+        "end": {
+          "column": 72,
+          "index": 9453,
+          "line": 213
+        },
+        "start": {
+          "column": 61,
+          "index": 9442,
+          "line": 213
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/data/RuntimeData.java",
+      "selection": {
+        "end": {
+          "column": 52,
+          "index": 211,
+          "line": 6
+        },
+        "start": {
+          "column": 18,
+          "index": 177,
+          "line": 6
+        }
+      }
+    }
+  ],
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/fragment/MusicListFragment.java"
+}

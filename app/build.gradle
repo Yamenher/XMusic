@@ -1,51 +1,51 @@
 plugins {
-	id 'com.android.application'
+    id 'com.android.application'
 }
 
 android {
-	compileSdk 36
-	
-	defaultConfig {
-		applicationId "com.xapps.media.xmusic"
-		namespace "com.xapps.media.xmusic"
-		minSdkVersion 26
-		targetSdkVersion 36
-		versionCode 210
-		versionName "0.21 Alpha"
-        
+    compileSdk 36
+
+
+    defaultConfig {
+        applicationId "com.xapps.media.xmusic"
+        namespace "com.xapps.media.xmusic"
+        minSdkVersion 26
+        targetSdkVersion 36
+        versionCode 210
+        versionName "0.21 Alpha"
+
         android.buildFeatures.buildConfig true
 
-		def localProps = new Properties()
-		def localPropsFile = rootProject.file("local.properties")
-		if (localPropsFile.exists()) {
-			localProps.load(new FileInputStream(localPropsFile))
-		}
-
-		def getSecret = { key ->
-			if (localProps[key] != null) return localProps[key]
-			else if (System.getenv(key) != null) return System.getenv(key)
-			else throw new GradleException("$key is missing.")
-		}
-
-		buildConfigField "String", "TG_BOT_TOKEN", "\"${getSecret('TG_BOT_TOKEN')}\""
-		buildConfigField "String", "TG_CHAT_ID", "\"${getSecret('TG_CHAT_ID')}\""
-        buildConfigField "String", "LOG_CHAT_ID", "\"${getSecret('LOG_CHAT_ID')}\""
-	}
-    
-    signingConfigs {
-    
         def localProps = new Properties()
-		def localPropsFile = rootProject.file("local.properties")
-		if (localPropsFile.exists()) {
-			localProps.load(new FileInputStream(localPropsFile))
-		}
-    
+        def localPropsFile = rootProject.file("local.properties")
+        if (localPropsFile.exists()) {
+            localProps.load(new FileInputStream(localPropsFile))
+        }
+
         def getSecret = { key ->
-			if (localProps[key] != null) return localProps[key]
-			else if (System.getenv(key) != null) return System.getenv(key)
-			else throw new GradleException("$key is missing.")
-		}
-        
+            if (localProps[key] != null) return localProps[key]
+            else if (System.getenv(key) != null) return System.getenv(key)
+            else throw new GradleException("$key is missing.")
+        }
+
+        buildConfigField "String", "TG_BOT_TOKEN", "\"${getSecret('TG_BOT_TOKEN')}\""
+        buildConfigField "String", "TG_CHAT_ID", "\"${getSecret('TG_CHAT_ID')}\""
+        buildConfigField "String", "LOG_CHAT_ID", "\"${getSecret('LOG_CHAT_ID')}\""
+    }
+
+    signingConfigs {
+        def localProps = new Properties()
+        def localPropsFile = rootProject.file("local.properties")
+        if (localPropsFile.exists()) {
+            localProps.load(new FileInputStream(localPropsFile))
+        }
+
+        def getSecret = { key ->
+            if (localProps[key] != null) return localProps[key]
+            else if (System.getenv(key) != null) return System.getenv(key)
+            else throw new GradleException("$key is missing.")
+        }
+
         release {
             def base64Key = getSecret("KEYSTORE_BASE64")
             def tmpFile = file("$buildDir/tmp_keystore.jks")
@@ -60,29 +60,59 @@ android {
             keyAlias getSecret("KEY_ALIAS")
             keyPassword getSecret("ALIAS_PASSWORD")
         }
+        
+        preview {
+            def base64Key = getSecret("KEYSTORE_BASE64")
+            def tmpFile = file("$buildDir/tmp_keystore.jks")
+            if (base64Key) {
+                tmpFile.parentFile.mkdirs()
+                tmpFile.bytes = Base64.decoder.decode(base64Key)
+                storeFile = tmpFile
+            } else {
+                throw new GradleException("KEYSTORE_BASE64 is missing.")
+            }
+            storePassword getSecret("KEYSTORE_PASSWORD")
+            keyAlias getSecret("KEY_ALIAS")
+            keyPassword getSecret("ALIAS_PASSWORD")
+        }
     }
-	
-	buildTypes {
-		release {
+
+    buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+            shrinkResources false
+        }
+
+        preview {
+            initWith release
+            debuggable false
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.preview
+        }
+
+        release {
             signingConfig signingConfigs.release
+            debuggable false
             minifyEnabled true
             shrinkResources true
-			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-		}
-	}
-    
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
     }
-	
-	buildFeatures {
-		 viewBinding true
-	}
-	
-	compileOptions {
-         sourceCompatibility JavaVersion.VERSION_17
-         targetCompatibility JavaVersion.VERSION_17
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     splits {
@@ -111,27 +141,29 @@ repositories {
 }
 
 dependencies {
-        implementation fileTree(dir: 'libs', include: ['*.jar'])
-    	implementation 'com.github.bumptech.glide:glide:5.0.3'
-    	implementation 'com.google.code.gson:gson:2.13.1'
-        implementation 'com.google.android.material:material:1.14.0-alpha06'
-    	implementation 'com.github.mmmelik:RoundedImageView:v1.0.1'
-        implementation 'androidx.transition:transition:1.6.0'
-        implementation 'androidx.fragment:fragment:1.8.9'
-    	implementation 'androidx.palette:palette:1.0.0'
-    	implementation 'androidx.media3:media3-common:1.8.0'
-        implementation 'androidx.media3:media3-exoplayer:1.8.0'
-        implementation 'androidx.media3:media3-session:1.8.0'
-        implementation 'androidx.core:core-splashscreen:1.2.0-rc01'
-        implementation 'androidx.activity:activity:1.11.0'
-        implementation 'androidx.media:media:1.7.1'
-        implementation 'androidx.customview:customview-poolingcontainer:1.0.0'
-        implementation 'androidx.recyclerview:recyclerview:1.4.0'
-        implementation 'com.github.bumptech.glide:recyclerview-integration:4.14.2'
-        implementation 'androidx.navigation:navigation-ui:2.9.5'
-        implementation 'androidx.navigation:navigation-fragment:2.9.5'
-        implementation 'org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1'
-        implementation 'com.github.rtugeek:colorseekbar:2.0.3'
-        implementation(name: 'fastscroller', ext: 'aar')
-        implementation project(':vumeterlibrary')
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.github.bumptech.glide:glide:5.0.3'
+    implementation 'com.google.code.gson:gson:2.13.1'
+    implementation 'com.google.android.material:material:1.14.0-alpha06'
+    implementation 'com.github.mmmelik:RoundedImageView:v1.0.1'
+    implementation 'androidx.transition:transition:1.6.0'
+    implementation 'androidx.fragment:fragment:1.8.9'
+    implementation 'androidx.palette:palette:1.0.0'
+    implementation 'androidx.media3:media3-common:1.8.0'
+    implementation 'androidx.media3:media3-exoplayer:1.8.0'
+    implementation 'androidx.media3:media3-session:1.8.0'
+    implementation 'androidx.core:core-splashscreen:1.2.0-rc01'
+    implementation 'androidx.activity:activity:1.11.0'
+    implementation 'androidx.media:media:1.7.1'
+    implementation 'androidx.customview:customview-poolingcontainer:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'com.github.bumptech.glide:recyclerview-integration:4.14.2'
+    implementation 'androidx.navigation:navigation-ui:2.9.5'
+    implementation 'androidx.navigation:navigation-fragment:2.9.5'
+    implementation 'org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1'
+    implementation 'com.github.rtugeek:colorseekbar:2.0.3'
+    implementation "androidx.graphics:graphics-shapes:1.1.0"
+    implementation 'com.github.Adonai:jaudiotagger:2.3.14'
+    implementation(name: 'fastscroller', ext: 'aar')
+    implementation project(':vumeterlibrary')
 }

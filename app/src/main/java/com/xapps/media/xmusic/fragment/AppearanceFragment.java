@@ -11,12 +11,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.transition.ChangeBounds;
 import androidx.transition.Fade;
 import androidx.transition.TransitionManager;
 import androidx.transition.TransitionSet;
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.transition.MaterialSharedAxis;
@@ -24,19 +22,23 @@ import com.rtugeek.android.colorseekbar.thumb.DefaultThumbDrawer;
 import com.rtugeek.android.colorseekbar.thumb.ThumbDrawer;
 import com.xapps.media.xmusic.activity.MainActivity;
 import com.xapps.media.xmusic.data.DataManager;
-import com.xapps.media.xmusic.databinding.SettingsBinding;
+import com.xapps.media.xmusic.databinding.FragmentAppearanceBinding;
 import com.xapps.media.xmusic.utils.XUtils;
 import com.xapps.media.xmusic.R;
 
-public class SettingsFragment extends BaseFragment {
+public class AppearanceFragment extends Fragment {
     
-    private SettingsBinding binding;
+    private FragmentAppearanceBinding binding;
     private MainActivity activity;
         
     @NonNull
 	@Override
 	public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-		binding = SettingsBinding.inflate(inflater, container, false);
+        setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.X, false));
+        setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.X, true));
+        setExitTransition(new MaterialSharedAxis(MaterialSharedAxis.X, true));
+        setReenterTransition(new MaterialSharedAxis(MaterialSharedAxis.X, false));
+		binding = FragmentAppearanceBinding.inflate(inflater, container, false);
         activity = (MainActivity) getActivity();
 		setupUI();
         setupListeners();
@@ -44,6 +46,7 @@ public class SettingsFragment extends BaseFragment {
 	}
 
     private void setupUI() {
+        activity.HideBNV(true);
         DefaultThumbDrawer dtd = new DefaultThumbDrawer(XUtils.convertToPx(getActivity(), 35), Color.WHITE, Color.WHITE);
         dtd.setRingBorderSize(XUtils.convertToPx(getActivity(), 1.5f));
         binding.colorSeekBar.setThumbDrawer(dtd);
@@ -58,7 +61,6 @@ public class SettingsFragment extends BaseFragment {
         binding.applyButton.setEnabled(DataManager.isDynamicColorsOn());
         binding.secondContent.setAlpha(DataManager.isDynamicColorsOn()? 1f : 0.5f);
         binding.colorSeekBar.setAlpha(DataManager.isDynamicColorsOn()? 1f : 0.5f);
-        binding.applyButton.setEnabled(false);
         switch (DataManager.getThemeMode()) {
             case 0:
                 binding.systemTheme.setChecked(true);
@@ -84,10 +86,15 @@ public class SettingsFragment extends BaseFragment {
         binding.firstPref.setOnClickListener(v -> {
             binding.firstSwitch.setChecked(!binding.firstSwitch.isChecked());
             DataManager.setDynamicColorsEnabled(binding.firstSwitch.isChecked());
-            getActivity().recreate();
+            activity.showSnackbar(activity.getBinding().Coordinator, "Restart to apply changes!", "restart", v2 -> {
+                Intent i = activity.getIntent();
+                activity.finish();
+                activity.startActivity(i);
+            });
         });
         binding.colorSeekBar.setOnColorChangeListener((progress, color) -> {
-            binding.applyButton.setEnabled(binding.colorSeekBar.getProgress() != DataManager.getCustomColor());
+            DataManager.setProgress(binding.colorSeekBar.getProgress());
+            DataManager.setCustomColor(XUtils.normalizeColor(color));
         });
         binding.icon1.setOnClickListener(v -> {
             activity.showInfoDialog("Experimental feature", R.drawable.ic_test_tube, "This is a feature that's still under testing and might be unstable or buggy for some users.", "OK");
@@ -105,14 +112,13 @@ public class SettingsFragment extends BaseFragment {
             XUtils.setThemeMode("light");
         });
         binding.applyButton.setOnClickListener(v -> {
-            DataManager.setProgress(binding.colorSeekBar.getProgress());
-            DataManager.setCustomColor(XUtils.normalizeColor(binding.colorSeekBar.getColor()));
             getActivity().recreate();
         });
     }
 
     private void showViews(boolean b) {
         ViewGroup root = binding.coordinator;
+
         TransitionSet set = new TransitionSet()
         .addTransition(new Fade(Fade.OUT))
         .addTransition(new ChangeBounds())

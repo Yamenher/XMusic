@@ -11,7 +11,6 @@ public class MainActivityViewModel extends ViewModel {
     private static final String KEY_IS_BNV_HIDDEN = "key_is_bnv_hidden";
     private static final String KEY_DATA_SAVED = "key_data_saved";
     private static final String KEY_LAST_POSITION = "key_last_position";
-    private static final String KEY_SONGS_MAP = "key_songs_map"; // New key for the complex list
 
     private final SavedStateHandle mSavedStateHandle;
 
@@ -53,16 +52,5 @@ public class MainActivityViewModel extends ViewModel {
     public boolean wasBNVHidden() {
         Boolean isHidden = mSavedStateHandle.get(KEY_IS_BNV_HIDDEN);
         return isHidden != null ? isHidden : false;
-    }
-
-    // --- SongsMap now uses SavedStateHandle ---
-    
-    public void saveSongsMap(ArrayList<HashMap<String, Object>> map) {
-        mSavedStateHandle.set(KEY_SONGS_MAP, map);
-    }
-
-    public ArrayList<HashMap<String, Object>> loadSongsMap() {
-        ArrayList<HashMap<String, Object>> map = mSavedStateHandle.get(KEY_SONGS_MAP);
-        return map != null ? map : new ArrayList<>();
     }
 }

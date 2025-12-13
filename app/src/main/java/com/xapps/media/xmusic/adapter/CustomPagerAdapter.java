@@ -12,6 +12,8 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
+import com.xapps.media.xmusic.service.PlayerService;
+import com.xapps.media.xmusic.utils.XUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import com.xapps.media.xmusic.R;
@@ -39,13 +41,14 @@ public class CustomPagerAdapter extends RecyclerView.Adapter<CustomPagerAdapter.
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(context).inflate(R.layout.song_cover_layout, parent, false);
+            Log.e("nigger", data.get(22).get("thumbnail").toString());
             return new ViewHolder(view);
         }
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            Object thumb = data.get(position).get("thumbnail");
-            if (thumb != null && !thumb.toString().trim().isEmpty() && !thumb.toString().equalsIgnoreCase("null")) {
+            String thumb = data.get(position).get("thumbnail").toString();
+            if (!thumb.trim().isEmpty()) {
                 String path = "file://" + thumb.toString();
                 Glide.with(context)
                     .load(Uri.parse(path))
@@ -56,8 +59,9 @@ public class CustomPagerAdapter extends RecyclerView.Adapter<CustomPagerAdapter.
                     .skipMemoryCache(false))
                     .into(holder.thumbnail);
             } else {
+                XUtils.showMessage(context, "detected an empty one");
                 Glide.with(context)
-                    .load(R.drawable.placeholder)
+                    .load(PlayerService.fallbackUri)
                     .apply(new RequestOptions()
                     .centerCrop()
                     .override(750, 750)

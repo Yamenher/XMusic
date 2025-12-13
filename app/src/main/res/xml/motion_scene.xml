@@ -3,8 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:motion="http://schemas.android.com/apk/res-auto">
     <Transition
-        android:id="@+id/start_mid"
-        motion:constraintSetEnd="@id/mid"
+        android:id="@+id/start_end"
+        motion:constraintSetEnd="@id/end"
         motion:constraintSetStart="@id/start"
         motion:duration="200">
         <KeyFrameSet>
@@ -12,29 +12,14 @@
                 android:alpha="0.0"
                 motion:framePosition="80"
                 motion:motionTarget="@+id/controls_layout" />
-            <KeyPosition
-                motion:framePosition="60"
-                motion:layout_constraintTop_toTopOf="parent"
-                motion:motionTarget="@+id/controls_layout"
-                motion:percentY="0.0" />
-            <KeyPosition
-                motion:framePosition="65"
-                motion:motionTarget="@+id/covers_pager"
-                motion:percentX="1.0"
-                motion:percentY="0.8"
-                motion:sizePercent="1.0" />
-        </KeyFrameSet>
-    </Transition>
-    <Transition
-        android:id="@+id/mid_end"
-        motion:constraintSetEnd="@id/mid"
-        motion:constraintSetStart="@id/end"
-        motion:duration="200">
-        <KeyFrameSet>
             <KeyAttribute
-                android:alpha="0.0"
                 motion:framePosition="80"
-                motion:motionTarget="@+id/controls_layout" />
+                motion:motionTarget="@id/covers_pager"
+                android:elevation="2dp" />
+            <KeyAttribute
+                motion:framePosition="100"
+                motion:motionTarget="@id/covers_pager"
+                android:elevation="0dp" />
             <KeyPosition
                 motion:framePosition="60"
                 motion:layout_constraintTop_toTopOf="parent"
@@ -43,11 +28,11 @@
             <KeyPosition
                 motion:framePosition="65"
                 motion:motionTarget="@+id/covers_pager"
-                motion:percentX="1.0"
-                motion:percentY="1.0"
-                motion:sizePercent="1.0" />
+                motion:percentX="1"
+                motion:percentY="1"
+                app:pathMotionArc="startVertical"
+                motion:sizePercent="1" />
         </KeyFrameSet>
-        
     </Transition>
     <ConstraintSet
         android:id="@+id/start">
@@ -59,15 +44,6 @@
             motion:layout_constraintStart_toStartOf="@+id/miniPlayerBottomSheet"
             motion:layout_constraintTop_toTopOf="parent"/>
         <Constraint
-            android:id="@+id/miniPlayerDetailsLayout"
-            android:layout_width="0.0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12.0dp"
-            motion:layout_constraintBottom_toBottomOf="@+id/covers_pager"
-            motion:layout_constraintEnd_toEndOf="parent"
-            motion:layout_constraintStart_toEndOf="@+id/covers_pager"
-            motion:layout_constraintTop_toTopOf="@+id/covers_pager" />
-        <Constraint
             android:id="@+id/controls_layout"
             android:layout_width="0.0dp"
             android:layout_height="wrap_content"
@@ -78,7 +54,7 @@
             motion:layout_constraintTop_toTopOf="parent" />
     </ConstraintSet>
     <ConstraintSet
-        android:id="@+id/mid">
+        android:id="@+id/end">
         <Constraint
             android:id="@+id/covers_pager"
             android:layout_width="match_parent"
@@ -86,22 +62,10 @@
             android:layout_marginTop="0.0dp"
             android:layout_marginStart="0.0dp"
             android:layout_marginEnd="0.0dp"
-            android:elevation="2.0dp"
             motion:layout_constraintDimensionRatio="1:1"
             motion:layout_constraintEnd_toEndOf="parent"
             motion:layout_constraintStart_toStartOf="parent"
             motion:layout_constraintTop_toBottomOf="@+id/miniPlayerDetailsLayout" />
-        <Constraint
-            android:id="@+id/second_coordinator"
-            android:paddingTop="100dp" />
-        <Constraint
-            android:id="@+id/miniPlayerDetailsLayout"
-            android:layout_width="0.0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="61.0dp"
-            motion:layout_constraintEnd_toEndOf="parent"
-            motion:layout_constraintStart_toStartOf="parent"
-            motion:layout_constraintTop_toTopOf="parent" />
         <Constraint
             android:id="@+id/controls_layout"
             android:layout_width="0.0dp"
@@ -110,43 +74,5 @@
             motion:layout_constraintEnd_toEndOf="parent"
             motion:layout_constraintStart_toStartOf="parent"
             motion:layout_constraintTop_toBottomOf="@+id/covers_pager" />
-        <Constraint
-            android:id="@+id/musicProgress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8.0dp"
-            motion:layout_constraintEnd_toEndOf="parent"
-            motion:layout_constraintStart_toStartOf="parent"
-            motion:layout_constraintTop_toBottomOf="@+id/miniPlayerDetailsLayout" />
-    </ConstraintSet>
-    <ConstraintSet
-        android:id="@+id/end" >
-        <Constraint
-            android:id="@+id/covers_pager"
-            android:layout_width="56.0dp"
-            android:layout_height="56.0dp"
-            android:layout_marginStart="16.0dp"
-            android:layout_marginTop="25dp"
-            motion:layout_constraintStart_toStartOf="@+id/miniPlayerBottomSheet"
-            motion:layout_constraintTop_toTopOf="parent"
-            motion:pathMotionArc="startVertical" />
-        <Constraint
-            android:id="@+id/miniPlayerDetailsLayout"
-            android:layout_width="0.0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16.0dp"
-            motion:layout_constraintBottom_toBottomOf="@+id/covers_pager"
-            motion:layout_constraintEnd_toEndOf="parent"
-            motion:layout_constraintStart_toEndOf="@+id/covers_pager"
-            motion:layout_constraintTop_toTopOf="@+id/covers_pager" />
-        <Constraint
-            android:id="@+id/controls_layout"
-            android:layout_width="0.0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="130.0dp"
-            android:alpha="0.0"
-            motion:layout_constraintEnd_toEndOf="parent"
-            motion:layout_constraintStart_toStartOf="parent"
-            motion:layout_constraintTop_toTopOf="parent" />
     </ConstraintSet>
 </MotionScene>
