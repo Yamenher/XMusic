@@ -79,8 +79,6 @@ public class NewPlayerToggle extends LinearLayout {
     private boolean isMorphing = false;
     private boolean isAnimating;
     
-    private AnimatedVectorDrawable pauseToResume, resumeToPause;
-    
     private ImageView image;
     
     private ObjectAnimator rotateAnimation;
@@ -108,9 +106,6 @@ public class NewPlayerToggle extends LinearLayout {
     private void init(Context context){
         setWillNotDraw(false);
         setClickable(true);
-        
-        resumeToPause = (AnimatedVectorDrawable) ContextCompat.getDrawable(context, R.drawable.resume_avd);
-        pauseToResume = (AnimatedVectorDrawable) ContextCompat.getDrawable(context, R.drawable.pause_avd);
 
         image = new ImageView(context);
         LayoutParams lp = new LayoutParams(
@@ -122,8 +117,8 @@ public class NewPlayerToggle extends LinearLayout {
         int p = XUtils.convertToPx(context, 20f);
 		image.setPadding(p, p, p, p);
         
-        image.setImageDrawable(pauseToResume);
-        pauseToResume.start();
+        image.setImageDrawable(newAvd(R.drawable.pause_avd));
+        ((AnimatedVectorDrawable) image.getDrawable()).start();
         
         addView(image);
 
@@ -140,12 +135,12 @@ public class NewPlayerToggle extends LinearLayout {
                 }
             }
             if (isAnimating) {
-                image.setImageDrawable(resumeToPause);
-                resumeToPause.start();
+                image.setImageDrawable(newAvd(R.drawable.resume_avd));
+                ((AnimatedVectorDrawable) image.getDrawable()).start();
                 startRotation();
             } else {
-                image.setImageDrawable(pauseToResume);
-                pauseToResume.start();
+                image.setImageDrawable(newAvd(R.drawable.pause_avd));
+                ((AnimatedVectorDrawable) image.getDrawable()).start();
                 stopRotation();
             }
             if(extraClickListener != null) extraClickListener.onClick(this);
@@ -189,19 +184,21 @@ public class NewPlayerToggle extends LinearLayout {
     }
     
     public void stopAnimation() {
+        if (!isAnimating || currentShape == defaultStartShape) return;
         isAnimating = false;
         stopRotation();
         morphTo(defaultStartShape);
-        image.setImageDrawable(pauseToResume);
-        pauseToResume.start();
+        image.setImageDrawable(newAvd(R.drawable.pause_avd));
+        ((AnimatedVectorDrawable) image.getDrawable()).start();
     }
     
     public void startAnimation() {
+        if (isAnimating || currentShape == defaultEndShape) return;
         isAnimating = true;
         startRotation();
         morphTo(defaultEndShape);
-        image.setImageDrawable(resumeToPause);
-        resumeToPause.start();
+        image.setImageDrawable(newAvd(R.drawable.resume_avd));
+        ((AnimatedVectorDrawable) image.getDrawable()).start();
     }
 
     @Override
@@ -348,12 +345,17 @@ public class NewPlayerToggle extends LinearLayout {
 	}
 
 	public void setIconColor(int color) {
-		avdColor = color;
-		DrawableCompat.setTint(resumeToPause, color);
-		DrawableCompat.setTint(pauseToResume, color);
-        resumeToPause.setTint(color);
-        pauseToResume.setTint(color);
-		ColorFilter filter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
-		if (image.getDrawable() != null) image.getDrawable().setColorFilter(filter);
-	}
+        avdColor = color;
+        Drawable d = image.getDrawable();
+        if (d != null) d.setTint(color);
+    }
+
+    private AnimatedVectorDrawable newAvd(int resId) {
+        Drawable d = ContextCompat.getDrawable(getContext(), resId);
+        if (!(d instanceof AnimatedVectorDrawable)) return null;
+
+        AnimatedVectorDrawable avd = (AnimatedVectorDrawable) d.mutate();
+        avd.setTint(avdColor);
+        return avd;
+    }
 }

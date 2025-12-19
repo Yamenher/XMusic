@@ -21,6 +21,7 @@ import com.google.android.material.transition.MaterialSharedAxis;
 import com.rtugeek.android.colorseekbar.thumb.DefaultThumbDrawer;
 import com.rtugeek.android.colorseekbar.thumb.ThumbDrawer;
 import com.xapps.media.xmusic.activity.MainActivity;
+import com.xapps.media.xmusic.application.XApplication;
 import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.databinding.FragmentAppearanceBinding;
 import com.xapps.media.xmusic.utils.XUtils;

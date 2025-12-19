@@ -30,7 +30,7 @@
                 motion:motionTarget="@+id/covers_pager"
                 motion:percentX="1"
                 motion:percentY="1"
-                app:pathMotionArc="startVertical"
+                motion:pathMotionArc="startVertical"
                 motion:sizePercent="1" />
         </KeyFrameSet>
     </Transition>
@@ -42,7 +42,13 @@
             android:layout_height="45.0dp"
             android:layout_marginStart="8.0dp"
             motion:layout_constraintStart_toStartOf="@+id/miniPlayerBottomSheet"
-            motion:layout_constraintTop_toTopOf="parent"/>
+            motion:layout_constraintTop_toTopOf="parent">
+
+            <CustomAttribute
+                motion:attributeName="radius"
+                motion:customDimension="8dp" />
+            
+        </Constraint>
         <Constraint
             android:id="@+id/controls_layout"
             android:layout_width="0.0dp"
@@ -59,13 +65,19 @@
             android:id="@+id/covers_pager"
             android:layout_width="match_parent"
             android:layout_height="0.0dp"
-            android:layout_marginTop="0.0dp"
-            android:layout_marginStart="0.0dp"
-            android:layout_marginEnd="0.0dp"
+            android:layout_marginTop="36dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             motion:layout_constraintDimensionRatio="1:1"
             motion:layout_constraintEnd_toEndOf="parent"
             motion:layout_constraintStart_toStartOf="parent"
-            motion:layout_constraintTop_toBottomOf="@+id/miniPlayerDetailsLayout" />
+            motion:layout_constraintTop_toBottomOf="@+id/miniPlayerDetailsLayout" >
+            
+            <CustomAttribute
+                motion:attributeName="radius"
+                motion:customDimension="32dp" />
+                
+        </Constraint>
         <Constraint
             android:id="@+id/controls_layout"
             android:layout_width="0.0dp"

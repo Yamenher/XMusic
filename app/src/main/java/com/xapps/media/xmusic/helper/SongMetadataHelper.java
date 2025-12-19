@@ -1,5 +1,6 @@
 package com.xapps.media.xmusic.helper;
 
+import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -16,17 +17,20 @@ import com.xapps.media.xmusic.common.SongLoadListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.Tag;
@@ -40,50 +44,74 @@ public class SongMetadataHelper {
 	public static void getAllSongs(Context context, SongLoadListener listener) {
 
     ArrayList<HashMap<String, Object>> songListMap = new ArrayList<>();
+    Object lock = new Object();
+
     String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0" + getListOfMediaTypes();
     String[] projection = {
-        MediaStore.Audio.Media._ID,
-        MediaStore.Audio.Media.TITLE,
-        MediaStore.Audio.Media.ARTIST,
-        MediaStore.Audio.Media.ARTIST_ID,
-        MediaStore.Audio.Media.ALBUM,
-        MediaStore.Audio.Media.ALBUM_ARTIST,
-        MediaStore.Audio.Media.DATA,
-        MediaStore.Audio.Media.YEAR,
-        MediaStore.Audio.Media.ALBUM_ID,
-        MediaStore.Audio.Media.MIME_TYPE,
-        MediaStore.Audio.Media.TRACK,
-        MediaStore.Audio.Media.DURATION,
-        MediaStore.Audio.Media.DATE_ADDED,
-        MediaStore.Audio.Media.DATE_MODIFIED
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.ARTIST_ID,
+            MediaStore.Audio.Media.ALBUM,
+            MediaStore.Audio.Media.ALBUM_ARTIST,
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.YEAR,
+            MediaStore.Audio.Media.ALBUM_ID,
+            MediaStore.Audio.Media.MIME_TYPE,
+            MediaStore.Audio.Media.TRACK,
+            MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.DATE_ADDED,
+            MediaStore.Audio.Media.DATE_MODIFIED
     };
 
     Cursor cursor = context.getContentResolver().query(
-        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, selection, null,
-        MediaStore.Audio.Media.TITLE + " COLLATE NOCASE");
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            null,
+            MediaStore.Audio.Media.TITLE + " COLLATE NOCASE"
+    );
 
-    if (cursor != null) {
-        List<Future<HashMap<String, Object>>> futures = new ArrayList<>();
-        int count = 0;
+    if (cursor == null) {
+        if (listener != null) listener.onComplete(songListMap);
+        return;
+    }
 
-        while (cursor.moveToNext()) {
-            final String path = cursor.getString(6);
-            final long songId = cursor.getLong(0);
-            final String title = cursor.getString(1);
-            final String artist = cursor.getString(2);
-            final String artistId = cursor.getString(3);
-            final String album = cursor.getString(4);
-            final String albumArtist = cursor.getString(5);
-            final String data = cursor.getString(6);
-            final String year = cursor.getString(7);
-            final String albumId = cursor.getString(8);
-            final String mimeType = cursor.getString(9);
-            final String track = cursor.getString(10);
-            final long duration = cursor.getLong(11);
-            final String dateAdded = cursor.getString(12);
-            final String dateModified = cursor.getString(13);
+    int total = cursor.getCount();
+    if (total == 0) {
+        cursor.close();
+        if (listener != null) listener.onComplete(songListMap);
+        return;
+    }
 
-            futures.add(executorService.submit(() -> {
+    for (int i = 0; i < total; i++) {
+        songListMap.add(null);
+    }
+
+    CountDownLatch latch = new CountDownLatch(total);
+    AtomicInteger progress = new AtomicInteger(0);
+
+    while (cursor.moveToNext()) {
+
+        final int index = cursor.getPosition();
+
+        final long songId = cursor.getLong(0);
+        final String title = cursor.getString(1);
+        final String artist = cursor.getString(2);
+        final String artistId = cursor.getString(3);
+        final String album = cursor.getString(4);
+        final String albumArtist = cursor.getString(5);
+        final String path = cursor.getString(6);
+        final String year = cursor.getString(7);
+        final String albumId = cursor.getString(8);
+        final String mimeType = cursor.getString(9);
+        final String track = cursor.getString(10);
+        final long duration = cursor.getLong(11);
+        final String dateAdded = cursor.getString(12);
+        final String dateModified = cursor.getString(13);
+
+        executorService.execute(() -> {
+            try {
                 HashMap<String, Object> map = new HashMap<>();
                 map.put("path", path);
                 map.put("id", songId);
@@ -92,7 +120,7 @@ public class SongMetadataHelper {
                 map.put("artistId", artistId);
                 map.put("album", album);
                 map.put("albumArtist", albumArtist);
-                map.put("data", data);
+                map.put("data", path);
                 map.put("year", year);
                 map.put("albumId", albumId);
                 map.put("mimeType", mimeType);
@@ -101,147 +129,102 @@ public class SongMetadataHelper {
                 map.put("total", String.valueOf((int) duration));
                 map.put("dateAdded", dateAdded);
                 map.put("dateModified", dateModified);
-                map.put("thumbnail", getSongCover(context, path));
-                MediaExtractor ex = new MediaExtractor();
-                ex.setDataSource(path);
-                for (int i = 0; i < ex.getTrackCount(); i++) {
-                    MediaFormat fmt = ex.getTrackFormat(i);
-                    String mime = fmt.getString(MediaFormat.KEY_MIME);
-                    if (mime != null && mime.startsWith("audio/")) {
-                        String codec = mime.substring(6);
-                        int sample = fmt.containsKey(MediaFormat.KEY_SAMPLE_RATE) ? fmt.getInteger(MediaFormat.KEY_SAMPLE_RATE) : -1;
-                        int bit = fmt.containsKey(MediaFormat.KEY_BIT_RATE) ? fmt.getInteger(MediaFormat.KEY_BIT_RATE) : -1;
-                        map.put("codecShort", codec);
-                        map.put("sampleRate", sample);
-                        map.put("bitrate", bit);
-                        break;
-                    }
+                map.put("thumbnail", getSongCover(context, path, mimeType, songId));
+
+                synchronized (lock) {
+                    songListMap.set(index, map);
                 }
-                ex.release();
-                return map;
-            }));
 
-            count++;
-            
-        }
-        cursor.close();
-
-        for (Future<HashMap<String, Object>> future : futures) {
-            try {
-                HashMap<String, Object> songMap = future.get();
-                songListMap.add(songMap);
+                int current = progress.incrementAndGet();
                 if (listener != null) {
-                    listener.onProgress(songListMap, songListMap.size());
+                    listener.onProgress(songListMap, current);
                 }
-            } catch (ExecutionException | InterruptedException e) {
-                Log.e("SongMetadataHelper", "Error processing song", e);
+
+            } finally {
+                latch.countDown();
             }
-        }
+        });
     }
 
-    if (listener != null) {
-        listener.onComplete(songListMap);
-    }
+    cursor.close();
+
+    executorService.execute(() -> {
+        try {
+            latch.await();
+        } catch (InterruptedException ignored) {}
+        if (listener != null) {
+            listener.onComplete(songListMap);
+        }
+    });
 }
 	
-	public static String getSongCover(Context context, String songFilePath) {
-        
-        try {
-			String cachedCoverPath = getCachedCoverPath(context, songFilePath);
-			if (cachedCoverPath != null) {
-				return cachedCoverPath;
-			}
-        } catch (Exception e) {}
-    byte[] coverArt = null;
-    File songFile = new File(songFilePath);
+	public static String getSongCover(Context context, String songFilePath, String mimeType, long id) {
+    String cached = getCachedCoverPath(context, songFilePath);
+    if (cached != null) return cached;
 
-    if (coverArt == null) {
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-        ParcelFileDescriptor pfd = null;
+    Long audioId = id;
+    if (audioId != null) {
         try {
-            try {
-                retriever.setDataSource(songFilePath);
-            } catch (Exception e1) {
-                try {
-                    pfd = ParcelFileDescriptor.open(songFile, ParcelFileDescriptor.MODE_READ_ONLY);
-                    retriever.setDataSource(pfd.getFileDescriptor());
-                } catch (Exception e2) {
-                    try {
-                        Uri uri = Uri.fromFile(songFile);
-                        retriever.setDataSource(context, uri);
-                    } catch (Exception e3) {
-                        Log.e("SongMetadataHelper", "Could not set data source for file: " + songFilePath, e3);
-                        return "";
-                    }
+            Uri uri = ContentUris.appendId(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.buildUpon(),
+                    audioId
+            ).appendPath("albumart").build();
+
+            InputStream is = context.getContentResolver().openInputStream(uri);
+            if (is != null) {
+                Bitmap b = BitmapFactory.decodeStream(is);
+                is.close();
+                if (b != null) {
+                    String path = saveCoverToCache(context, songFilePath, b);
+                    b.recycle();
+                    return path;
                 }
             }
-            coverArt = retriever.getEmbeddedPicture();
-        } catch (Exception e) {
-            Log.e("SongMetadataHelper", "MediaMetadataRetriever fallback error", e);
-        } finally {
-            try {
-                retriever.release();
-            } catch (Exception ignored) {}
-            try {
-                if (pfd != null) pfd.close();
-            } catch (IOException ignored) {}
-        }
+        } catch (Exception ignored) {}
     }
 
-    if (coverArt == null || coverArt.length == 0) {
-        try {
-            if (songFile.exists()) {
-                AudioFile audioFile = AudioFileIO.read(songFile);
-                Tag tag = audioFile.getTag();
+    boolean useJAudioTagger =
+            mimeType == null ||
+            mimeType.equals("audio/flac") ||
+            mimeType.equals("audio/ogg") ||
+            mimeType.equals("audio/opus") ||
+            mimeType.equals("audio/x-flac");
 
-                if (tag != null) {
-                    List<Artwork> artworkList = tag.getArtworkList();
-                    if (!artworkList.isEmpty()) {
-                        Artwork artwork = artworkList.get(0);
-                        coverArt = artwork.getBinaryData();
-                    } else {
-                        Log.w("SongMetadataHelper", "JAudioTagger failed to extract cover for: " + songFilePath);
-                    }
+    if (!useJAudioTagger) {
+        try {
+            MediaMetadataRetriever r = new MediaMetadataRetriever();
+            r.setDataSource(songFilePath);
+            byte[] art = r.getEmbeddedPicture();
+            r.release();
+            if (art != null && art.length > 0) {
+                Bitmap b = BitmapFactory.decodeByteArray(art, 0, art.length);
+                if (b != null) {
+                    String path = saveCoverToCache(context, songFilePath, b);
+                    b.recycle();
+                    return path;
                 }
             }
-        } catch (Exception e) {
-            Log.w("SongMetadataHelper", "JAudioTagger failed to extract cover for: " + songFilePath, e);
-            return "";
-        }
+        } catch (Exception ignored) {}
     }
 
-    String cacheFilePath = null;
-    Bitmap finalBitmap = null;
-    Bitmap bitmap = null;
-    Bitmap square = null;
-    
     try {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeByteArray(coverArt, 0, coverArt.length, options);
-        options.inSampleSize = calculateInSampleSize(options, 750, 750);
-        options.inJustDecodeBounds = false;
-        
-        bitmap = BitmapFactory.decodeByteArray(coverArt, 0, coverArt.length, options);
-        if (bitmap == null) return "";
+        AudioFile audioFile = AudioFileIO.read(new File(songFilePath));
+        Tag tag = audioFile.getTag();
+        if (tag == null) return null;
+        Artwork artwork = tag.getFirstArtwork();
+        if (artwork == null) return null;
 
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        int edge = Math.min(width, height);
-        
-        square = Bitmap.createBitmap(bitmap, (width - edge) / 2, (height - edge) / 2, edge, edge);
-        finalBitmap = Bitmap.createScaledBitmap(square, 1000, 1000, true);
-        
-        if (square != finalBitmap) square.recycle();
+        byte[] art = artwork.getBinaryData();
+        if (art == null || art.length == 0) return null;
 
-        cacheFilePath = saveCoverToCache(context, songFilePath, finalBitmap);
-        return cacheFilePath;
-    } catch (Exception e) {
-        Log.e("SongMetadataHelper", "Error processing and saving cover", e);
-        return "";
-    } finally {
-        if (finalBitmap != null && !finalBitmap.isRecycled()) finalBitmap.recycle();
-        bitmap.recycle();
+        Bitmap b = BitmapFactory.decodeByteArray(art, 0, art.length);
+        if (b == null) return null;
+
+        String path = saveCoverToCache(context, songFilePath, b);
+        b.recycle();
+        return path;
+    } catch (Exception ignored) {
+        return null;
     }
 }
     

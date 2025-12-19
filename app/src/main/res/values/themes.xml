@@ -49,6 +49,6 @@
         <item name="android:fontFamily">@font/product_sans_regular</item>
         <item name="fontFamily">@font/product_sans_regular</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">true</item>
     </style>
 </resources>

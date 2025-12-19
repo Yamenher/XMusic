@@ -9,6 +9,7 @@ import com.xapps.media.xmusic.BuildConfig;
 import com.xapps.media.xmusic.activity.CrashReportActivity;
 import com.xapps.media.xmusic.data.DataManager;
 
+import com.xapps.media.xmusic.utils.XUtils;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -17,7 +18,6 @@ public class XApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-
         DataManager.init(this);
 
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
@@ -56,5 +56,10 @@ public class XApplication extends Application {
                 "Android: " + Build.VERSION.RELEASE + " / SDK " + Build.VERSION.SDK_INT + "\n" +
                 "Device: " + Build.MANUFACTURER + " " + Build.MODEL + "\n\n" +
                 sw.toString();
+    }
+
+    public void tryit() {
+        XUtils.updateTheme();
+        XUtils.applyDynamicColors(this);
     }
 }

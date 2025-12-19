@@ -1,6 +1,7 @@
 package com.xapps.media.xmusic.utils;
 
 import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -200,6 +201,19 @@ public class XUtils {
                 DynamicColors.applyToActivityIfAvailable(c, options.build());
             } else {
                 DynamicColors.applyToActivityIfAvailable(c);
+            }
+        }
+    }
+    
+    public static void applyDynamicColors(Application a) {
+        if (DataManager.isDynamicColorsOn() && Build.VERSION.SDK_INT >= 31) {
+            if (DataManager.isCustomColorsOn()) {
+                DynamicColorsOptions.Builder options = new DynamicColorsOptions.Builder();
+                options.setContentBasedSource(DataManager.getCustomColor());
+                options.setThemeOverlay(R.style.AppTheme);
+                DynamicColors.applyToActivitiesIfAvailable(a, options.build());
+            } else {
+                DynamicColors.applyToActivitiesIfAvailable(a);
             }
         }
     }

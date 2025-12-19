@@ -41,7 +41,6 @@ public class CustomPagerAdapter extends RecyclerView.Adapter<CustomPagerAdapter.
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(context).inflate(R.layout.song_cover_layout, parent, false);
-            Log.e("nigger", data.get(22).get("thumbnail").toString());
             return new ViewHolder(view);
         }
 
@@ -50,21 +49,18 @@ public class CustomPagerAdapter extends RecyclerView.Adapter<CustomPagerAdapter.
             String thumb = data.get(position).get("thumbnail").toString();
             if (!thumb.trim().isEmpty()) {
                 String path = "file://" + thumb.toString();
-                Glide.with(context)
+                Glide.with(holder.thumbnail)
                     .load(Uri.parse(path))
                     .apply(new RequestOptions()
                     .centerCrop()
-                    .override(750, 750)
                     .priority(Priority.LOW)
                     .skipMemoryCache(false))
                     .into(holder.thumbnail);
             } else {
-                XUtils.showMessage(context, "detected an empty one");
-                Glide.with(context)
+                Glide.with(holder.thumbnail)
                     .load(PlayerService.fallbackUri)
                     .apply(new RequestOptions()
                     .centerCrop()
-                    .override(750, 750)
                     .priority(Priority.LOW)
                     .skipMemoryCache(false))
                     .into(holder.thumbnail);

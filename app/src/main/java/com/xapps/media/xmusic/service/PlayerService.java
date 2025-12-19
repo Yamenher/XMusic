@@ -47,6 +47,7 @@ public class PlayerService extends MediaSessionService {
 	private Handler handler;  
 	private Runnable updateProgressRunnable;  
     private final Context c = this;
+    public static long currentProgress;
 	
 	private Bitmap icon;  
 	public static boolean isPlaying, isRunning;  
@@ -101,7 +102,7 @@ public class PlayerService extends MediaSessionService {
     @Override
     public void onTaskRemoved(Intent i) {
         ExoPlayerHandler.post(() -> {
-            if (!player.isPlaying()) stopSelf();
+            if (player.getMediaItemCount() == 0) stopSelf();
         });
     }
 
@@ -167,8 +168,9 @@ public class PlayerService extends MediaSessionService {
                             player.addListener(new Player.Listener() {
                             @Override
                             public void onPlaybackStateChanged(int state) {
-                                sendUpdate(true);
                                 if (state == Player.STATE_READY) {
+                                    currentPosition = player.getCurrentMediaItemIndex();
+                                    sendUpdate(true);
                                     long duration = player.getDuration();
                                     if (!isRunning) {
                                         startUpdates();
@@ -188,6 +190,7 @@ public class PlayerService extends MediaSessionService {
                                         startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
                                     }  
                                     isInForeground = true;
+                                    areMediaItemsEmpty = player.getMediaItemCount() > 0;
                                 } else {
                                     if (player.getMediaItemCount() == 0) stopForeground(Service.STOP_FOREGROUND_REMOVE);
                                 }
@@ -195,8 +198,7 @@ public class PlayerService extends MediaSessionService {
                     
                             @Override
                             public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-                                currentPosition = player.getCurrentMediaItemIndex();
-                                sendUpdate(true);
+                                
                             }
                         });
                         }
@@ -211,7 +213,7 @@ public class PlayerService extends MediaSessionService {
     private long lastUpdate = 0;
     
     private void sendUpdate(boolean isFromNotif) {
-        if (System.currentTimeMillis() - lastUpdate < 150 || currentPosition == -1) return;
+        if (System.currentTimeMillis() - lastUpdate < 250 || currentPosition < 0) return;
         lastUpdate = System.currentTimeMillis();
         executor_.execute(() -> {
             Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
@@ -226,7 +228,6 @@ public class PlayerService extends MediaSessionService {
                 lightColors = light;
                 darkColors = dark;
                 ServiceCallback.Hub.send(ServiceCallback.CALLBACK_COLORS_UPDATE);
-                //if (isFromNotif) sendDataToActivity("update-cover"); else sendDataToActivity("update"); 
             });
         });
     }
@@ -265,7 +266,8 @@ public class PlayerService extends MediaSessionService {
             @Override
             public void run(){
                 try {
-                    if (player != null && player.isPlaying()) {
+                    if (player != null && isPlaying) {
+                        currentProgress = player.getCurrentPosition();
                         RuntimeData.currentProgress = player.getContentPosition();
                         ServiceCallback.Hub.send(ServiceCallback.CALLBACK_PROGRESS_UPDATE);
                     }
@@ -547,5 +549,11 @@ public class PlayerService extends MediaSessionService {
 
     public static int getCurrentPos() {
         return currentPosition;
+    }
+    
+    private static boolean areMediaItemsEmpty;
+
+    public static boolean isAnythingPlaying() {
+        return areMediaItemsEmpty;
     }
 }
