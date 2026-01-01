@@ -29,6 +29,7 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.common.collect.ImmutableList;
 import com.xapps.media.xmusic.activity.*;
 import com.xapps.media.xmusic.R;
+import com.xapps.media.xmusic.application.XApplication;
 import com.xapps.media.xmusic.data.RuntimeData;
 import com.xapps.media.xmusic.helper.ServiceCallback;
 import com.xapps.media.xmusic.utils.*;
@@ -183,24 +184,9 @@ public class PlayerService extends MediaSessionService {
                             @Override
                             public void onIsPlayingChanged(boolean playing) {
                                 isPlaying = playing;
-                                if (playing && !isInForeground) {
-                                    if (Build.VERSION.SDK_INT >= 33) {  
-                                        startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", "") , ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);  
-                                    } else {  
-                                        startForeground(NOTIFICATION_ID, buildNotification("XMusic", "No song is playing", ""));  
-                                    }  
-                                    isInForeground = true;
-                                    areMediaItemsEmpty = player.getMediaItemCount() > 0;
-                                } else {
-                                    if (player.getMediaItemCount() == 0) stopForeground(Service.STOP_FOREGROUND_REMOVE);
-                                }
                             }
                     
-                            @Override
-                            public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-                                
-                            }
-                        });
+                            });
                         }
                     });
                     });
@@ -405,7 +391,10 @@ public class PlayerService extends MediaSessionService {
 		if (mediaSession != null) {
 			return;
 		}
-        mediaSession = new androidx.media3.session.MediaSession.Builder(this, player).setId("XMusicMediaSessionPrivate").setCallback(new CustomCallback()).build();
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent sessionActivity = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        mediaSession = new androidx.media3.session.MediaSession.Builder(this, player).setId("XMusicMediaSession").setSessionActivity(sessionActivity).setCallback(new CustomCallback()).build();
     }
     
     public class CustomCallback implements MediaSession.Callback {

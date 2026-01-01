@@ -146,12 +146,12 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     @Override
 	public void onPause() {
 		super.onPause();
-        //unregisterReceiver(multiReceiver);
 	}
     
     @Override
     public void onStart() {
         super.onStart();
+        binding.gradientBg.setAlpha(0);
         navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
         navController = navHostFragment.getNavController();
         NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
@@ -162,6 +162,20 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
                 try {
                     mediaController = controllerFuture.get();
                     progressDrawable.setAnimate(mediaController.isPlaying());
+                    mediaController.addListener(new Player.Listener() {
+                        @Override
+                        public void onIsPlayingChanged(boolean playing) {
+                            if (playing) {
+                                //binding.gradientBg.setAnimationSpeed(1f);
+                                binding.toggleView.startAnimation();
+                                progressDrawable.setAnimate(true);
+                            }else {
+                                //binding.gradientBg.setAnimationSpeed(0.1f);
+                                binding.toggleView.stopAnimation();
+                                progressDrawable.setAnimate(false);
+                            }
+                        }
+                    });
                 } catch (Exception e) {
                     showInfoDialog("Error", 0, e.toString(), "OK");
                 }
@@ -236,8 +250,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         if (!binding.toggleView.isAnimating()) binding.toggleView.startAnimation();
         PlayerService.currentPosition = position;
         seekbarFree = false;
-        Intent intent = new Intent(this, PlayerService.class);
-        startService(intent);
         binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(0));
         binding.songSeekbar.setProgress(0, true);
         binding.musicProgress.setProgressCompat(0, true);
@@ -344,7 +356,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
                 }
                 updateProgress(RuntimeData.currentProgress == -1? PlayerService.currentPosition : RuntimeData.currentProgress);
             }
-        } if (PlayerService.isAnythingPlaying()) {
+        } else if (PlayerService.isAnythingPlaying()) {
             ColorPaletteUtils.darkColors = PlayerService.darkColors;
             ColorPaletteUtils.lightColors = PlayerService.lightColors;
             syncPlayerUI(mediaController.getCurrentMediaItemIndex());
@@ -352,15 +364,16 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             musicListFragment.updateActiveItem(mediaController.getMediaItemCount() > 0? mediaController.getCurrentMediaItemIndex() : -1);
             binding.bottomNavigation.postDelayed(() -> {
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                isBnvHidden = true;
+                HideBNV(false);
             }, 500);
             updateProgress(RuntimeData.currentProgress == -1? PlayerService.currentPosition : RuntimeData.currentProgress);
         } else {
-            
+            binding.bottomNavigation.postDelayed(() -> {
+                isBnvHidden = true;
+                HideBNV(false);
+            }, 500);
         }
-        binding.bottomNavigation.postDelayed(() -> {
-            isBnvHidden = true;
-            HideBNV(false);
-        }, 500);
         isRestoring = false;
     }
     
@@ -371,9 +384,11 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 				if (!binding.toggleView.isAnimating()) {
                     mediaController.pause();
                     progressDrawable.setAnimate(false);
+                    binding.gradientBg.setAnimationSpeed(0.1f);
 				} else {
                     mediaController.play();
                     progressDrawable.setAnimate(true);
+                    binding.gradientBg.setAnimationSpeed(0.5f);
 				}
 			}
 		});
@@ -496,14 +511,15 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 					    tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, slideOffset*2 - 1f);
 						((GradientDrawable) background).setColor(tmpColor);
 						binding.songSeekbar.setEnabled(true);
+                        binding.gradientBg.setAlpha((slideOffset-0.5f)*2);
 					} else {
+                        binding.gradientBg.setAlpha(0);
 						if (!isColorAnimated) {
 							isColorAnimated = true;
 							XUtils.animateColor(tmpColor, bottomSheetColor, animation -> {
 								int animatedColor = (int) animation.getAnimatedValue();
 								Drawable background = binding.miniPlayerBottomSheet.getBackground();
 								((GradientDrawable) background).setColor(animatedColor);
-						    
                             });
                         }
                         binding.songSeekbar.setEnabled(false);
@@ -522,6 +538,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         innerBottomSheetBehavior = BottomSheetBehavior.from(binding.extendableLayout);
         innerBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         innerBottomSheetBehavior.setDraggable(true);
+        binding.gradientBg.setAlpha(0);
         
         innerBottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
 			@Override
@@ -689,6 +706,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             binding.currentDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
             binding.totalDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
         }, 120);
+        if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) binding.gradientBg.setAlpha(1);
     }
     
     private void updateSongsQueue() {
@@ -813,6 +831,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         GradientDrawable background = (GradientDrawable) binding.miniPlayerBottomSheet.getBackground();
         tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
         background.setColor(tmpColor);
+        
+        binding.gradientBg.setColors(colors.get("surface"), colors.get("surface"), colors.get("surface"), colors.get("surfaceContainer"));
     }
 
     public void showSnackbar(@NonNull View parent, String text, String btntext, @Nullable View.OnClickListener actionListener) {

@@ -38,16 +38,16 @@
                 android:id="@+id/miniPlayerBottomSheet"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingTop="8dp"
+                android:paddingTop="0dp"
                 android:orientation="vertical"
                 android:layout_gravity="bottom"
-                android:fitsSystemWindows="false"
                 app:layout_behavior="com.xapps.media.xmusic.models.CustomBottomSheetBehavior"
                 android:background="@drawable/rounded_corners_bottom_sheet"
                 app:layoutDescription="@xml/motion_scene"
                 android:clickable="true"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:clipToOutline="true"
                 app:behavior_peekHeight="140dp">
                 <com.appbroker.roundedimageview.RoundedImageView
                     android:id="@+id/covers_pager"
@@ -55,6 +55,12 @@
                     android:layout_height="wrap_content"
                     app:layout_constraintStart_toStartOf="@+id/miniPlayerBottomSheet"
                     app:layout_constraintTop_toTopOf="parent" />
+                <com.xapps.media.xmusic.widget.ShaderGradientView
+                    android:id="@+id/gradient_bg"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:translationZ="-1dp"
+                    android:elevation="0dp"/>
                 <LinearLayout
                     android:id="@+id/miniPlayerDetailsLayout"
                     android:layout_width="wrap_content"
@@ -63,10 +69,10 @@
                     android:layout_marginStart="69dp"
                     app:layout_constraintBottom_toBottomOf="@+id/covers_pager"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="@+id/covers_pager" >
+                    app:layout_constraintTop_toTopOf="@+id/covers_pager">
                     <TextView
                         android:id="@+id/currentSongTitle"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="No song is being played"
                         android:textSize="16sp"
@@ -80,7 +86,7 @@
                         android:scrollHorizontally="true" />
                     <TextView
                         android:id="@+id/currentSongArtist"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:paddingTop="4dp"
                         android:text="Artist"
@@ -130,14 +136,14 @@
                             android:padding="8dp"
                             android:gravity="center_vertical"
                             android:orientation="horizontal">
-                            <ImageView
+                            <com.xapps.media.xmusic.widget.SmallToggleView
                                 android:id="@+id/favorite_button"
                                 android:layout_width="50dp"
                                 android:layout_height="50dp"
                                 android:layout_marginEnd="10dp"
                                 android:padding="12dp"
                                 android:scaleType="fitCenter"
-                                android:background="@drawable/circle_ripple"
+                                android:background="@drawable/circle_shape"
                                 android:src="@drawable/ic_favorite_outlined"
                                 android:tint="?attr/colorOnSurface" />
                             <LinearLayout
@@ -145,55 +151,52 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:orientation="horizontal">
-                                <LinearLayout
+                                <androidx.constraintlayout.widget.ConstraintLayout
                                     android:id="@+id/texts_layout"
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:gravity="center_vertical|center_horizontal"
-                                    android:orientation="vertical">
+                                    android:layout_height="wrap_content">
                                     <TextView
                                         android:id="@+id/song_big_title"
-                                        android:layout_width="wrap_content"
+                                        android:layout_width="0dp"
                                         android:layout_height="wrap_content"
                                         android:paddingTop="5dp"
-                                        android:paddingRight="5dp"
                                         android:paddingBottom="2dp"
-                                        android:text="@android:string/unknownName"
                                         android:textSize="22sp"
-                                        android:textStyle="normal"
                                         android:singleLine="true"
                                         android:ellipsize="marquee"
                                         android:marqueeRepeatLimit="marquee_forever"
-                                        android:focusable="true"
-                                        android:focusableInTouchMode="true"
                                         android:scrollHorizontally="true"
-                                        android:textColor="?colorOnSurface" />
+                                        android:gravity="center"
+                                        android:textColor="?colorOnSurface"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintTop_toTopOf="parent" />
                                     <TextView
                                         android:id="@+id/artist_big_title"
-                                        android:layout_width="wrap_content"
+                                        android:layout_width="0dp"
                                         android:layout_height="wrap_content"
                                         android:paddingTop="5dp"
-                                        android:paddingRight="5dp"
                                         android:paddingBottom="5dp"
-                                        android:text="@android:string/unknownName"
                                         android:textSize="16sp"
+                                        android:singleLine="true"
                                         android:ellipsize="marquee"
-                                        android:focusable="true"
-                                        android:focusableInTouchMode="true"
                                         android:marqueeRepeatLimit="marquee_forever"
                                         android:scrollHorizontally="true"
-                                        android:singleLine="true"
-                                        android:textColor="?colorOutline" />
-                                </LinearLayout>
+                                        android:gravity="center"
+                                        android:textColor="?colorOutline"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintTop_toBottomOf="@id/song_big_title" />
+                                </androidx.constraintlayout.widget.ConstraintLayout>
                             </LinearLayout>
-                            <ImageView
+                            <com.xapps.media.xmusic.widget.SmallToggleView
                                 android:id="@+id/save_button"
                                 android:layout_width="50dp"
                                 android:layout_height="50dp"
                                 android:layout_marginStart="10dp"
                                 android:padding="12dp"
                                 android:scaleType="fitCenter"
-                                android:background="@drawable/circle_ripple"
+                                android:background="@drawable/circle_shape"
                                 android:src="@drawable/ic_playlist_add"
                                 android:tint="?attr/colorOnSurface" />
                         </LinearLayout>
@@ -241,12 +244,12 @@
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintEnd_toEndOf="parent" />
-                        <ImageView
+                        <com.xapps.media.xmusic.widget.SmallToggleView
                             android:id="@+id/previous_button"
                             android:layout_width="60dp"
                             android:layout_height="60dp"
                             android:padding="15dp"
-                            android:background="@drawable/circle_ripple"
+                            android:background="@drawable/circle_shape"
                             android:src="@drawable/icon_skip_previous_outline"
                             android:tint="?attr/colorOnSurface" />
                         <com.xapps.media.xmusic.widget.NewPlayerToggle
@@ -255,12 +258,12 @@
                             android:layout_height="105dp"
                             android:gravity="center"
                             android:layout_marginHorizontal="24dp" />
-                        <ImageView
+                        <com.xapps.media.xmusic.widget.SmallToggleView
                             android:id="@+id/next_button"
                             android:layout_width="60dp"
                             android:layout_height="60dp"
                             android:padding="15dp"
-                            android:background="@drawable/circle_ripple"
+                            android:background="@drawable/circle_shape"
                             android:src="@drawable/icon_skip_next_outline"
                             android:tint="?attr/colorOnSurface" />
                     </androidx.constraintlayout.widget.ConstraintLayout>

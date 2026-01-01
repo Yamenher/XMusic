@@ -40,8 +40,11 @@ public class SongMetadataHelper {
 	
 	private static final String CACHE_DIR_NAME = "covers";
     private static final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private static ArrayList<HashMap<String, Object>> songsData = new ArrayList<>();
 	
 	public static void getAllSongs(Context context, SongLoadListener listener) {
+    
+    if (songsData.size() > 0 && listener != null) listener.onComplete(songsData);
 
     ArrayList<HashMap<String, Object>> songListMap = new ArrayList<>();
     Object lock = new Object();
@@ -153,6 +156,7 @@ public class SongMetadataHelper {
             latch.await();
         } catch (InterruptedException ignored) {}
         if (listener != null) {
+            songsData = songListMap;
             listener.onComplete(songListMap);
         }
     });

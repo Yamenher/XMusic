@@ -4,19 +4,17 @@ import android.graphics.Bitmap;
 
 import com.google.android.material.color.utilities.Hct;
 import com.google.android.material.color.utilities.QuantizerCelebi;
-import com.google.android.material.color.utilities.Score;
 import com.google.android.material.color.utilities.Scheme;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ColorPaletteUtils {
+public class LegacyColorPaletteUtils {
 
-    public static volatile Map<String, Integer> lightColors;
-    public static volatile Map<String, Integer> darkColors;
+    public static Map<String, Integer> lightColors;
+    public static Map<String, Integer> darkColors;
 
     private static final ExecutorService executor =
             Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -34,8 +32,10 @@ public class ColorPaletteUtils {
             try {
                 long hash = hashBitmap(bitmap);
 
-                if (hash == lastBitmapHash && lightColors != null && darkColors != null) {
-                    if (callback != null) callback.onResult(lightColors, darkColors);
+                if (hash == lastBitmapHash) {
+                    if (callback != null && lightColors != null && darkColors != null) {
+                        callback.onResult(lightColors, darkColors);
+                    }
                     return;
                 }
 
@@ -49,14 +49,37 @@ public class ColorPaletteUtils {
                         0, 0, scaled.getWidth(), scaled.getHeight()
                 );
 
-                Map<Integer, Integer> colorMap =
-                        QuantizerCelebi.quantize(pixels, 16);
+                Map<Integer, Integer> colorMap = QuantizerCelebi.quantize(pixels, 16);
+                int totalPixels = pixels.length;
 
-                List<Integer> ranked =
-                        Score.score(colorMap, 0, 1, false);
+                int bestColor = 0;
+                double bestScore = -1;
 
-                int seedColor = ranked.isEmpty() ? 0xFF6750A4 : ranked.get(0);
-                Hct seed = Hct.fromInt(seedColor);
+                for (Map.Entry<Integer, Integer> e : colorMap.entrySet()) {
+                    int color = e.getKey();
+                    int count = e.getValue();
+
+                    Hct hct = Hct.fromInt(color);
+
+                    double dominance = (double) count / totalPixels;
+                    double chroma = hct.getChroma();
+                    double tone = hct.getTone();
+
+                    double penalty = chroma > 50 ? (chroma - 30) * 0.4 : 0;
+
+                    double score =
+                            (dominance * 100) +
+                            (chroma * 0.4) -
+                            penalty +
+                            (20 - Math.abs(tone - 60));
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestColor = color;
+                    }
+                }
+
+                Hct seed = Hct.fromInt(bestColor);
 
                 lightColors = generateMaterialTones(seed, false);
                 darkColors = generateMaterialTones(seed, true);
@@ -65,7 +88,7 @@ public class ColorPaletteUtils {
                     callback.onResult(lightColors, darkColors);
                 }
 
-            } catch (Exception e) {
+            } catch (Exception ignored) {
                 if (callback != null) {
                     callback.onResult(new HashMap<>(), new HashMap<>());
                 }
@@ -92,15 +115,15 @@ public class ColorPaletteUtils {
     private static Map<String, Integer> generateMaterialTones(Hct hct, boolean isDark) {
         Map<String, Integer> tones = new HashMap<>();
 
-        double hue = hct.getHue() % 360;
+        double hue = hct.getHue();
         double chroma = hct.getChroma();
         boolean lowChroma = chroma < 10;
 
         tones.put("primary", Hct.from(hue, lowChroma ? chroma : 40, isDark ? 80 : 30).toInt());
         tones.put("onPrimary", Hct.from(hue, lowChroma ? chroma : 40, isDark ? 20 : 80).toInt());
 
-        tones.put("tertiary", Hct.from((hue + 25) % 360, lowChroma ? chroma : 40, isDark ? 80 : 40).toInt());
-        tones.put("onTertiary", Hct.from((hue + 25) % 360, lowChroma ? chroma : 40, isDark ? 20 : 80).toInt());
+        tones.put("tertiary", Hct.from(hue + 25, lowChroma ? chroma : 40, isDark ? 80 : 40).toInt());
+        tones.put("onTertiary", Hct.from(hue + 25, lowChroma ? chroma : 40, isDark ? 20 : 80).toInt());
 
         tones.put("primaryContainer", Hct.from(hue, chroma, isDark ? 30 : 90).toInt());
         tones.put("onPrimaryContainer", Hct.from(hue, chroma, isDark ? 90 : 10).toInt());

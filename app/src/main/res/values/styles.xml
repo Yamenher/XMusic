@@ -24,12 +24,18 @@
         <item name="android:focusable">false</item>
     </style>    
     <style name="Base.MaterialAlertDialog.MaterialComponents.Title.Icon" parent="android:Widget">
-    <item name="android:layout_width">32dip</item>
-    <item name="android:layout_height">32dip</item>
-    <item name="android:scaleType">fitCenter</item>
-    <item name="android:src">@null</item>
-    <item name="android:tint">?colorPrimary</item>
-    <item name="android:contentDescription">@null</item>
-    <item name="android:importantForAccessibility">no</item>
+        <item name="android:layout_width">32dip</item>
+        <item name="android:layout_height">32dip</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:src">@null</item>
+        <item name="android:tint">?colorPrimary</item>
+        <item name="android:contentDescription">@null</item>
+        <item name="android:importantForAccessibility">no</item>
+  </style>
+  <style name="MarqueeTextStyle"> 
+    <item name="marqueeIsLooping">true</item>
+    <item name="marqueeFadeToColor">@android:color/transparent</item>
+    <item name="marqueeFontFamily">@font/product_sans_regular</item>
+    <item name="android:scrollbars">none</item>
   </style>
 </resources>

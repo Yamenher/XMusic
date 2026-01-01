@@ -41,6 +41,7 @@
             android:layout_width="45.0dp"
             android:layout_height="45.0dp"
             android:layout_marginStart="8.0dp"
+            android:layout_marginTop="8dp"
             motion:layout_constraintStart_toStartOf="@+id/miniPlayerBottomSheet"
             motion:layout_constraintTop_toTopOf="parent">
 

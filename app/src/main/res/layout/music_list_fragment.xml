@@ -24,6 +24,7 @@
             app:layout_scrollFlags="scroll|enterAlwaysCollapsed|exitUntilCollapsed"
             app:layout_collapseMode="pin">
             <LinearLayout
+                android:id="@+id/custom_toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@android:color/transparent"
@@ -84,4 +85,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:scrimColor="?colorSurface" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/shuffle_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right|top"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="16dp"
+        android:elevation="8dp"
+        style="@style/Widget.Material3Expressive.Button.IconButton.Tonal"
+        app:icon="@drawable/ic_shuffle" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

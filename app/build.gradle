@@ -152,17 +152,18 @@ dependencies {
     implementation 'androidx.media3:media3-common:1.8.0'
     implementation 'androidx.media3:media3-exoplayer:1.8.0'
     implementation 'androidx.media3:media3-session:1.8.0'
-    implementation 'androidx.core:core-splashscreen:1.2.0-rc01'
+    implementation 'androidx.core:core-splashscreen:1.2.0'
     implementation 'androidx.activity:activity:1.11.0'
     implementation 'androidx.media:media:1.7.1'
     implementation 'androidx.customview:customview-poolingcontainer:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
-    implementation 'com.github.bumptech.glide:recyclerview-integration:4.14.2'
     implementation 'androidx.navigation:navigation-ui:2.9.5'
     implementation 'androidx.navigation:navigation-fragment:2.9.5'
+    implementation "androidx.lifecycle:lifecycle-process:2.10.0" 
     implementation 'org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1'
     implementation 'com.github.rtugeek:colorseekbar:2.0.3'
     implementation "androidx.graphics:graphics-shapes:1.1.0"
+    implementation 'io.github.chayanforyou:marquee:1.0.0'
     implementation 'com.github.Adonai:jaudiotagger:2.3.14'
     implementation(name: 'fastscroller', ext: 'aar')
     implementation project(':vumeterlibrary')

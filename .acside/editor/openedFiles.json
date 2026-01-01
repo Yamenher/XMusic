@@ -1,17 +1,62 @@
 {
   "allFiles": [
     {
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/res/layout/main.xml",
+      "selection": {
+        "end": {
+          "column": 44,
+          "index": 3122,
+          "line": 61
+        },
+        "start": {
+          "column": 44,
+          "index": 3122,
+          "line": 61
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/res/raw/bg_frag.glsl",
+      "selection": {
+        "end": {
+          "column": 1,
+          "index": 2829,
+          "line": 104
+        },
+        "start": {
+          "column": 1,
+          "index": 2829,
+          "line": 104
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/widget/ShaderGradientView.java",
+      "selection": {
+        "end": {
+          "column": 29,
+          "index": 710,
+          "line": 27
+        },
+        "start": {
+          "column": 29,
+          "index": 710,
+          "line": 27
+        }
+      }
+    },
+    {
       "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/activity/MainActivity.java",
       "selection": {
         "end": {
-          "column": 79,
-          "index": 5962,
-          "line": 135
+          "column": 102,
+          "index": 39820,
+          "line": 834
         },
         "start": {
-          "column": 79,
-          "index": 5962,
-          "line": 135
+          "column": 102,
+          "index": 39820,
+          "line": 834
         }
       }
     }

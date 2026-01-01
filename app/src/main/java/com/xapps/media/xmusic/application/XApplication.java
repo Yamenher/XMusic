@@ -5,6 +5,12 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Process;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.ProcessLifecycleOwner;
+import androidx.lifecycle.OnLifecycleEvent;
 import com.xapps.media.xmusic.BuildConfig;
 import com.xapps.media.xmusic.activity.CrashReportActivity;
 import com.xapps.media.xmusic.data.DataManager;
@@ -14,6 +20,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class XApplication extends Application {
+
+    public static boolean isForeground = false;
 
     @Override
     public void onCreate() {
@@ -39,6 +47,14 @@ public class XApplication extends Application {
 
             Process.killProcess(Process.myPid());
             System.exit(10);
+        });
+        ProcessLifecycleOwner.get().getLifecycle().addObserver(new DefaultLifecycleObserver() {
+                    
+            @Override
+            public void onStart(@NonNull LifecycleOwner owner) { isForeground = true; }
+        
+            @Override
+            public void onStop(@NonNull LifecycleOwner owner) { isForeground = false; }
         });
     }
 

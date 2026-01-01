@@ -22,7 +22,8 @@ public class CrashReportActivity extends AppCompatActivity {
         error = getIntent().getStringExtra("error");
         binding.reportButton.setOnClickListener(v -> {
             try {
-                File file = new File(getCacheDir(), "crash_report.txt");
+                String suffix = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US).format(new java.util.Date());
+                File file = new File(getCacheDir(), "crash_report-" + suffix + ".txt");
                 FileOutputStream fos = new FileOutputStream(file);
                 String report = error == null? "Unknown error" : error;
                 fos.write(report.getBytes());
