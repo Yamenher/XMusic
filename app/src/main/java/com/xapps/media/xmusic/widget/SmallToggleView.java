@@ -7,6 +7,7 @@ import androidx.appcompat.widget.AppCompatImageView;
 public class SmallToggleView extends AppCompatImageView {
 
     private boolean pressedInside = false;
+    private boolean isEnabled = true;
 
     public SmallToggleView(Context c) {
         super(c);
@@ -34,17 +35,10 @@ public class SmallToggleView extends AppCompatImageView {
                 pressedInside = true;
                 animate().scaleX(0.9f).scaleY(0.9f).setDuration(80).start();
                 return true;
-
-            case MotionEvent.ACTION_MOVE:
-                /*if (!isInside(e)) {
-                    pressedInside = false;
-                    animate().scaleX(1f).scaleY(1f).setDuration(80).start();
-                }*/
-                return true;
-
+            
             case MotionEvent.ACTION_UP:
                 animate().scaleX(1f).scaleY(1f).setDuration(80).start();
-                if (pressedInside && isInside(e)) performClick();
+                if (pressedInside && isInside(e) && isEnabled) performClick();
                 pressedInside = false;
                 return true;
 
@@ -64,5 +58,10 @@ public class SmallToggleView extends AppCompatImageView {
     @Override
     public boolean performClick() {
         return super.performClick();
+    }
+    
+    public void setActive(boolean b) {
+        setAlpha(b? 1f : 0.3f);
+        isEnabled = b;
     }
 }

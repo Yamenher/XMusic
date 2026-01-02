@@ -16,24 +16,22 @@ import java.util.Scanner;
 
 public class ShaderGradientView extends View {
 
-    private static final boolean SUPPORTED = Build.VERSION.SDK_INT >= 31;
+    private static final boolean SUPPORTED = Build.VERSION.SDK_INT >= 32;
 
     private RuntimeShader shader;
     private Paint paint;
 
     private boolean visible = false;
-
-    // ---- animation clock (loop-based) ----
+    
     private float phase = 0f;
     private float speed = 0.5f;
-    private static final float BASE_SPEED = 0.016f; // ~60fps normalized step
+    private static final float BASE_SPEED = 0.016f;
 
-    // ---- color interpolation ----
     private float[] currentColors;
     private float[] startColors;
     private float[] targetColors;
     private float colorT = 1f;
-    private float colorSpeed = 0.8f; // seconds-ish
+    private float colorSpeed = 0.8f;
 
     private final float[] uPoints = {
             0f, 0f, 1.5f,
@@ -58,11 +56,9 @@ public class ShaderGradientView extends View {
 
                     if (visible && shader != null) {
 
-                        // ---- advance phase smoothly ----
                         phase += BASE_SPEED * speed;
                         shader.setFloatUniform("uAnimTime", phase);
 
-                        // ---- color interpolation ----
                         if (colorT < 1f && startColors != null && targetColors != null) {
                             colorT += BASE_SPEED * colorSpeed;
                             float t = Math.min(1f, colorT);
@@ -158,8 +154,6 @@ public class ShaderGradientView extends View {
         canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
     }
 
-    // ---- PUBLIC API ----
-
     public void setAnimationSpeed(float s) {
         speed = Math.max(0f, s);
     }
@@ -169,8 +163,6 @@ public class ShaderGradientView extends View {
         targetColors = colorsFromInts(c1, c2, c3, c4);
         colorT = 0f;
     }
-
-    // ---- utils ----
 
     private static float[] colorsFromInts(int c1, int c2, int c3, int c4) {
         return new float[]{

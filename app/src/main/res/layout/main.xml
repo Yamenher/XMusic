@@ -10,16 +10,31 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:background="?colorSurface">
-        <androidx.fragment.app.FragmentContainerView
+        <LinearLayout
             android:id="@+id/fragmentsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:name="androidx.navigation.fragment.NavHostFragment"
-            android:orientation="vertical"
-            app:navGraph="@navigation/nav_graph"
-            app:defaultNavHost="true"
             android:transitionGroup="true"
-            android:layout_weight="1" />
+            android:orientation="horizontal"
+            android:layout_weight="1" >
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/main_frag"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" 
+                android:name="com.xapps.media.xmusic.fragment.MusicListFragment" />
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/search_frag"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" 
+                android:name="com.xapps.media.xmusic.fragment.SearchFragment" 
+                android:visibility="gone"/>
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/settings_frag"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" 
+                android:name="com.xapps.media.xmusic.fragment.SettingsFragment" 
+                android:visibility="gone"/>
+        </LinearLayout>
         <View
             android:id="@+id/Scrim"
             android:padding="8dp"
@@ -315,7 +330,7 @@
                 android:layout_gravity="bottom"
                 android:translationY="125dp"
                 app:menu="@menu/bnv_menu"
-                app:labelVisibilityMode="selected"
+                app:labelVisibilityMode="unlabeled"
                 app:itemTextAppearanceActive="@style/BoldStyleBNV" />
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </FrameLayout>

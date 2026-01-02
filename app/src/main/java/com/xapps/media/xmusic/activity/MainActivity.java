@@ -45,6 +45,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.transition.TransitionManager;
 import androidx.viewpager2.widget.ViewPager2;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.Priority;
@@ -53,6 +54,7 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.transition.MaterialFadeThrough;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.xapps.media.xmusic.R;
@@ -152,9 +154,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     public void onStart() {
         super.onStart();
         binding.gradientBg.setAlpha(0);
-        navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentsContainer);
-        navController = navHostFragment.getNavController();
-        NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
         if (sessionToken == null) sessionToken = new SessionToken(context, new ComponentName(context, PlayerService.class));
         if (controllerFuture == null && mediaController == null) {
             controllerFuture = new MediaController.Builder(this, sessionToken).buildAsync();
@@ -164,15 +163,37 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
                     progressDrawable.setAnimate(mediaController.isPlaying());
                     mediaController.addListener(new Player.Listener() {
                         @Override
-                        public void onIsPlayingChanged(boolean playing) {
-                            if (playing) {
-                                //binding.gradientBg.setAnimationSpeed(1f);
-                                binding.toggleView.startAnimation();
+                        public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
+                            if (mediaItem != null) {
+                                int position = mediaController.getCurrentMediaItemIndex();
                                 progressDrawable.setAnimate(true);
-                            }else {
-                                //binding.gradientBg.setAnimationSpeed(0.1f);
-                                binding.toggleView.stopAnimation();
-                                progressDrawable.setAnimate(false);
+                                if (!binding.toggleView.isAnimating()) binding.toggleView.startAnimation();
+                                PlayerService.currentPosition = position;
+                                seekbarFree = false;
+                                binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(0));
+                                binding.songSeekbar.setProgress(0, true);
+                                binding.musicProgress.setProgressCompat(0, true);
+                                if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_HIDDEN) bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                                syncPlayerUI(position);
+                                saveUIState();
+                                backgroundHandler.postDelayed(() -> {
+                                    seekbarFree = true;
+                                }, 150);
+                                if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+                                    binding.miniPlayerBottomSheet.setProgress(1f);
+                                } else {
+                                    binding.miniPlayerBottomSheet.setProgress(0f);
+                                }
+                                if (position == 0) {
+                                    binding.previousButton.setActive(false);
+                                    binding.nextButton.setActive(true);
+                                } else if (position == RuntimeData.songsMap.size() - 1) {
+                                    binding.previousButton.setActive(true);
+                                    binding.nextButton.setActive(false);
+                                } else {
+                                    binding.previousButton.setActive(true);
+                                    binding.nextButton.setActive(true);
+                                }
                             }
                         }
                     });
@@ -246,20 +267,20 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 	}
     
     public void setSong(int position, String coverPath, Uri fileUri) {
-        progressDrawable.setAnimate(true);
+        /*progressDrawable.setAnimate(true);
         if (!binding.toggleView.isAnimating()) binding.toggleView.startAnimation();
         PlayerService.currentPosition = position;
         seekbarFree = false;
         binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(0));
         binding.songSeekbar.setProgress(0, true);
-        binding.musicProgress.setProgressCompat(0, true);
+        binding.musicProgress.setProgressCompat(0, true);*/
         if (mediaController.getMediaItemCount() == 0) {
             mediaController.setMediaItems(PlayerService.mediaItems);
             mediaController.prepare();
         }
         mediaController.seekTo(position, 0);
         mediaController.play();
-        if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_HIDDEN) bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        /*if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_HIDDEN) bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         syncPlayerUI(position);
         saveUIState();
         backgroundHandler.postDelayed(() -> {
@@ -269,7 +290,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             binding.miniPlayerBottomSheet.setProgress(1f);
         } else {
             binding.miniPlayerBottomSheet.setProgress(0f);
-        }
+        }*/
 	}
     
     private void updateProgress(long position) {
@@ -444,6 +465,35 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 				}, 125);
                 mediaController.seekTo(seekBar.getProgress());
             }
+        });
+        
+            
+        MaterialFadeThrough transition = new MaterialFadeThrough();
+        transition.setDuration(500);
+
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+             TransitionManager.beginDelayedTransition(binding.Coordinator, transition);
+        
+            int id = item.getItemId();
+
+            if (id == R.id.menuHomeFragment) {
+                binding.searchFrag.setVisibility(View.GONE);
+                binding.settingsFrag.setVisibility(View.GONE);
+                binding.mainFrag.setVisibility(View.VISIBLE);
+                return true;
+            } else if (id == R.id.menuSearchFragment) {
+                binding.searchFrag.setVisibility(View.VISIBLE);
+                binding.mainFrag.setVisibility(View.GONE);
+                binding.settingsFrag.setVisibility(View.GONE);
+                return true;
+            } else if (id == R.id.menuSettingsFragment) {
+                binding.searchFrag.setVisibility(View.GONE);
+                binding.mainFrag.setVisibility(View.GONE);
+                binding.settingsFrag.setVisibility(View.VISIBLE);
+                return true;
+            }
+
+            return false;
         });
     }
     
@@ -820,7 +870,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         binding.previousButton.setColorFilter(tertiary, PorterDuff.Mode.SRC_IN);
 
         SeekBar seekbar = binding.songSeekbar;
-        seekbar.setThumbTintList(ColorStateList.valueOf(colors.get("primary")));
+        seekbar.setThumbTintList(ColorStateList.valueOf(colors.get("primary"))); 
         progressDrawable.setTint(colors.get("primary"));
 
         binding.artistBigTitle.setTextColor(colors.get("onSurfaceContainer"));
@@ -832,7 +882,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
         background.setColor(tmpColor);
         
-        binding.gradientBg.setColors(colors.get("surface"), colors.get("surface"), colors.get("surface"), colors.get("surfaceContainer"));
+        binding.gradientBg.setColors(0x99000000, 0x55000000, 0xAA000000, 0x88000000);
     }
 
     public void showSnackbar(@NonNull View parent, String text, String btntext, @Nullable View.OnClickListener actionListener) {

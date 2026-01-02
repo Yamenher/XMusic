@@ -116,7 +116,7 @@ jobs:
             -F chat_id="${{ secrets.CHAT_ID }}" \
             -F message_thread_id="4" \
             -F document=@"debug-arm64-v8a-${HASH}.apk" \
-            -F caption="ARM64 build"
+            -F caption="arm64-v8a Build"
 
       - name: Send armeabi APK to Telegram
         if: success() && github.event_name != 'pull_request'
@@ -127,4 +127,4 @@ jobs:
             -F chat_id="${{ secrets.CHAT_ID }}" \
             -F message_thread_id="4" \
             -F document=@"debug-armeabi-v7a-${HASH}.apk" \
-            -F caption="ARMEABI build"
+            -F caption="armeabi-v7a Build"
