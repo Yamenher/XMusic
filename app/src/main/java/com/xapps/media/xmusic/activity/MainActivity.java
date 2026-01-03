@@ -17,6 +17,8 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowInsetsController;
 import android.view.animation.Interpolator;
 import android.view.animation.PathInterpolator;
 import android.widget.Button;
@@ -100,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     private SquigglyProgress progressDrawable;
     private int bnvHeight, statusBarHeight, navBarHeight, bsbHeight, bottomSheetColor, tmpColor, playerSurface;
     private long lastClick;
-    private float currentSlideOffset;
+    private float currentSlideOffset, normalFabY, playingFabY;
     private OnBackPressedCallback callback, callback2;
 
     @Override
@@ -119,7 +121,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 		setContentView(binding.getRoot());
         int resourceId = context.getResources().getIdentifier("navigation_bar_height", "dimen", "android");
         int resourceId2 = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
-            
 		if (resourceId > 0 && resourceId2 > 0) {
             statusBarHeight = context.getResources().getDimensionPixelSize(resourceId2);
             navBarHeight = context.getResources().getDimensionPixelSize(resourceId);
@@ -132,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 	protected void onResume() {
 	    super.onResume();
         if (mediaController != null) {
-            updateProgress(RuntimeData.currentProgress == -1? PlayerService.currentProgress : RuntimeData.currentProgress);
+            updateProgress(mediaController.getCurrentPosition());
             syncPlayerUI(mediaController.getCurrentMediaItemIndex());
             updateColors();
             if (!PlayerService.isPlaying && binding.toggleView.isAnimating()) {
@@ -159,44 +160,10 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             controllerFuture = new MediaController.Builder(this, sessionToken).buildAsync();
                 controllerFuture.addListener(() -> {
                 try {
+                    if (!XUtils.isDarkMode(this)) setDarkStatusBar(getWindow(), true);
                     mediaController = controllerFuture.get();
                     progressDrawable.setAnimate(mediaController.isPlaying());
-                    mediaController.addListener(new Player.Listener() {
-                        @Override
-                        public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-                            if (mediaItem != null) {
-                                int position = mediaController.getCurrentMediaItemIndex();
-                                progressDrawable.setAnimate(true);
-                                if (!binding.toggleView.isAnimating()) binding.toggleView.startAnimation();
-                                PlayerService.currentPosition = position;
-                                seekbarFree = false;
-                                binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(0));
-                                binding.songSeekbar.setProgress(0, true);
-                                binding.musicProgress.setProgressCompat(0, true);
-                                if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_HIDDEN) bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-                                syncPlayerUI(position);
-                                saveUIState();
-                                backgroundHandler.postDelayed(() -> {
-                                    seekbarFree = true;
-                                }, 150);
-                                if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
-                                    binding.miniPlayerBottomSheet.setProgress(1f);
-                                } else {
-                                    binding.miniPlayerBottomSheet.setProgress(0f);
-                                }
-                                if (position == 0) {
-                                    binding.previousButton.setActive(false);
-                                    binding.nextButton.setActive(true);
-                                } else if (position == RuntimeData.songsMap.size() - 1) {
-                                    binding.previousButton.setActive(true);
-                                    binding.nextButton.setActive(false);
-                                } else {
-                                    binding.previousButton.setActive(true);
-                                    binding.nextButton.setActive(true);
-                                }
-                            }
-                        }
-                    });
+                    setupControllerListener();
                 } catch (Exception e) {
                     showInfoDialog("Error", 0, e.toString(), "OK");
                 }
@@ -205,23 +172,85 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         }
     }
     
+    public void setupControllerListener() {
+        mediaController.addListener(new Player.Listener() {
+            @Override
+            public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
+                if (mediaItem != null) {
+                    int position = mediaController.getCurrentMediaItemIndex();
+                    musicListFragment.updateActiveItem(position);
+                    progressDrawable.setAnimate(true);
+                    if (!binding.toggleView.isAnimating()) binding.toggleView.startAnimation();
+                    PlayerService.currentPosition = position;
+                    seekbarFree = false;
+                    binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(0));
+                    binding.songSeekbar.setProgress(0, true);
+                    binding.musicProgress.setProgressCompat(0, true);
+                    if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_HIDDEN) bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                    syncPlayerUI(position);
+                    saveUIState();
+                    backgroundHandler.postDelayed(() -> {
+                            seekbarFree = true;
+                        }, 150);
+                    if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+                        binding.miniPlayerBottomSheet.setProgress(1f);
+                    } else {
+                        binding.miniPlayerBottomSheet.setProgress(0f);
+                    }
+                    if (position == 0) {
+                        binding.previousButton.setActive(false);
+                        binding.nextButton.setActive(true);
+                    } else if (position == RuntimeData.songsMap.size() - 1) {
+                        binding.previousButton.setActive(true);
+                        binding.nextButton.setActive(false);
+                    } else {
+                        binding.previousButton.setActive(true);
+                        binding.nextButton.setActive(true);
+                    }
+                }
+            }
+            
+            @Override
+            public void onPositionDiscontinuity(Player.PositionInfo positionInfo, Player.PositionInfo positionInfo2, int i) {
+                updateProgress(mediaController.getCurrentPosition());
+            }            
+            
+            @Override
+            public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
+                if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST) {
+                    if (playWhenReady) {
+                        binding.toggleView.startAnimation();
+                        progressDrawable.setAnimate(true);
+                    } else {
+                        binding.toggleView.stopAnimation();
+                        progressDrawable.setAnimate(false);
+                    }
+                }
+            }
+        });
+    }
+    
     @Override
     public void onDestroy() {
+        saveUIState();
         super.onDestroy();
         ServiceCallback.Hub.set(null);
+        mediaController.release();
         //executor.shutdown();
         //unregisterReceiver(focusReceiver);
     }
     
     private void initialize() {
-        handler = new Handler(Looper.getMainLooper());
         viewmodel = new ViewModelProvider(this).get(MainActivityViewModel.class);
+        handler = new Handler(Looper.getMainLooper());
         bottomSheetBehavior = BottomSheetBehavior.from(binding.miniPlayerBottomSheet);
         binding.bottomNavigation.post(() -> {
+            binding.bottomNavigation.setSelectedItemId(viewmodel.loadBNVPosition());
             bnvHeight = binding.bottomNavigation.getHeight();
 			XUtils.increaseMargins(binding.musicProgress, 0, 0, 0, navBarHeight);
 			bottomSheetBehavior.setPeekHeight(bottomSheetBehavior.getPeekHeight() + navBarHeight);
-			//int bottomHeight = binding.coversPager.getHeight() + binding.bottomNavigation.getHeight() + binding.musicProgress.getHeight() + XUtils.getMargin(binding.musicProgress, "top");
+			playingFabY = -(binding.bottomNavigation.getHeight() + binding.miniPlayerDetailsLayout.getHeight() + XUtils.getMargin(binding.coversPager, "top")*2 + binding.musicProgress.getHeight());
+            normalFabY = -(binding.bottomNavigation.getHeight() + binding.musicProgress.getHeight());
         });
         bottomSheetBehavior.setHideable(true);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
@@ -246,17 +275,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         binding.songSeekbar.setProgressDrawable(progressDrawable);
         binding.miniPlayerBottomSheet.setBackground(ContextCompat.getDrawable(this, R.drawable.rounded_corners_bottom_sheet));
         EdgeToEdge.enable(this);
-        
-        /*RecyclerView innerRecylcerView = (RecyclerView) binding.coversPager.getChildAt(0);
-        if (innerRecylcerView != null) {
-            innerRecylcerView.setNestedScrollingEnabled(false);
-            innerRecylcerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        }
-        int pageGap = XUtils.convertToPx(this, 30);
-        binding.coversPager.setClipToPadding(false);
-        binding.coversPager.setClipChildren(false);*/
 		bottomSheetColor = MaterialColorUtils.colorSurfaceContainer;
-        
         binding.extendableLayout.setPadding(XUtils.convertToPx(this, 16f), 0, XUtils.convertToPx(this, 16f), navBarHeight);
         XUtils.setMargins(binding.coversPager, 0, XUtils.getStatusBarHeight(this)*5, 0, 0);
 		binding.songBigTitle.setSelected(true);
@@ -267,30 +286,15 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 	}
     
     public void setSong(int position, String coverPath, Uri fileUri) {
-        /*progressDrawable.setAnimate(true);
-        if (!binding.toggleView.isAnimating()) binding.toggleView.startAnimation();
-        PlayerService.currentPosition = position;
-        seekbarFree = false;
-        binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(0));
-        binding.songSeekbar.setProgress(0, true);
-        binding.musicProgress.setProgressCompat(0, true);*/
+        if (mediaController.getPlaybackState() == Player.STATE_BUFFERING) return;
+        MusicListFragment.fab.animate().translationY(playingFabY).setDuration(300).start();
         if (mediaController.getMediaItemCount() == 0) {
             mediaController.setMediaItems(PlayerService.mediaItems);
+            PlayerService.areMediaItemsEmpty = false;
             mediaController.prepare();
         }
         mediaController.seekTo(position, 0);
         mediaController.play();
-        /*if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_HIDDEN) bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-        syncPlayerUI(position);
-        saveUIState();
-        backgroundHandler.postDelayed(() -> {
-            seekbarFree = true;
-        }, 150);
-        if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
-            binding.miniPlayerBottomSheet.setProgress(1f);
-        } else {
-            binding.miniPlayerBottomSheet.setProgress(0f);
-        }*/
 	}
     
     private void updateProgress(long position) {
@@ -341,17 +345,10 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         startService(playIntent);
     }
     
-    public void openFragment(int layoutId) {
-        try {
-            navController.navigate(layoutId);
-        } catch (IllegalArgumentException e) {
-            
-        }
-    }
-    
     private void saveUIState() {
         viewmodel.markDataAsSaved(true);
         viewmodel.setBNVAsHidden(isBnvHidden);
+        viewmodel.saveBNVPosition(binding.bottomNavigation.getSelectedItemId());
         if (mediaController != null) viewmodel.setLastPosition(mediaController.getCurrentMediaItemIndex());
         PlayerService.songsMap = RuntimeData.songsMap;
     }
@@ -366,16 +363,23 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             if (index >= 0 && ColorPaletteUtils.lightColors != null && ColorPaletteUtils.darkColors != null) {
                 updateColors();
             }
-            if (PlayerService.isAnythingPlaying()) {
+            if (mediaController.getMediaItemCount() > 0) {
+                musicListFragment.updateActiveItem(index);
+                syncPlayerUI(mediaController.getCurrentMediaItemIndex());
+                updateProgress(mediaController.getCurrentPosition());
+                updateColors();
                 binding.bottomNavigation.postDelayed(() -> {
                     bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-                    isBnvHidden = !viewmodel.wasBNVHidden();
-                    HideBNV(viewmodel.wasBNVHidden());
-                }, 500);
-                if (mediaController.getMediaItemCount() > 0) {
-                    musicListFragment.updateActiveItem(index);
-                }
-                updateProgress(RuntimeData.currentProgress == -1? PlayerService.currentPosition : RuntimeData.currentProgress);
+                    isBnvHidden = true;
+                    HideBNV(false);
+                    MusicListFragment.fab.animate().translationY(playingFabY).setDuration(300).start();
+                }, 100);
+            } else {
+                binding.bottomNavigation.postDelayed(() -> {
+                    isBnvHidden = true;
+                    HideBNV(false);
+                    MusicListFragment.fab.animate().translationY(normalFabY).setDuration(300).start();
+                }, 100);
             }
         } else if (PlayerService.isAnythingPlaying()) {
             ColorPaletteUtils.darkColors = PlayerService.darkColors;
@@ -384,16 +388,18 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             updateColors();
             musicListFragment.updateActiveItem(mediaController.getMediaItemCount() > 0? mediaController.getCurrentMediaItemIndex() : -1);
             binding.bottomNavigation.postDelayed(() -> {
+                MusicListFragment.fab.animate().translationY(playingFabY).setDuration(300).start();
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                 isBnvHidden = true;
                 HideBNV(false);
-            }, 500);
-            updateProgress(RuntimeData.currentProgress == -1? PlayerService.currentPosition : RuntimeData.currentProgress);
+            }, 100);
+            updateProgress(mediaController.getContentPosition());
         } else {
             binding.bottomNavigation.postDelayed(() -> {
                 isBnvHidden = true;
                 HideBNV(false);
-            }, 500);
+                MusicListFragment.fab.animate().translationYBy(normalFabY).setDuration(300).start();
+            }, 100);
         }
         isRestoring = false;
     }
@@ -416,6 +422,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         
         binding.miniPlayerBottomSheet.setOnClickListener(v -> {
             if (bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            binding.musicProgress.setAlpha(0f);
         });
         
         binding.favoriteButton.setOnClickListener(v -> {
@@ -448,6 +455,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
                     binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration((int)progress));
+                    binding.musicProgress.setProgress(progress);
                 }
             }
 
@@ -472,8 +480,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         transition.setDuration(500);
 
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
-             TransitionManager.beginDelayedTransition(binding.Coordinator, transition);
-        
+            TransitionManager.beginDelayedTransition(binding.Coordinator, transition);
             int id = item.getItemId();
 
             if (id == R.id.menuHomeFragment) {
@@ -521,6 +528,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
                         PlayerService.currentPosition = -1;
 						mediaController.stop();
                         mediaController.clearMediaItems();
+                        PlayerService.areMediaItemsEmpty = true;
+                        MusicListFragment.fab.animate().translationY(normalFabY).setDuration(300).start();
 						isBsInvisible = true;
 				    } else {
 						isBsInvisible = false;
@@ -677,7 +686,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             public void handleOnBackCancelled() {
                 binding.miniPlayerBottomSheet.animate().scaleX(1f).setDuration(300).start();
                 binding.miniPlayerBottomSheet.animate().scaleY(1f).setDuration(300).start();
-                //bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
             }
         };
 
@@ -717,11 +725,9 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             } else {
                 RuntimeData.songsMap = PlayerService.songsMap;
                 updateSongsQueue(RuntimeData.songsMap);
-                //CustomPagerAdapter customPagerAdapter = new CustomPagerAdapter(context, RuntimeData.songsMap);
                 new Handler(Looper.getMainLooper()).post(() -> {
                     if (RuntimeData.songsMap.size() > 0) {
                         wasAdjusted = true;
-                        //binding.coversPager.setAdapter(customPagerAdapter);
                         if (PlayerService.isPlaying && !RuntimeData.songsMap.isEmpty()) {
                             updateCoverPager(PlayerService.currentPosition);
                             binding.toggleView.startAnimation();
@@ -829,7 +835,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     }
     
     public boolean isBNVHidden() {
-        return isBnvHidden; // binding.bottomNavigation.getTranslationY() == binding.bottomNavigation.getHeight();
+        return isBnvHidden;
     }
 
     public void updateColors() {
@@ -882,7 +888,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
         background.setColor(tmpColor);
         
-        binding.gradientBg.setColors(0x99000000, 0x55000000, 0xAA000000, 0x88000000);
+        binding.gradientBg.setColors(0x10000000, colors.get("onPrimaryDark"), colors.get("onPrimaryDark"), 0x00000000);
     }
 
     public void showSnackbar(@NonNull View parent, String text, String btntext, @Nullable View.OnClickListener actionListener) {
@@ -928,6 +934,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 
     @Override
     public void onServiceEvent(int callbackType) {
+        if (handler == null) return;
         handler.post(() -> {
             if (callbackType == ServiceCallback.CALLBACK_COLORS_UPDATE) {
                 updateColors();
@@ -943,5 +950,26 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 
     public void setMusicListFragmentInstance(MusicListFragment f) {
         musicListFragment = f;
+    }
+
+    public void setDarkStatusBar(Window window, boolean dark) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller == null) return;
+
+            int appearance = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS;
+            controller.setSystemBarsAppearance(dark ? appearance : 0, appearance);
+        } else {
+            View decor = window.getDecorView();
+            int flags = decor.getSystemUiVisibility();
+
+            if (dark) {
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            } else {
+                flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            }
+
+            decor.setSystemUiVisibility(flags);
+        }
     }
 }

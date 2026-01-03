@@ -72,6 +72,16 @@ public class ColorPaletteUtils {
             }
         });
     }
+    
+    public static void generateFromColor(int color, ResultCallback callback) {
+            Hct seed = Hct.fromInt(color);
+            lightColors = generateMaterialTones(seed, false);
+            darkColors = generateMaterialTones(seed, true);
+            if (callback != null) {
+                callback.onResult(lightColors, darkColors);
+            }
+
+       }
 
     private static long hashBitmap(Bitmap bitmap) {
         Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 64, 64, false);
@@ -98,6 +108,8 @@ public class ColorPaletteUtils {
 
         tones.put("primary", Hct.from(hue, lowChroma ? chroma : 40, isDark ? 80 : 30).toInt());
         tones.put("onPrimary", Hct.from(hue, lowChroma ? chroma : 40, isDark ? 20 : 80).toInt());
+        
+        tones.put("onPrimaryDark", Hct.from(hue, lowChroma ? chroma : 40, isDark ? 10 : 90).toInt());
 
         tones.put("tertiary", Hct.from((hue + 25) % 360, lowChroma ? chroma : 40, isDark ? 80 : 40).toInt());
         tones.put("onTertiary", Hct.from((hue + 25) % 360, lowChroma ? chroma : 40, isDark ? 20 : 80).toInt());

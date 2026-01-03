@@ -139,6 +139,7 @@ public class MusicListFragment extends BaseFragment {
 	}
 	
 	private void initializeLogic() {
+        fab = binding.shuffleButton;
         a = (MainActivity) getActivity();
         activity = a.getBinding();
         placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.placeholder_small);
@@ -182,6 +183,10 @@ public class MusicListFragment extends BaseFragment {
                         
                 }
             });
+        });
+        
+        binding.shuffleButton.setOnClickListener(v -> {
+            shuffle();
         });
         
 	}

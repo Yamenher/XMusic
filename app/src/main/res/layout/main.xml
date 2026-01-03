@@ -21,7 +21,8 @@
                 android:id="@+id/main_frag"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" 
-                android:name="com.xapps.media.xmusic.fragment.MusicListFragment" />
+                android:name="com.xapps.media.xmusic.fragment.MusicListFragment"
+                android:visibility="gone" />
             <androidx.fragment.app.FragmentContainerView
                 android:id="@+id/search_frag"
                 android:layout_width="match_parent"
@@ -63,7 +64,7 @@
                 android:focusable="true"
                 android:focusableInTouchMode="true"
                 android:clipToOutline="true"
-                app:behavior_peekHeight="140dp">
+                app:behavior_peekHeight="132dp">
                 <com.appbroker.roundedimageview.RoundedImageView
                     android:id="@+id/covers_pager"
                     android:layout_width="wrap_content"
@@ -81,9 +82,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_marginStart="69dp"
+                    android:layout_marginStart="16dp"
                     app:layout_constraintBottom_toBottomOf="@+id/covers_pager"
-                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/covers_pager"
                     app:layout_constraintTop_toTopOf="@+id/covers_pager">
                     <TextView
                         android:id="@+id/currentSongTitle"

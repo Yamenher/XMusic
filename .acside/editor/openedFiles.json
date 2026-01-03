@@ -1,20 +1,20 @@
 {
   "allFiles": [
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/widget/ShaderGradientView.java",
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/activity/MainActivity.java",
       "selection": {
         "end": {
-          "column": 72,
-          "index": 504,
-          "line": 18
+          "column": 16,
+          "index": 18366,
+          "line": 396
         },
         "start": {
-          "column": 72,
-          "index": 504,
-          "line": 18
+          "column": 16,
+          "index": 18366,
+          "line": 396
         }
       }
     }
   ],
-  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/widget/ShaderGradientView.java"
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/activity/MainActivity.java"
 }

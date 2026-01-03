@@ -1,9 +1,11 @@
 package com.xapps.media.xmusic.viewmodel;
 
+import android.util.Log;
 import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import com.xapps.media.xmusic.R;
 
 public class MainActivityViewModel extends ViewModel {
 
@@ -11,6 +13,7 @@ public class MainActivityViewModel extends ViewModel {
     private static final String KEY_IS_BNV_HIDDEN = "key_is_bnv_hidden";
     private static final String KEY_DATA_SAVED = "key_data_saved";
     private static final String KEY_LAST_POSITION = "key_last_position";
+    private static final String KEY_BNV_POSITION = "key_bnv_position";
 
     private final SavedStateHandle mSavedStateHandle;
 
@@ -52,5 +55,19 @@ public class MainActivityViewModel extends ViewModel {
     public boolean wasBNVHidden() {
         Boolean isHidden = mSavedStateHandle.get(KEY_IS_BNV_HIDDEN);
         return isHidden != null ? isHidden : false;
+    }
+
+    public void saveBNVPosition(int i) {
+        mSavedStateHandle.set(KEY_BNV_POSITION, i);
+    }
+
+    public int loadBNVPosition() {
+        try {
+            int bnvpos = mSavedStateHandle.get(KEY_BNV_POSITION);
+            return bnvpos; 
+        } catch (NullPointerException e) {
+            Log.e("MainActivityViewModel", "selected tab id was null");
+            return R.id.menuHomeFragment;
+        }
     }
 }

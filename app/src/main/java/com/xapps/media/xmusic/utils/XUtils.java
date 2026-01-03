@@ -27,6 +27,8 @@ import com.xapps.media.xmusic.R;
 import java.lang.reflect.Field;
 
 public class XUtils {
+
+    private static String theme = "auto";
 	
 	public static void increaseMarginsSmoothly(View view, int increaseLeft, int increaseTop, int increaseRight, int increaseBottom, long duration) {
 		ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
@@ -156,8 +158,7 @@ public class XUtils {
 	}
 
     public static boolean isDarkMode(Context context) {
-        int nightMode = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        return nightMode == Configuration.UI_MODE_NIGHT_YES;
+        return theme.equals("dark");
     }
     
     public static void setThemeMode(String mode) {
@@ -172,6 +173,7 @@ public class XUtils {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
             break;
         }
+        theme = mode;
     }
 
     public static int normalizeColor(int color) {

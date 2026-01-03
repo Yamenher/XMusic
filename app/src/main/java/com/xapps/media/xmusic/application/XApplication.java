@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Process;
 
+import android.os.StrictMode;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.Lifecycle;
@@ -27,6 +28,10 @@ public class XApplication extends Application {
     public void onCreate() {
         super.onCreate();
         DataManager.init(this);
+        
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectAll().penaltyFlashScreen().penaltyLog().build());
+        
+        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().detectAll().penaltyLog().build());
 
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             String report = buildReport(thread, throwable);
@@ -72,10 +77,5 @@ public class XApplication extends Application {
                 "Android: " + Build.VERSION.RELEASE + " / SDK " + Build.VERSION.SDK_INT + "\n" +
                 "Device: " + Build.MANUFACTURER + " " + Build.MODEL + "\n\n" +
                 sw.toString();
-    }
-
-    public void tryit() {
-        XUtils.updateTheme();
-        XUtils.applyDynamicColors(this);
     }
 }

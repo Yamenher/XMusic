@@ -109,7 +109,8 @@ public class PlayerService extends MediaSessionService {
 
 	@Override 
 	public void onCreate() {  
-		super.onCreate();   
+		super.onCreate();  
+        sendInitialUpdate(false); 
         CustomNotificationProvider cnp = new CustomNotificationProvider(this);
         cnp.setSmallIcon(R.drawable.service_icon);
         setMediaNotificationProvider(cnp);
@@ -218,6 +219,17 @@ public class PlayerService extends MediaSessionService {
         });
     }
     
+    private void sendInitialUpdate(boolean isFromNotif) {
+        executor_.execute(() -> {
+            Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
+            ColorPaletteUtils.generateFromBitmap(transparentBitmap, (light, dark) -> {
+                lightColors = light;
+                darkColors = dark;
+                ServiceCallback.Hub.send(ServiceCallback.CALLBACK_COLORS_UPDATE);
+            });
+        });
+    }
+    
     private Bitmap loadBitmapFromPath(String uri) {
         InputStream in = null;
         try {
@@ -254,7 +266,7 @@ public class PlayerService extends MediaSessionService {
                 try {
                     if (player != null && isPlaying) {
                         currentProgress = player.getCurrentPosition();
-                        RuntimeData.currentProgress = player.getContentPosition();
+                        RuntimeData.currentProgress = player.getCurrentPosition();
                         ServiceCallback.Hub.send(ServiceCallback.CALLBACK_PROGRESS_UPDATE);
                     }
                 } catch (Exception e) {
@@ -540,9 +552,9 @@ public class PlayerService extends MediaSessionService {
         return currentPosition;
     }
     
-    private static boolean areMediaItemsEmpty;
+    public static boolean areMediaItemsEmpty = true;
 
     public static boolean isAnythingPlaying() {
-        return areMediaItemsEmpty;
+        return !areMediaItemsEmpty;
     }
 }

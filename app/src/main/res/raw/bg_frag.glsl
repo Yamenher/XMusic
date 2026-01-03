@@ -58,7 +58,6 @@ float gradientNoise(vec2 uv) {
 }
 
 vec4 main(vec2 fragCoord) {
-
     vec2 vUv = fragCoord / uResolution;
     vUv.y = 1.0 - vUv.y;
 
@@ -78,8 +77,12 @@ vec4 main(vec2 fragCoord) {
         vec2 p = uPoints[i].xy;
         float r = uPoints[i].z * uPointRadiusMulti;
 
-        p.x += sin(uAnimTime + p.y) * uPointOffset;
-        p.y += cos(uAnimTime + p.x) * uPointOffset;
+        float id = float(i);
+        float t = uAnimTime * (0.5 + id * 0.1) + id * 25.0; 
+        
+        p.x += (sin(t) * 0.7 + sin(t * 0.4) * 0.3) * uPointOffset;
+        
+        p.y += (cos(t * 0.8) * 0.6 + cos(t * 0.2) * 0.4) * uPointOffset;
 
         float d = distance(uv, p);
         float pct = smoothstep(r, 0.0, d);
@@ -89,7 +92,6 @@ vec4 main(vec2 fragCoord) {
     }
 
     float n = smoothstep(0.0, 1.0, noiseValue);
-
     color.rgb /= max(color.a, 1e-4);
 
     vec3 hsv = rgb2hsv(color.rgb);
