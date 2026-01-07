@@ -71,12 +71,6 @@
                     android:layout_height="wrap_content"
                     app:layout_constraintStart_toStartOf="@+id/miniPlayerBottomSheet"
                     app:layout_constraintTop_toTopOf="parent" />
-                <com.xapps.media.xmusic.widget.ShaderGradientView
-                    android:id="@+id/gradient_bg"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:translationZ="-1dp"
-                    android:elevation="0dp"/>
                 <LinearLayout
                     android:id="@+id/miniPlayerDetailsLayout"
                     android:layout_width="wrap_content"

@@ -7,12 +7,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        // Android Gradle Plugin (AGP)
         classpath 'com.android.tools.build:gradle:8.9.1' 
-        
-        // --- ADD THIS LINE FOR KOTLIN PLUGIN ---
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0'
-        // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     }
 }
 

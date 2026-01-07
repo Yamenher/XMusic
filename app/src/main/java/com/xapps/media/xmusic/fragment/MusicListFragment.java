@@ -173,6 +173,7 @@ public class MusicListFragment extends BaseFragment {
                             binding.songsList.setAdapter(concatAdapter);
                             binding.emptyLayout.setVisibility(View.GONE);
                             a.Start();
+                            binding.shuffleButton.animate().translationY(-(XUtils.getStatusBarHeight(getActivity()) + binding.customToolbar.getHeight()/2)).setDuration(300).start();
                             //a.setSong(0, SongMetadataHelper.getSongCover(getActivity(), RuntimeData.songsMap.get(0).get("path").toString()), Uri.parse(RuntimeData.songsMap.get(0).get("path").toString()));
                         }
                     });

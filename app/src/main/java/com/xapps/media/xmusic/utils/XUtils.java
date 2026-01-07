@@ -1,9 +1,11 @@
 package com.xapps.media.xmusic.utils;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Paint;
@@ -11,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.Settings;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +22,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatDelegate;
 
+import androidx.core.content.ContextCompat;
 import com.google.android.material.color.DynamicColors;
 import com.google.android.material.color.DynamicColorsOptions;
 import com.xapps.media.xmusic.data.DataManager;
@@ -158,7 +162,10 @@ public class XUtils {
 	}
 
     public static boolean isDarkMode(Context context) {
-        return theme.equals("dark");
+        int night =
+        context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        boolean isLight = night != Configuration.UI_MODE_NIGHT_YES;
+        return !isLight;
     }
     
     public static void setThemeMode(String mode) {
@@ -217,6 +224,24 @@ public class XUtils {
             } else {
                 DynamicColors.applyToActivitiesIfAvailable(a);
             }
+        }
+    }
+    
+    public static boolean areAllPermsGranted(Context c) {
+        if (Build.VERSION.SDK_INT <= 29) {
+            return checkPermissionAllowed(c, Manifest.permission.READ_EXTERNAL_STORAGE) && checkPermissionAllowed(c, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        } else if (30 <= Build.VERSION.SDK_INT && Build.VERSION.SDK_INT <= 32) {
+            return Environment.isExternalStorageManager();
+        } else {
+            return checkPermissionAllowed(c, Manifest.permission.READ_MEDIA_AUDIO) && checkPermissionAllowed(c, Manifest.permission.POST_NOTIFICATIONS);
+        }
+    }
+    
+    public static boolean checkPermissionAllowed(Context context, String permission) {
+        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            return false;
         }
     }
 

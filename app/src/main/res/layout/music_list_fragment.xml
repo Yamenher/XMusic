@@ -89,7 +89,9 @@
         android:id="@+id/shuffle_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="right|bottom"
-        android:layout_margin="16dp"
-        android:src="@drawable/ic_shuffle" />
+        android:layout_gravity="right|top"
+        android:translationY="-100dp"
+        android:layout_marginHorizontal="16dp"
+        android:src="@drawable/ic_shuffle" 
+        style="@style/Widget.Material3.FloatingActionButton.Small.Primary"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

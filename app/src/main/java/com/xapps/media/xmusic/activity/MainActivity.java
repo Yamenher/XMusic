@@ -34,6 +34,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
@@ -43,9 +44,6 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
-import androidx.navigation.NavController;
-import androidx.navigation.fragment.NavHostFragment;
-import androidx.navigation.ui.NavigationUI;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.transition.TransitionManager;
 import androidx.viewpager2.widget.ViewPager2;
@@ -91,8 +89,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     private ArrayList<HashMap<String, Object>> songsMap = new ArrayList<>();
     private Context context = this;
     private Handler handler, backgroundHandler;
-    private NavHostFragment navHostFragment;
-    private NavController navController;
     private boolean isRestoring, wasAdjusted, seekbarFree, isBnvHidden, isColorAnimated, isAnimated, isBsInvisible = false;
     private ListenableFuture<MediaController> controllerFuture;
     private SessionToken sessionToken;
@@ -113,6 +109,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 
     @Override
 	protected void onCreate(Bundle bundle) {
+        EdgeToEdge.enable(this);
+        getWindow().setNavigationBarContrastEnforced(false);
         XUtils.updateTheme();
         super.onCreate(bundle);
         XUtils.applyDynamicColors(this);
@@ -154,7 +152,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     @Override
     public void onStart() {
         super.onStart();
-        binding.gradientBg.setAlpha(0);
         if (sessionToken == null) sessionToken = new SessionToken(context, new ComponentName(context, PlayerService.class));
         if (controllerFuture == null && mediaController == null) {
             controllerFuture = new MediaController.Builder(this, sessionToken).buildAsync();
@@ -249,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             bnvHeight = binding.bottomNavigation.getHeight();
 			XUtils.increaseMargins(binding.musicProgress, 0, 0, 0, navBarHeight);
 			bottomSheetBehavior.setPeekHeight(bottomSheetBehavior.getPeekHeight() + navBarHeight);
-			playingFabY = -(binding.bottomNavigation.getHeight() + binding.miniPlayerDetailsLayout.getHeight() + XUtils.getMargin(binding.coversPager, "top")*2 + binding.musicProgress.getHeight());
+			playingFabY = -(binding.bottomNavigation.getHeight() + binding.miniPlayerDetailsLayout.getHeight() + XUtils.getMargin(binding.coversPager, "bottom")*2 + binding.musicProgress.getHeight());
             normalFabY = -(binding.bottomNavigation.getHeight() + binding.musicProgress.getHeight());
         });
         bottomSheetBehavior.setHideable(true);
@@ -274,7 +271,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 		progressDrawable.setTint(MaterialColorUtils.colorPrimary);
         binding.songSeekbar.setProgressDrawable(progressDrawable);
         binding.miniPlayerBottomSheet.setBackground(ContextCompat.getDrawable(this, R.drawable.rounded_corners_bottom_sheet));
-        EdgeToEdge.enable(this);
 		bottomSheetColor = MaterialColorUtils.colorSurfaceContainer;
         binding.extendableLayout.setPadding(XUtils.convertToPx(this, 16f), 0, XUtils.convertToPx(this, 16f), navBarHeight);
         XUtils.setMargins(binding.coversPager, 0, XUtils.getStatusBarHeight(this)*5, 0, 0);
@@ -411,11 +407,9 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 				if (!binding.toggleView.isAnimating()) {
                     mediaController.pause();
                     progressDrawable.setAnimate(false);
-                    binding.gradientBg.setAnimationSpeed(0.1f);
 				} else {
                     mediaController.play();
                     progressDrawable.setAnimate(true);
-                    binding.gradientBg.setAnimationSpeed(0.5f);
 				}
 			}
 		});
@@ -570,9 +564,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 					    tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, slideOffset*2 - 1f);
 						((GradientDrawable) background).setColor(tmpColor);
 						binding.songSeekbar.setEnabled(true);
-                        binding.gradientBg.setAlpha((slideOffset-0.5f)*2);
 					} else {
-                        binding.gradientBg.setAlpha(0);
 						if (!isColorAnimated) {
 							isColorAnimated = true;
 							XUtils.animateColor(tmpColor, bottomSheetColor, animation -> {
@@ -597,7 +589,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         innerBottomSheetBehavior = BottomSheetBehavior.from(binding.extendableLayout);
         innerBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         innerBottomSheetBehavior.setDraggable(true);
-        binding.gradientBg.setAlpha(0);
         
         innerBottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
 			@Override
@@ -762,7 +753,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             binding.currentDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
             binding.totalDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
         }, 120);
-        if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) binding.gradientBg.setAlpha(1);
     }
     
     private void updateSongsQueue() {
@@ -887,8 +877,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         GradientDrawable background = (GradientDrawable) binding.miniPlayerBottomSheet.getBackground();
         tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
         background.setColor(tmpColor);
-        
-        binding.gradientBg.setColors(0x10000000, colors.get("onPrimaryDark"), colors.get("onPrimaryDark"), 0x00000000);
     }
 
     public void showSnackbar(@NonNull View parent, String text, String btntext, @Nullable View.OnClickListener actionListener) {
