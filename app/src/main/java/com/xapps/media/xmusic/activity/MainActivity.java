@@ -1,11 +1,19 @@
 package com.xapps.media.xmusic.activity;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ArgbEvaluator;
+import android.animation.ValueAnimator;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.TransitionDrawable;
@@ -15,6 +23,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.util.Log;
+import android.view.Choreographer;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
@@ -45,6 +56,7 @@ import androidx.media3.common.Player;
 import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.transition.Fade;
 import androidx.transition.TransitionManager;
 import androidx.viewpager2.widget.ViewPager2;
 import com.bumptech.glide.Glide;
@@ -59,12 +71,16 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.xapps.media.xmusic.R;
 import com.xapps.media.xmusic.adapter.CustomPagerAdapter;
+import com.xapps.media.xmusic.common.PlaybackControlListener;
 import com.xapps.media.xmusic.common.SongLoadListener;
+import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.data.RuntimeData;
-import com.xapps.media.xmusic.databinding.MainBinding;
+import com.xapps.media.xmusic.databinding.ActivityMainBinding;
 import com.xapps.media.xmusic.fragment.MusicListFragment;
 import com.xapps.media.xmusic.helper.ServiceCallback;
 import com.xapps.media.xmusic.helper.SongMetadataHelper;
+import com.xapps.media.xmusic.lyric.LyricsExtractor;
+import com.xapps.media.xmusic.lyric.LyricsParser;
 import com.xapps.media.xmusic.models.BottomSheetBehavior;
 import com.xapps.media.xmusic.models.CustomBottomSheetBehavior;
 import com.xapps.media.xmusic.models.SquigglyProgress;
@@ -73,6 +89,11 @@ import com.xapps.media.xmusic.utils.ColorPaletteUtils;
 import com.xapps.media.xmusic.utils.MaterialColorUtils;
 import com.xapps.media.xmusic.utils.XUtils;
 import com.xapps.media.xmusic.viewmodel.MainActivityViewModel;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -80,16 +101,16 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class MainActivity extends AppCompatActivity implements ServiceCallback {
+public class MainActivity extends AppCompatActivity implements ServiceCallback, PlaybackControlListener {
 
     private MusicListFragment musicListFragment;
-    private MainBinding binding;
+    private ActivityMainBinding binding;
     private MediaController mediaController;
     ExecutorService executor = Executors.newSingleThreadExecutor();
     private ArrayList<HashMap<String, Object>> songsMap = new ArrayList<>();
     private Context context = this;
     private Handler handler, backgroundHandler;
-    private boolean isRestoring, wasAdjusted, seekbarFree, isBnvHidden, isColorAnimated, isAnimated, isBsInvisible = false;
+    private boolean isRestoring, wasAdjusted, seekbarFree, isBnvHidden, isColorAnimated, isAnimated, isBsInvisible, isOledTheme, isResuming = false;
     private ListenableFuture<MediaController> controllerFuture;
     private SessionToken sessionToken;
     private MainActivityViewModel viewmodel;
@@ -98,8 +119,11 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     private SquigglyProgress progressDrawable;
     private int bnvHeight, statusBarHeight, navBarHeight, bsbHeight, bottomSheetColor, tmpColor, playerSurface;
     private long lastClick;
-    private float currentSlideOffset, normalFabY, playingFabY;
+    private float currentSlideOffset;
     private OnBackPressedCallback callback, callback2;
+    private CustomTarget<Drawable> coverTarget;
+    private ValueAnimator colorAnimator;
+    private Map<String, Integer> effectiveOldColors = new HashMap<>();
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
@@ -112,10 +136,11 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         EdgeToEdge.enable(this);
         getWindow().setNavigationBarContrastEnforced(false);
         XUtils.updateTheme();
+        XUtils.applyDynamicColors(this, DataManager.isOledThemeEnabled());
+        if (XUtils.isDarkMode(this) && DataManager.isOledThemeEnabled())getTheme().applyStyle(R.style.ThemeOverlay_XMusic_OLED, true);
         super.onCreate(bundle);
-        XUtils.applyDynamicColors(this);
         ServiceCallback.Hub.set(this);
-		binding = MainBinding.inflate(getLayoutInflater());
+		binding = ActivityMainBinding.inflate(getLayoutInflater());
 		setContentView(binding.getRoot());
         int resourceId = context.getResources().getIdentifier("navigation_bar_height", "dimen", "android");
         int resourceId2 = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
@@ -130,10 +155,11 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     @Override
 	protected void onResume() {
 	    super.onResume();
+        isResuming = true;
         if (mediaController != null) {
             updateProgress(mediaController.getCurrentPosition());
             syncPlayerUI(mediaController.getCurrentMediaItemIndex());
-            updateColors();
+            binding.getRoot().post(() -> updateColors());
             if (!PlayerService.isPlaying && binding.toggleView.isAnimating()) {
                 binding.toggleView.stopAnimation();
                 progressDrawable.setAnimate(false);
@@ -142,6 +168,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
                 progressDrawable.setAnimate(true);
             }
         }
+        isResuming = false;
     }
     
     @Override
@@ -173,6 +200,22 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         mediaController.addListener(new Player.Listener() {
             @Override
             public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
+                try {
+                    String songPath = RuntimeData.songsMap.get(mediaController.getCurrentMediaItemIndex()).get("path").toString();
+                    LyricsExtractor.extract(songPath, lyrics -> {
+                        if (lyrics != null) {
+                            InputStream is = new ByteArrayInputStream(lyrics.getBytes(StandardCharsets.UTF_8));
+                            binding.newTest.setLyrics(LyricsParser.parse(is));
+                            binding.newTest.setOnSeekListener(MainActivity.this);
+                            binding.newTest.configureSyncedLyrics(true, Gravity.START, 17f);
+                            
+                        } else {
+                            Log.e("LyricsExtractor", "could not find any lyrics for song : "+ RuntimeData.songsMap.get(mediaController.getCurrentMediaItemIndex()).get("title").toString());
+                        }
+                    });
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
                 if (mediaItem != null) {
                     int position = mediaController.getCurrentMediaItemIndex();
                     musicListFragment.updateActiveItem(position);
@@ -233,8 +276,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         super.onDestroy();
         ServiceCallback.Hub.set(null);
         mediaController.release();
-        //executor.shutdown();
-        //unregisterReceiver(focusReceiver);
     }
     
     private void initialize() {
@@ -246,8 +287,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             bnvHeight = binding.bottomNavigation.getHeight();
 			XUtils.increaseMargins(binding.musicProgress, 0, 0, 0, navBarHeight);
 			bottomSheetBehavior.setPeekHeight(bottomSheetBehavior.getPeekHeight() + navBarHeight);
-			playingFabY = -(binding.bottomNavigation.getHeight() + binding.miniPlayerDetailsLayout.getHeight() + XUtils.getMargin(binding.coversPager, "bottom")*2 + binding.musicProgress.getHeight());
-            normalFabY = -(binding.bottomNavigation.getHeight() + binding.musicProgress.getHeight());
         });
         bottomSheetBehavior.setHideable(true);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
@@ -261,6 +300,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     }
     
     private void setupUI() {
+        binding.currentSongTitle.setTypeface(binding.currentSongTitle.getTypeface(), Typeface.BOLD);
         progressDrawable = new SquigglyProgress();
         progressDrawable.setWaveLength(100);
 		progressDrawable.setLineAmplitude(8);
@@ -279,11 +319,11 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 		binding.currentSongTitle.setSelected(true);
 		binding.currentSongArtist.setSelected(true);
         bsbHeight = bottomSheetBehavior.getPeekHeight();
+        loadSettings();
 	}
     
     public void setSong(int position, String coverPath, Uri fileUri) {
         if (mediaController.getPlaybackState() == Player.STATE_BUFFERING) return;
-        MusicListFragment.fab.animate().translationY(playingFabY).setDuration(300).start();
         if (mediaController.getMediaItemCount() == 0) {
             mediaController.setMediaItems(PlayerService.mediaItems);
             PlayerService.areMediaItemsEmpty = false;
@@ -295,41 +335,45 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     
     private void updateProgress(long position) {
         binding.musicProgress.setProgressCompat((int) position, true);
-        binding.songSeekbar.setProgress((int) position, true);
+        binding.songSeekbar.setProgress((int) position, false);
         binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration(position));
     }
     
     private void updateCoverPager(int index) {
-        if (RuntimeData.songsMap.size() == 0) return;
-        wasAdjusted = true;
+        if (RuntimeData.songsMap.isEmpty()) return;
+        
         Object cover = RuntimeData.songsMap.get(index).get("thumbnail");
+        if (coverTarget != null) {
+            Glide.with(this).clear(coverTarget);
+        }
+
+        coverTarget = new CustomTarget<Drawable>() {
+            @Override
+            public void onResourceReady(Drawable drawable, Transition<? super Drawable> transition) {
+                crossfadeDrawable(binding.coversPager, drawable, 200);
+            }
+
+            @Override
+            public void onLoadCleared(Drawable placeholder) {
+                binding.coversPager.setImageDrawable(placeholder);
+            }
+        };
+    
         Glide.with(this)
             .asDrawable()
-            .load(cover == null? ContextCompat.getDrawable(this, R.drawable.placeholder) : cover.toString())
+            .load(cover == null ? R.drawable.placeholder : cover)
             .apply(new RequestOptions()
             .override(500, 500)
-            .fallback(ContextCompat.getDrawable(this, R.drawable.placeholder))
             .centerCrop()
-            .priority(Priority.NORMAL)
-            .skipMemoryCache(false))
-            .into(new CustomTarget<Drawable>() {
-                @Override
-                public void onResourceReady(Drawable drawable, Transition<? super Drawable> transition) {
-                    crossfadeDrawable(binding.coversPager, drawable, 200);
-                }
-
-                @Override
-                public void onLoadCleared(Drawable placeholder) {}
-            });
+            .priority(Priority.NORMAL))
+            .into(coverTarget);
     }
     
     private void crossfadeDrawable(ImageView iv, Drawable next, int duration) {
-        Drawable current = iv.getDrawable();
-        if (current == null) {
-            iv.setImageDrawable(next);
-            return;
-        }
-        TransitionDrawable td = new TransitionDrawable(new Drawable[]{current, next});
+        TransitionDrawable td = new TransitionDrawable(new Drawable[]{
+            new ColorDrawable(Color.TRANSPARENT),
+            next
+        });
         td.setCrossFadeEnabled(true);
         iv.setImageDrawable(td);
         td.startTransition(duration);
@@ -368,13 +412,12 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
                     bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                     isBnvHidden = true;
                     HideBNV(false);
-                    MusicListFragment.fab.animate().translationY(playingFabY).setDuration(300).start();
                 }, 100);
             } else {
                 binding.bottomNavigation.postDelayed(() -> {
                     isBnvHidden = true;
                     HideBNV(false);
-                    MusicListFragment.fab.animate().translationY(normalFabY).setDuration(300).start();
+                    //MusicListFragment.fab.animate().translationY(normalFabY).setDuration(300).start();
                 }, 100);
             }
         } else if (PlayerService.isAnythingPlaying()) {
@@ -384,7 +427,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             updateColors();
             musicListFragment.updateActiveItem(mediaController.getMediaItemCount() > 0? mediaController.getCurrentMediaItemIndex() : -1);
             binding.bottomNavigation.postDelayed(() -> {
-                MusicListFragment.fab.animate().translationY(playingFabY).setDuration(300).start();
+                //MusicListFragment.fab.animate().translationY(playingFabY).setDuration(300).start();
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                 isBnvHidden = true;
                 HideBNV(false);
@@ -394,7 +437,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             binding.bottomNavigation.postDelayed(() -> {
                 isBnvHidden = true;
                 HideBNV(false);
-                MusicListFragment.fab.animate().translationYBy(normalFabY).setDuration(300).start();
+                //MusicListFragment.fab.animate().translationYBy(normalFabY).setDuration(300).start();
             }, 100);
         }
         isRestoring = false;
@@ -428,7 +471,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         });
         
         binding.placeholder1.setOnClickListener(v -> {
-            binding.lyricsTestLine.demoSmoothProgress();
+            
         });
 
         View.OnClickListener navClick = v -> {
@@ -450,6 +493,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
                 if (fromUser) {
                     binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration((int)progress));
                     binding.musicProgress.setProgress(progress);
+                    binding.newTest.onSeek(progress);
                 }
             }
 
@@ -523,7 +567,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
 						mediaController.stop();
                         mediaController.clearMediaItems();
                         PlayerService.areMediaItemsEmpty = true;
-                        MusicListFragment.fab.animate().translationY(normalFabY).setDuration(300).start();
+                        //MusicListFragment.fab.animate().translationY(normalFabY).setDuration(300).start();
 						isBsInvisible = true;
 				    } else {
 						isBsInvisible = false;
@@ -735,31 +779,35 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
     private void syncPlayerUI(int position) {
         updateMaxValue(position);
         updateCoverPager(position);
-        binding.artistBigTitle.animate().alpha(0f).translationX(-20f).setDuration(100).start();
-        binding.songBigTitle.animate().alpha(0f).translationX(-20f).setDuration(100).start();
-        binding.totalDurationText.animate().alpha(0f).translationX(-20f).setDuration(100).start();
-        binding.currentDurationText.animate().alpha(0f).translationX(-20f).setDuration(100).start();
-        handler = new Handler(Looper.getMainLooper());   
-        handler.postDelayed(() -> {
+        if (!isResuming) {
+            binding.artistBigTitle.animate().alpha(0f).translationX(-20f).setDuration(100).start();
+            binding.songBigTitle.animate().alpha(0f).translationX(-20f).setDuration(100).start();
+            binding.totalDurationText.animate().alpha(0f).translationX(-20f).setDuration(100).start();
+            binding.currentDurationText.animate().alpha(0f).translationX(-20f).setDuration(100).start();
+            handler = new Handler(Looper.getMainLooper());   
+            handler.postDelayed(() -> {
+                updateTexts(position);
+                binding.totalDurationText.setTranslationX(20f);
+                binding.currentDurationText.setTranslationX(20f);
+                binding.songBigTitle.setTranslationX(20f);
+                binding.artistBigTitle.setTranslationX(20f);
+            }, 110);
+            handler.postDelayed(() -> {
+                binding.artistBigTitle.animate().alpha(1f).translationX(0f).setDuration(120).start();
+                binding.songBigTitle.animate().alpha(1f).translationX(0f).setDuration(120).start();
+                binding.currentDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
+                binding.totalDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
+            }, 120);
+        } else {
             updateTexts(position);
-            binding.totalDurationText.setTranslationX(20f);
-            binding.currentDurationText.setTranslationX(20f);
-            binding.songBigTitle.setTranslationX(20f);
-            binding.artistBigTitle.setTranslationX(20f);
-        }, 110);
-        handler.postDelayed(() -> {
-            binding.artistBigTitle.animate().alpha(1f).translationX(0f).setDuration(120).start();
-            binding.songBigTitle.animate().alpha(1f).translationX(0f).setDuration(120).start();
-            binding.currentDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
-            binding.totalDurationText.animate().alpha(1f).translationX(0f).setDuration(120).start();
-        }, 120);
+        }
     }
     
     private void updateSongsQueue() {
         
     }
     
-    public MainBinding getBinding() {
+    public ActivityMainBinding getBinding() {
 		return binding;
 	}
     
@@ -832,92 +880,110 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
         if (ColorPaletteUtils.lightColors == null && ColorPaletteUtils.darkColors == null) return;
         
         Map<String, Integer> colors = XUtils.isDarkMode(context) ? ColorPaletteUtils.darkColors : ColorPaletteUtils.lightColors;
-
-        playerSurface = colors.get("surface");
+        Map<String, Integer> oldColors = XUtils.isDarkMode(context) ? ColorPaletteUtils.oldDarkColors : ColorPaletteUtils.oldLightColors;
+        
+        effectiveOldColors = new HashMap<>(oldColors);
+        
+        int onTertiary = colors.get("onTertiary");
+        int tertiary = colors.get("tertiary");
+        int oldOnTertiary = effectiveOldColors.get("onTertiary");
+        int oldTertiary = effectiveOldColors.get("tertiary");
+        int surface = isOledTheme? 0xff000000 : colors.get("surface");
+        int oldSurface = isOledTheme? 0xff000000 : effectiveOldColors.get("surface");
+        int surfaceContainer = isOledTheme? 0xff050505 : colors.get("surfaceContainer");
+        int oldSurfaceContainer = isOledTheme? 0xff050505 : effectiveOldColors.get("surfaceContainer");
+        int outline = colors.get("outline");
+        int oldOutline = effectiveOldColors.get("outline");
+        int primary = colors.get("primary");
+        int oldPrimary = effectiveOldColors.get("primary");
+        int onPrimary = colors.get("onPrimary");
+        int oldOnPrimary = effectiveOldColors.get("onPrimary");
+        int onSurfaceContainer = isOledTheme? colors.get("onSurface") : colors.get("onSurfaceContainer");
+        int oldOnSurfaceContainer = isOledTheme? effectiveOldColors.get("onSurface") : effectiveOldColors.get("onSurfaceContainer");
+        int onSurface = colors.get("onSurface");
+        int oldOnSurface = effectiveOldColors.get("onSurface");
+        
+        Drawable nextBg = binding.nextButton.getBackground();
+        Drawable favBg  = binding.favoriteButton.getBackground();
+        Drawable saveBg = binding.saveButton.getBackground();
+        Drawable prevBg = binding.previousButton.getBackground();
+        GradientDrawable background = (GradientDrawable) binding.miniPlayerBottomSheet.getBackground();
         
         Drawable d = binding.extendableLayout.getBackground();
         GradientDrawable gd = (GradientDrawable) d;
-        gd.setColor(colors.get("surfaceContainer"));
         
         GradientDrawable d2 = (GradientDrawable) binding.dragHandle.getBackground();
-        d2.setColor(colors.get("outline"));
         
-        binding.placeholder1.setIconTint(ColorStateList.valueOf(colors.get("onSurfaceContainer")));
-
-        binding.toggleView.setShapeColor(colors.get("onPrimary"));
-        binding.toggleView.setIconColor(colors.get("primary"));
-
-        Drawable nextBg = binding.nextButton.getBackground();
-        Drawable favBg = binding.favoriteButton.getBackground();
-        Drawable saveBg = binding.saveButton.getBackground();
-        Drawable prevBg = binding.previousButton.getBackground();
-
-        int onTertiary = colors.get("onTertiary");
-        int tertiary = colors.get("tertiary");
-
-        nextBg.setColorFilter(onTertiary, PorterDuff.Mode.SRC_IN);
-        favBg.setColorFilter(onTertiary, PorterDuff.Mode.SRC_IN);
-        saveBg.setColorFilter(onTertiary, PorterDuff.Mode.SRC_IN);
-        prevBg.setColorFilter(onTertiary, PorterDuff.Mode.SRC_IN);
-
-        binding.nextButton.setColorFilter(tertiary, PorterDuff.Mode.SRC_IN);
-        binding.favoriteButton.setColorFilter(tertiary, PorterDuff.Mode.SRC_IN);
-        binding.saveButton.setColorFilter(tertiary, PorterDuff.Mode.SRC_IN);
-        binding.previousButton.setColorFilter(tertiary, PorterDuff.Mode.SRC_IN);
-
         SeekBar seekbar = binding.songSeekbar;
-        seekbar.setThumbTintList(ColorStateList.valueOf(colors.get("primary"))); 
-        progressDrawable.setTint(colors.get("primary"));
-
-        binding.artistBigTitle.setTextColor(colors.get("onSurfaceContainer"));
-        binding.songBigTitle.setTextColor(colors.get("onSurface"));
-        binding.currentDurationText.setTextColor(colors.get("onSurfaceContainer"));
-        binding.totalDurationText.setTextColor(colors.get("onSurfaceContainer"));
-    
-        GradientDrawable background = (GradientDrawable) binding.miniPlayerBottomSheet.getBackground();
-        tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
-        background.setColor(tmpColor);
-    }
-
-    public void showSnackbar(@NonNull View parent, String text, String btntext, @Nullable View.OnClickListener actionListener) {
-        Snackbar snack = Snackbar.make(parent, "", Snackbar.LENGTH_LONG);
-        View defaultText = snack.getView().findViewById(
-            com.google.android.material.R.id.snackbar_text
-        );
-        if (defaultText != null) defaultText.setVisibility(View.INVISIBLE);
-        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        View custom = inflater.inflate(R.layout.custom_snackbar, null);
         
-        TextView t = custom.findViewById(R.id.text);
-        t.setText(text);
+        ValueAnimator va = ValueAnimator.ofFloat(0f, 1f);
+        va.setDuration(isResuming? 0 : 200);
+        va.addUpdateListener(a -> {
+            float f = (float) a.getAnimatedValue();
+            int iop = XUtils.interpolateColor(oldOnPrimary, onPrimary, f);
+            int ip = XUtils.interpolateColor(oldPrimary, primary, f);
+            int iot = XUtils.interpolateColor(oldOnTertiary, onTertiary, f);
+            int it = XUtils.interpolateColor(oldTertiary, tertiary, f);
+            int is = XUtils.interpolateColor(oldSurface, surface, f);
+            int isc = XUtils.interpolateColor(oldSurfaceContainer, surfaceContainer, f);
+            int io = XUtils.interpolateColor(oldOutline, outline, f);
+            int iosc = XUtils.interpolateColor(oldOnSurfaceContainer, onSurfaceContainer, f);
+            int ios = XUtils.interpolateColor(oldOnSurface, onSurface, f);
+            
+            binding.toggleView.setShapeColor(iop);
+            binding.toggleView.setIconColor(ip);
+            
+            binding.nextButton.setColorFilter(it, PorterDuff.Mode.SRC_IN);
+            binding.favoriteButton.setColorFilter(it, PorterDuff.Mode.SRC_IN);
+            binding.saveButton.setColorFilter(it, PorterDuff.Mode.SRC_IN);
+            binding.previousButton.setColorFilter(it, PorterDuff.Mode.SRC_IN);
+            
+            nextBg.setColorFilter(iot, PorterDuff.Mode.SRC_IN);
+            favBg.setColorFilter(iot, PorterDuff.Mode.SRC_IN);
+            saveBg.setColorFilter(iot, PorterDuff.Mode.SRC_IN);
+            prevBg.setColorFilter(iot, PorterDuff.Mode.SRC_IN);
+            
+            playerSurface = is;
+            
+            tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
+            background.setColor(tmpColor);
+            
+            gd.setColor(isc);
+            
+            d2.setColor(isOledTheme? 0xffbdbdbd : io);
+            
+            seekbar.setThumbTintList(ColorStateList.valueOf(ip)); 
+            progressDrawable.setTint(ip);
+            
+            binding.placeholder1.setIconTint(ColorStateList.valueOf(isOledTheme? 0xffbdbdbd : iosc));
+            
+            binding.artistBigTitle.setTextColor(iosc);
+            binding.songBigTitle.setTextColor(ios);
+            binding.currentDurationText.setTextColor(iosc);
+            binding.totalDurationText.setTextColor(iosc);
+        });
+        va.addListener(new AnimatorListenerAdapter() {
+            private boolean canceled;
 
-        Button btn = custom.findViewById(R.id.button);
-        btn.setText(btntext);
-        if (actionListener != null) {
-            btn.setOnClickListener(actionListener);
-        } else {
-            btn.setOnClickListener(v -> {
-                snack.dismiss();
-            });
-        }
-        
-        Snackbar.SnackbarLayout snackLayout = (Snackbar.SnackbarLayout) snack.getView();
-        snackLayout.setBackground(null);
-        snackLayout.setPadding(0, 0, 0, 0);
-        snackLayout.addView(custom, 0);
-
-        snack.show();
-    }
-
-    public void Start() {
-        ViewCompat.setWindowInsetsAnimationCallback(binding.bottomNavigation, new WindowInsetsAnimationCompat.Callback(WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
             @Override
-            public WindowInsetsCompat onProgress(WindowInsetsCompat insets, List<WindowInsetsAnimationCompat> runningAnimations) {
-                int imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
-                binding.bottomNavigation.setTranslationY(imeBottom < 0 ? 0 : -imeBottom);
-                return insets;
+            public void onAnimationCancel(Animator animation) {
+                canceled = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (!canceled) {
+                    effectiveOldColors = new HashMap<>(colors);
+                }
             }
         });
+        if (colorAnimator != null) {
+            colorAnimator.cancel();
+        }
+
+        colorAnimator = va;
+        va.start();
+    
     }
 
     @Override
@@ -928,6 +994,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
                 updateColors();
             } else if (callbackType == ServiceCallback.CALLBACK_PROGRESS_UPDATE && seekbarFree) {
                 updateProgress(RuntimeData.currentProgress);
+                //binding.testLyrics.updateTime(RuntimeData.currentProgress);
+                if (mediaController != null) binding.newTest.onProgress((int) RuntimeData.currentProgress);
             }
         });
     }
@@ -960,4 +1028,18 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback {
             decor.setSystemUiVisibility(flags);
         }
     }
+
+    private void loadSettings() {
+        isOledTheme = XUtils.isDarkMode(this) && DataManager.isOledThemeEnabled();
+    }
+    
+    @Override
+    public void onSeekRequested(long ms) {
+        // 1. Update the Actual Music
+        if (mediaController != null) {
+            mediaController.seekTo(ms);
+            binding.newTest.onSeek((int) ms);
+        }
+    }
+
 }

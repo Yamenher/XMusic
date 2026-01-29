@@ -8,9 +8,9 @@ public class BaseFragment extends Fragment {
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(null);
-        setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        setExitTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        setReenterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
+        setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.X, false));
+        setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.X, true));
+        setExitTransition(new MaterialSharedAxis(MaterialSharedAxis.X, true));
+        setReenterTransition(new MaterialSharedAxis(MaterialSharedAxis.X, false));
     }
 }

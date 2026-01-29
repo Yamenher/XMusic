@@ -7,9 +7,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.transition.ChangeBounds;
 import androidx.transition.Fade;
@@ -23,19 +25,19 @@ import com.rtugeek.android.colorseekbar.thumb.DefaultThumbDrawer;
 import com.rtugeek.android.colorseekbar.thumb.ThumbDrawer;
 import com.xapps.media.xmusic.activity.MainActivity;
 import com.xapps.media.xmusic.data.DataManager;
-import com.xapps.media.xmusic.databinding.SettingsBinding;
+import com.xapps.media.xmusic.databinding.FragmentSettingsBinding;
 import com.xapps.media.xmusic.utils.XUtils;
 import com.xapps.media.xmusic.R;
 
 public class SettingsFragment extends BaseFragment {
     
-    private SettingsBinding binding;
+    private FragmentSettingsBinding binding;
     private MainActivity activity;
         
     @NonNull
 	@Override
 	public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-		binding = SettingsBinding.inflate(inflater, container, false);
+		binding = FragmentSettingsBinding.inflate(inflater, container, false);
         activity = (MainActivity) getActivity();
 		setupUI();
         setupListeners();
@@ -43,90 +45,36 @@ public class SettingsFragment extends BaseFragment {
 	}
 
     private void setupUI() {
-        DefaultThumbDrawer dtd = new DefaultThumbDrawer(XUtils.convertToPx(getActivity(), 35), Color.WHITE, Color.WHITE);
-        dtd.setRingBorderSize(XUtils.convertToPx(getActivity(), 1.5f));
-        binding.colorSeekBar.setThumbDrawer(dtd);
-        binding.colorSeekBar.setProgress(DataManager.getProgress());
-        binding.firstSwitch.setChecked(DataManager.isDynamicColorsOn());
-        binding.secondSwitch.setChecked(DataManager.isCustomColorsOn());
-        binding.colorSeekBar.setVisibility(DataManager.isCustomColorsOn()? View.VISIBLE : View.GONE);
-        binding.applyButton.setVisibility(DataManager.isCustomColorsOn()? View.VISIBLE : View.GONE);
-        binding.colorSeekBar.setEnabled(DataManager.isDynamicColorsOn());
-        binding.secondSwitch.setEnabled(DataManager.isDynamicColorsOn());
-        binding.secondPref.setEnabled(DataManager.isDynamicColorsOn());
-        binding.applyButton.setEnabled(DataManager.isDynamicColorsOn());
-        binding.secondContent.setAlpha(DataManager.isDynamicColorsOn()? 1f : 0.5f);
-        binding.colorSeekBar.setAlpha(DataManager.isDynamicColorsOn()? 1f : 0.5f);
-        binding.applyButton.setEnabled(false);
-        switch (DataManager.getThemeMode()) {
-            case 0:
-                binding.systemTheme.setChecked(true);
-                break;
-            case 1:
-                binding.darkTheme.setChecked(true);
-                break;
-            case 2:
-                binding.lightTheme.setChecked(true);
-                break;
-        }
+        binding.collapsingtoolbar.setExpandedTitleTextAppearance(R.style.ExpandedAppBarTextStyle);
+        TextView t = (TextView) binding.toolbar.getChildAt(0);
+        t.setTypeface(ResourcesCompat.getFont(getActivity(), R.font.google_sans_flex));
+        t.setFontVariationSettings("'ROND' 100, 'wght' 500");
     }
 
     private void setupListeners() {
-        binding.toolbar.setNavigationOnClickListener(v -> {
-            getActivity().getOnBackPressedDispatcher().onBackPressed();
+        binding.firstCategory.setOnClickListener(v -> {
+            getActivity().getSupportFragmentManager()
+            .beginTransaction()
+            .replace(R.id.settings_frag, new AppearanceFragment())
+            .addToBackStack("root")
+            .commit();
         });
-        binding.secondPref.setOnClickListener(v -> {
-            binding.secondSwitch.setChecked(!binding.secondSwitch.isChecked());
-            DataManager.setCustomColorsEnabled(binding.secondSwitch.isChecked());
-            getActivity().recreate();
+        
+        binding.secondCategory.setOnClickListener(v -> {
+            getActivity().getSupportFragmentManager()
+            .beginTransaction()
+            .replace(R.id.settings_frag, new NowPlayingEditFragment())
+            .addToBackStack(null)
+            .commit();
         });
-        binding.firstPref.setOnClickListener(v -> {
-            binding.firstSwitch.setChecked(!binding.firstSwitch.isChecked());
-            DataManager.setDynamicColorsEnabled(binding.firstSwitch.isChecked());
-            getActivity().recreate();
-        });
-        binding.colorSeekBar.setOnColorChangeListener((progress, color) -> {
-            binding.applyButton.setEnabled(binding.colorSeekBar.getProgress() != DataManager.getCustomColor());
-        });
-        binding.icon1.setOnClickListener(v -> {
-            activity.showInfoDialog("Experimental feature", R.drawable.ic_test_tube, "This is a feature that's still under testing and might be unstable or buggy for some users.", "OK");
-        });
-        binding.systemTheme.setOnClickListener(v -> {
-            DataManager.setThemeMode(0);
-            XUtils.setThemeMode("auto");
-        });
-        binding.darkTheme.setOnClickListener(v -> {
-            DataManager.setThemeMode(1);
-            XUtils.setThemeMode("dark");
-        });
-        binding.lightTheme.setOnClickListener(v -> {
-            DataManager.setThemeMode(2);
-            XUtils.setThemeMode("light");
-        });
-        binding.applyButton.setOnClickListener(v -> {
-            DataManager.setProgress(binding.colorSeekBar.getProgress());
-            DataManager.setCustomColor(XUtils.normalizeColor(binding.colorSeekBar.getColor()));
-            getActivity().recreate();
+        
+        binding.infoCategory.setOnClickListener(v -> {
+            getActivity().getSupportFragmentManager()
+            .beginTransaction()
+            .replace(R.id.settings_frag, new AboutFragment())
+            .addToBackStack(null)
+            .commit();
         });
     }
-
-    private void showViews(boolean b) {
-        ViewGroup root = binding.coordinator;
-        TransitionSet set = new TransitionSet()
-        .addTransition(new Fade(Fade.OUT))
-        .addTransition(new ChangeBounds())
-        .setInterpolator(new AccelerateDecelerateInterpolator())
-        .setDuration(250);
-
-        TransitionManager.beginDelayedTransition(root, set);
-        if (b) {
-            binding.applyButton.setVisibility(View.VISIBLE);
-            binding.colorSeekBar.setVisibility(View.VISIBLE);
-        } else {
-            binding.colorSeekBar.setVisibility(View.GONE);
-            binding.applyButton.setVisibility(View.GONE);
-        }
-    }
-
 
 }

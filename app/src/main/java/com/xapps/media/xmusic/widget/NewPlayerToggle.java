@@ -349,6 +349,14 @@ public class NewPlayerToggle extends LinearLayout {
         Drawable d = image.getDrawable();
         if (d != null) d.setTint(color);
     }
+    
+    public int getShapeColor() {
+		return indicatorColor;
+	}
+
+	public int getIconColor() {
+        return avdColor;
+    }
 
     private AnimatedVectorDrawable newAvd(int resId) {
         Drawable d = ContextCompat.getDrawable(getContext(), resId);

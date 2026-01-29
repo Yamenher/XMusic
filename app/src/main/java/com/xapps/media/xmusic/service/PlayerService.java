@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.*;
 import android.service.controls.actions.CommandAction;
 import android.util.Log;
+import android.view.Choreographer;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.*;
@@ -83,6 +84,14 @@ public class PlayerService extends MediaSessionService {
     
     private final IBinder binder = new LocalBinder();
     private Callback callback;
+    
+    private volatile long currentPlayerPositionMs = 0;
+    
+    private final Runnable queryPlayerPositionRunnable = () -> {
+        currentProgress = player.getCurrentPosition();
+        RuntimeData.currentProgress = player.getCurrentPosition();
+        ServiceCallback.Hub.send(ServiceCallback.CALLBACK_PROGRESS_UPDATE);
+    };
     
     private int resId = R.drawable.placeholder;
     public static Uri fallbackUri;
@@ -183,6 +192,12 @@ public class PlayerService extends MediaSessionService {
                             }
                                 
                             @Override
+                            public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
+                                currentPosition = player.getCurrentMediaItemIndex();
+                                sendUpdate(true);
+                            }
+                                
+                            @Override
                             public void onIsPlayingChanged(boolean playing) {
                                 isPlaying = playing;
                             }
@@ -200,7 +215,7 @@ public class PlayerService extends MediaSessionService {
     private long lastUpdate = 0;
     
     private void sendUpdate(boolean isFromNotif) {
-        if (System.currentTimeMillis() - lastUpdate < 250 || currentPosition < 0) return;
+        if (System.currentTimeMillis() - lastUpdate < 50 || currentPosition < 0) return;
         lastUpdate = System.currentTimeMillis();
         executor_.execute(() -> {
             Bitmap transparentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent); 
@@ -258,24 +273,18 @@ public class PlayerService extends MediaSessionService {
             }
         }
     }
+    
+    private final Choreographer.FrameCallback frameCallback =
+        new Choreographer.FrameCallback() {
+        @Override
+        public void doFrame(long frameTimeNanos) {
+                ExoPlayerHandler.post(queryPlayerPositionRunnable);
+                Choreographer.getInstance().postFrameCallback(this);
+        }
+    };
 
     private void startUpdates() {
-        ExoPlayerHandler.postDelayed(new Runnable() {
-            @Override
-            public void run(){
-                try {
-                    if (player != null && isPlaying) {
-                        currentProgress = player.getCurrentPosition();
-                        RuntimeData.currentProgress = player.getCurrentPosition();
-                        ServiceCallback.Hub.send(ServiceCallback.CALLBACK_PROGRESS_UPDATE);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                ExoPlayerHandler.postDelayed(this, 100);
-            }
-        }, 100);
-
+        Choreographer.getInstance().postFrameCallback(frameCallback);
         isExecutorStarted = true;
     }
 	

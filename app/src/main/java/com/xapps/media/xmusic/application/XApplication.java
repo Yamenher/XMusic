@@ -29,9 +29,10 @@ public class XApplication extends Application {
         super.onCreate();
         DataManager.init(this);
         
-        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectAll().penaltyFlashScreen().penaltyLog().build());
-        
-        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().detectAll().penaltyLog().build());
+        if (BuildConfig.BUILD_TYPE.equals("debug")) {
+            StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectAll().penaltyFlashScreen().penaltyLog().build());
+            StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().detectAll().penaltyLog().build());
+        }
 
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             String report = buildReport(thread, throwable);

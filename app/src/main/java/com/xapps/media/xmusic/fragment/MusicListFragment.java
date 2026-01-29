@@ -83,7 +83,7 @@ import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.data.RuntimeData;
 import com.xapps.media.xmusic.helper.SongMetadataHelper;
 import com.xapps.media.xmusic.databinding.*;
-import com.xapps.media.xmusic.databinding.MainBinding;
+import com.xapps.media.xmusic.databinding.ActivityMainBinding;
 import com.xapps.media.xmusic.fragment.SettingsFragment;
 import com.xapps.media.xmusic.service.PlayerService;
 import com.xapps.media.xmusic.utils.*;
@@ -110,7 +110,7 @@ public class MusicListFragment extends BaseFragment {
 	private String coverUri = "";
 	public int imageSize, size;
 	private String path = "";
-	private MainBinding activity;
+	private ActivityMainBinding activity;
     private MainActivity a;
     private SongsListAdapter songsAdapter;
     private boolean isPlaying = false;
@@ -144,6 +144,8 @@ public class MusicListFragment extends BaseFragment {
         activity = a.getBinding();
         placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.placeholder_small);
         imageSize = XUtils.convertToPx(getActivity(), 45f);
+        binding.swipeRefreshLayout.setProgressBackgroundColorSchemeColor(MaterialColorUtils.colorSurfaceContainerHigh);
+        binding.swipeRefreshLayout.setColorSchemeColors(MaterialColorUtils.colorPrimary);
         activity.bottomNavigation.post(() -> {
             if (getActivity() == null) return;
             a.setMusicListFragmentInstance(this);
@@ -172,9 +174,11 @@ public class MusicListFragment extends BaseFragment {
                         public void run() {
                             binding.songsList.setAdapter(concatAdapter);
                             binding.emptyLayout.setVisibility(View.GONE);
-                            a.Start();
-                            binding.shuffleButton.animate().translationY(-(XUtils.getStatusBarHeight(getActivity()) + binding.customToolbar.getHeight()/2)).setDuration(300).start();
-                            //a.setSong(0, SongMetadataHelper.getSongCover(getActivity(), RuntimeData.songsMap.get(0).get("path").toString()), Uri.parse(RuntimeData.songsMap.get(0).get("path").toString()));
+                            binding.collapsingToolbar.post(() -> {    
+                                binding.shuffleButton.post(() -> {
+                                    binding.shuffleButton.setTranslationY((binding.collapsingToolbar.getHeight())/2);
+                                });
+                            });
                         }
                     });
                 }
@@ -234,14 +238,13 @@ public class MusicListFragment extends BaseFragment {
         private Uri uri;
         private String placeholderUri;
         
-        private Drawable top;
-        private Drawable bottom;
-        private Drawable middle;
+        private static final int TYPE_TOP = 0;
+        private static final int TYPE_MIDDLE = 1;
+        private static final int TYPE_BOTTOM = 2;
+        
+        private SongItemMiddleBinding binding;
         
 		public SongsListAdapter(Context c, ArrayList<HashMap<String, Object>> arraylist) {
-            top = ContextCompat.getDrawable(c, R.drawable.rv_ripple_top);
-            bottom = ContextCompat.getDrawable(c, R.drawable.rv_ripple_bottom);
-            middle = ContextCompat.getDrawable(c, R.drawable.rv_ripple);
             spacing = XUtils.convertToPx(c, 5f);
             uri = Uri.parse("android.resource://" + c.getPackageName() + "/" + resId);
             placeholderUri = uri.toString();
@@ -249,35 +252,30 @@ public class MusicListFragment extends BaseFragment {
         }
 		
 		@Override
-		public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-			LayoutInflater inflater = getActivity().getLayoutInflater();
-			View v = inflater.inflate(R.layout.songs_list_view, parent, false);
-			RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-			v.setLayoutParams(lp);
-			return new ViewHolder(v);
-		}
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+            int layout;
+            if (viewType == TYPE_TOP) layout = R.layout.song_item_top;
+            else if (viewType == TYPE_BOTTOM) layout = R.layout.song_item_bottom;
+            else layout = R.layout.song_item_middle;
+
+            return new ViewHolder(inflater.inflate(layout, parent, false));
+        }
         
 		@Override
 		public void onBindViewHolder(ViewHolder holder, int position) {
 			View view = holder.itemView;
-			SongsListViewBinding binding = SongsListViewBinding.bind(view);
-            if (position == 0) {
-                binding.item.setBackground(top.getConstantState().newDrawable().mutate());
-            } else if (position == getItemCount() - 1) {
-                binding.item.setBackground(bottom.getConstantState().newDrawable().mutate());
-            } else {
-                binding.item.setBackground(middle.getConstantState().newDrawable().mutate());
-            }
+            binding = SongItemMiddleBinding.bind(view);
             if (position == currentPos) {
                 binding.item.setChecked(true);
                 binding.SongTitle.setTextColor(c1);
                 binding.SongArtist.setTextColor(c2);
-                binding.songBars.setVisibility(View.VISIBLE);
+                //binding.songBars.setVisibility(View.VISIBLE);
             } else {
                 binding.item.setChecked(false);
                 binding.SongTitle.setTextColor(c3);
                 binding.SongArtist.setTextColor(c4);
-                binding.songBars.setVisibility(View.INVISIBLE);
+                //binding.songBars.setVisibility(View.INVISIBLE);
             }
 			coverUri = data.get(position).get("thumbnail") == null? "invalid" : data.get(position).get("thumbnail").toString();
 			Title = data.get(position).get("title").toString();
@@ -337,7 +335,14 @@ public class MusicListFragment extends BaseFragment {
         @Override
         public void onViewRecycled(@NonNull ViewHolder holder) {
             super.onViewRecycled(holder);
-            Glide.with(holder.itemView.getContext()).clear((View)holder.itemView.findViewById(R.id.songCover));
+            Glide.with(holder.itemView.getContext()).clear((View)holder.itemView.findViewById(R.id.songCover)); 
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            if (position == 0) return TYPE_TOP;
+            if (position == getItemCount() - 1) return TYPE_BOTTOM;
+            return TYPE_MIDDLE;
         }
 		
 		public class ViewHolder extends RecyclerView.ViewHolder {
@@ -382,21 +387,21 @@ public class MusicListFragment extends BaseFragment {
     public class BottomSpacingDecoration extends RecyclerView.ItemDecoration {
         private final int bottomSpacing;
         private int spacing;
+        private int sideSpacing;
         public BottomSpacingDecoration(int bottomSpacing) {
+            sideSpacing = XUtils.convertToPx(getActivity(), 12f);
             this.bottomSpacing = bottomSpacing;
             spacing = XUtils.convertToPx(getActivity(), 2f);
         }
 
         @Override
-        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
-                               @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
             int position = parent.getChildAdapterPosition(view);
             if (position == RecyclerView.NO_POSITION) return;
-
             if (position == state.getItemCount() -1 ) {
-                outRect.set(0, 0, 0, lastSpacing);
+                outRect.set(sideSpacing, 0, sideSpacing, lastSpacing);
             } else {
-                outRect.set(0, 0, 0, spacing);
+                outRect.set(sideSpacing, 0, sideSpacing, spacing);
             }
         }
     }

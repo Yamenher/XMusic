@@ -11,8 +11,8 @@ android {
         namespace "com.xapps.media.xmusic"
         minSdkVersion 26
         targetSdkVersion 36
-        versionCode 210
-        versionName "0.21 Alpha"
+        versionCode 22
+        versionName "0.22 Alpha"
 
         android.buildFeatures.buildConfig true
 
@@ -47,6 +47,21 @@ android {
         }
 
         release {
+            def base64Key = getSecret("KEYSTORE_BASE64")
+            def tmpFile = file("$buildDir/tmp_keystore.jks")
+            if (base64Key) {
+                tmpFile.parentFile.mkdirs()
+                tmpFile.bytes = Base64.decoder.decode(base64Key)
+                storeFile = tmpFile
+            } else {
+                throw new GradleException("KEYSTORE_BASE64 is missing.")
+            }
+            storePassword getSecret("KEYSTORE_PASSWORD")
+            keyAlias getSecret("KEY_ALIAS")
+            keyPassword getSecret("ALIAS_PASSWORD")
+        }
+        
+        debug {
             def base64Key = getSecret("KEYSTORE_BASE64")
             def tmpFile = file("$buildDir/tmp_keystore.jks")
             if (base64Key) {
@@ -114,6 +129,13 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    
+    /*tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs += [
+                "-Xlint:deprecation",
+                "-Xlint:unchecked"
+        ]
+    }*/
 
     splits {
         abi {
@@ -155,13 +177,15 @@ dependencies {
     implementation 'androidx.media:media:1.7.1'
     implementation 'androidx.customview:customview-poolingcontainer:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
-    implementation "androidx.lifecycle:lifecycle-process:2.10.0" 
+    implementation 'androidx.lifecycle:lifecycle-process:2.10.0'
     implementation 'org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1'
     implementation 'com.github.rtugeek:colorseekbar:2.0.3'
-    implementation "androidx.graphics:graphics-shapes:1.1.0"
+    implementation 'androidx.graphics:graphics-shapes:1.1.0'
+    implementation 'androidx.preference:preference:1.2.1'
     implementation 'io.github.chayanforyou:marquee:1.0.0'
     implementation 'com.github.Adonai:jaudiotagger:2.3.14'
     implementation 'com.airbnb.android:lottie:6.7.1'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.2.0'
     implementation(name: 'fastscroller', ext: 'aar')
     implementation(name: 'roundedimageview', ext: 'aar')
     implementation project(':vumeterlibrary')

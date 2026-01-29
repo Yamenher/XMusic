@@ -149,5 +149,7 @@
     <color name="grad_6">#47A6FF</color>
     <color name="grad_7">#B17BFF</color>
     <color name="grad_8">#FF7AD8</color>
+    <color name="colorSurfaceContainer">#FFFFFF</color>
+    <color name="colorSurface">#FFFFFF</color>
 </resources>
 

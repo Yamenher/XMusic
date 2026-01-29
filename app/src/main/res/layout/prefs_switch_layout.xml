@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/pref_item"
+    android:paddingVertical="16dp"
+    android:paddingHorizontal="16dp"
+    android:layout_marginHorizontal="16dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center_vertical">
+        <TextView
+            android:textSize="16.0sp"
+            android:textColor="?colorOnSurface"
+            android:id="@+id/pref_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Preference" />
+        <TextView
+            android:textSize="14.0sp"
+            android:textColor="?colorOutline"
+            android:id="@+id/pref_description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Details" />
+    </LinearLayout>
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/pref_switch"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:clickable="true" />
+</LinearLayout>

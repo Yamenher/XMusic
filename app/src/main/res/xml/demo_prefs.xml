@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:title="Demo">
+
+        <SwitchPreferenceCompat
+            android:key="demo_switch"
+            android:title="Demo switch"
+            android:summary="Turns absolutely nothing on"
+            android:defaultValue="false" />
+
+        <CheckBoxPreference
+            android:key="demo_checkbox"
+            android:title="Demo checkbox"
+            android:summary="Also useless"
+            android:defaultValue="true" />
+
+        <EditTextPreference
+            android:key="demo_text"
+            android:title="Demo text"
+            android:summary="Type random garbage here"
+            android:defaultValue="test" />
+
+        <Preference
+            android:key="demo_click"
+            android:title="Clickable preference"
+            android:summary="Click me, I dare you" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

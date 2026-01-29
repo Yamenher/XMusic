@@ -10,13 +10,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import com.xapps.media.xmusic.activity.MainActivity;
 import com.xapps.media.xmusic.databinding.FragmentSearchBinding;
-import com.xapps.media.xmusic.databinding.MainBinding;
+import com.xapps.media.xmusic.databinding.ActivityMainBinding;
 import com.xapps.media.xmusic.utils.XUtils;
 
 public class SearchFragment extends BaseFragment {
     
     private FragmentSearchBinding binding;
-    private MainBinding activityBinding;
+    private ActivityMainBinding activityBinding;
     
     @NonNull
 	@Override

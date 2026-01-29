@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?><resources>
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
     <style name="Theme.XMusic.SplashScreen" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">?colorSurface</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>

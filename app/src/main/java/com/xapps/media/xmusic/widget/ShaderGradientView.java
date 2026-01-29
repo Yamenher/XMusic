@@ -10,6 +10,7 @@ import android.view.Choreographer;
 import android.view.View;
 
 import com.xapps.media.xmusic.R;
+import com.xapps.media.xmusic.utils.MaterialColorUtils;
 import com.xapps.media.xmusic.utils.XUtils;
 
 import java.io.InputStream;
@@ -37,12 +38,16 @@ public class ShaderGradientView extends View {
 
     private Choreographer.FrameCallback frameCallback;
 
-    private final float[] uPoints = {
-            0.25f, 0.30f, 0.55f,
-            0.75f, 0.35f, 0.65f,
-            0.35f, 0.75f, 0.60f,
-            0.70f, 0.80f, 0.70f
-    };
+    private static final float TOP_Y = 0.32f;
+private static final float BOTTOM_Y = 0.78f;
+
+private final float[] uPoints = {
+        0.25f, TOP_Y,    0.55f,
+        0.75f, TOP_Y,    0.65f,
+
+        0.35f, BOTTOM_Y, 0.60f,
+        0.70f, BOTTOM_Y, 0.70f
+};
 
     private final float[] uBound = {0f, 0f, 1f, 1f};
 
@@ -72,10 +77,10 @@ public class ShaderGradientView extends View {
         paint.setShader(shader);
 
         currentColors = colorsFromInts(
-                0xFF0C2A33,
-                0xFF0E3A44,
-                0xFF123F4A,
-                0xFF0A2E38
+                XUtils.interpolateColor(MaterialColorUtils.colorOnPrimary, MaterialColorUtils.colorSurface, 0.5f),
+                XUtils.interpolateColor(MaterialColorUtils.colorSecondaryContainer, MaterialColorUtils.colorSurface, 0.5f),
+                XUtils.interpolateColor(MaterialColorUtils.colorPrimaryContainer, MaterialColorUtils.colorSurface, 0.5f),
+                XUtils.interpolateColor(MaterialColorUtils.colorTertiaryContainer, MaterialColorUtils.colorSurface, 0.5f)
         );
 
         shader.setFloatUniform("uPoints", uPoints);
@@ -84,6 +89,7 @@ public class ShaderGradientView extends View {
         shader.setFloatUniform("uPointOffset", 0.18f);
         shader.setFloatUniform("uPointRadiusMulti", 1.3f);
         shader.setFloatUniform("uAlphaMulti", 1f);
+        shader.setFloatUniform("uColors", currentColors);
         shader.setFloatUniform("uSaturateOffset", 0.3f);
         shader.setFloatUniform("uLightOffset", 0.08f);
         shader.setFloatUniform("uTranslateY", 0f);
@@ -163,7 +169,7 @@ public class ShaderGradientView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
         if (!SUPPORTED) return;
         if (shader != null && w > 0 && h > 0) {
-            shader.setFloatUniform("uResolution", w, h);
+            shader.setFloatUniform("uResolution", w/1.15f, h/1.15f);
         }
     }
 

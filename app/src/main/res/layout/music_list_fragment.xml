@@ -5,13 +5,13 @@
     android:id="@+id/coordinator"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?colorSurface"
+    android:background="@null"
     android:orientation="vertical">
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?colorSurface"
+        android:background="@null"
         app:liftOnScroll="false"
         app:layout_collapseMode="pin"
         android:theme="@style/Widget.Material3.AppBarLayout">
@@ -19,7 +19,7 @@
             android:id="@+id/collapsing_toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?colorSurface"
+            android:background="@null"
             app:contentScrim="@android:color/transparent"
             app:layout_scrollFlags="scroll|enterAlwaysCollapsed|exitUntilCollapsed"
             app:layout_collapseMode="pin">
@@ -27,7 +27,7 @@
                 android:id="@+id/custom_toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="@android:color/transparent"
+                android:background="@null"
                 android:orientation="horizontal"
                 android:gravity="bottom"
                 android:paddingHorizontal="15dp"
@@ -45,12 +45,17 @@
             </LinearLayout>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/songsList"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        tools:listitem="@layout/songs_list_view" />
+        android:layout_height="match_parent">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/songsList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/songs_list_view" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
     <LinearLayout
         android:id="@+id/empty_layout"
         android:layout_width="wrap_content"
@@ -90,8 +95,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="right|top"
-        android:translationY="-100dp"
+        android:translationY="0dp"
         android:layout_marginHorizontal="16dp"
-        android:src="@drawable/ic_shuffle" 
-        style="@style/Widget.Material3.FloatingActionButton.Small.Primary"/>
+        android:src="@drawable/ic_shuffle"
+        style="@style/Widget.Material3.FloatingActionButton.Small.Primary" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

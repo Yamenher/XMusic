@@ -2,4 +2,5 @@
     <declare-styleable name="StatusBarScrimView">
         <attr name="scrimColor" format="color|reference" />
     </declare-styleable>
+    <attr name="originalSurfaceColor" format="color" />
 </resources>

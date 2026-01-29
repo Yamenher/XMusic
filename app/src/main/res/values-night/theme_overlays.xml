@@ -95,4 +95,11 @@
         <item name="colorSurfaceContainerHigh">@color/md_theme_surfaceContainerHigh_highContrast</item>
         <item name="colorSurfaceContainerHighest">@color/md_theme_surfaceContainerHighest_highContrast</item>
     </style>
+    
+    <style name="ThemeOverlay.XMusic.OLED" parent="">
+        <item name="colorSurface">#000000</item>
+        <item name="colorSurfaceContainer">#080808</item>
+        <item name="colorSurfaceContainerLow">#080808</item>
+        <item name="colorSurfaceContainerHigh">#080808</item>
+    </style>
 </resources>

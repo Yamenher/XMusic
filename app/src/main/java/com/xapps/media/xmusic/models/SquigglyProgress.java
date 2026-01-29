@@ -29,6 +29,8 @@ public class SquigglyProgress extends Drawable {
 	private ValueAnimator heightAnimator;
 	private float phaseOffset = 0f;
 	private long lastFrameTime = -1L;
+    
+    private int mTintColor;
 	
 	// Configuration variables
 	private final float transitionPeriods = 1.5f;
@@ -217,8 +219,13 @@ public class SquigglyProgress extends Drawable {
 	
 	@Override
 	public void setTint(int tintColor) {
+        mTintColor = tintColor;
 		updateColors(tintColor, getAlpha());
 	}
+    
+    public int getTint() {
+        return mTintColor;
+    }
 	
 	@Override
 	protected boolean onLevelChange(int level) {

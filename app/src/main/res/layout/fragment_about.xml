@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/coordinator"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:paddingHorizontal="8dp"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$Behavior"
+        android:background="@null"
+        android:fitsSystemWindows="true"
+        app:liftOnScrollColor="@android:color/transparent"
+        android:id="@+id/appbar">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:layout_height="200dp"
+            android:layout_width="match_parent"
+            android:id="@+id/collapsingtoolbar"
+            android:gravity="center"
+            android:background="@null"
+            app:layout_collapseMode="pin"
+            app:contentScrim="?colorSurface"
+            app:expandedTitleTextColor="@android:color/transparent"
+            app:expandedTitleSpacing="0dp"
+            app:collapsedTitleTextAppearance="@style/CollapsedAppBarTextStyle"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed|snap">
+
+            <LinearLayout
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:layout_gravity="bottom|center_horizontal">
+                <ImageView
+                    android:layout_width="86dp"
+                    android:layout_height="86dp"
+                    android:src="@drawable/service_icon"
+                    android:tint="?colorPrimary" />
+                <TextView
+                    android:id="@+id/random_note"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="?colorOnSurfaceVariant"
+                    android:text="Works on my device" />
+            </LinearLayout>
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:layout_height="?attr/actionBarSize"
+                android:layout_width="match_parent"
+                app:title="About XMusic"
+                android:background="@null"
+                app:liftOnScroll="false"
+                app:navigationIcon="@drawable/ic_arrow_back"
+                android:theme="@style/ThemeOverlay.Material3.Toolbar.CircleNavigationButton"
+                app:layout_collapseMode="pin"
+                android:id="@+id/toolbar" />
+
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/nested_scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingTop="24dp"
+        android:clipChildren="false"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="16dp"
+            
+            android:orientation="vertical">
+
+            <TextView
+                android:textSize="14.0sp"
+                android:textColor="?colorPrimary"
+                android:id="@+id/first_header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8.0dp"
+                android:text="Header"
+                android:layout_marginHorizontal="20.0dp" />
+
+            <LinearLayout
+                android:id="@+id/first_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple_top"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Package name" />
+                <TextView
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="com.xapps.media.xmusic" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/second_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version" />
+                <TextView
+                    android:id="@+id/version_text"
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/third_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version" />
+                <TextView
+                    android:id="@+id/build_text"
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/forth_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version" />
+                <TextView
+                    android:id="@+id/build_teffgxt"
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/fifth_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version" />
+                <TextView
+                    android:id="@+id/build_ffftext"
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/sixth_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version" />
+                <TextView
+                    android:id="@+id/jejzk"
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/seventh_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version" />
+                <TextView
+                    android:id="@+id/jejhhzfk"
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/eightth_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version" />
+                <TextView
+                    android:id="@+id/jejhhfzk"
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="" />
+
+            </LinearLayout>    
+
+            <LinearLayout
+                android:id="@+id/ninth_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version" />
+                <TextView
+                    android:id="@+id/jegehjzk"
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="" />
+
+            </LinearLayout>   
+
+            <LinearLayout
+                android:id="@+id/tenth_item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/rv_ripple"
+                android:padding="16dp">
+
+                <TextView
+                    android:textSize="16.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version" />
+                <TextView
+                    android:id="@+id/jefj4zk"
+                    android:textSize="14.0sp"
+                    android:textColor="?colorOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

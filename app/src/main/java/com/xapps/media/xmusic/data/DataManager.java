@@ -57,19 +57,11 @@ public class DataManager {
         return sp.getInt("theme", 0);
     }
 
-    public static void saveFabMargin(int i) {
-        sp.edit().putInt("fabMargin", i).apply();
+    public static void setOledTheme(boolean b) {
+        sp.edit().putBoolean("oledTheme", b).apply();
     }
 
-    public static int getFabMargin() {
-        return sp.getInt("fabMargin", 0);
-    }
-
-    public static void saveNormalFabMargin(int i) {
-        sp.edit().putInt("fabMarginNormal", i).apply();
-    }
-
-    public static int getNormalFabMargin() {
-        return sp.getInt("fabMarginNormal", 0);
+    public static boolean isOledThemeEnabled() {
+        return sp.getBoolean("oledTheme", false);
     }
 }

@@ -1,27 +1,34 @@
-<?xml version="1.0" encoding="UTF-8"?><resources>
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
     <style name="SmallRoundedCornersImage">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">8dp</item>
     </style>
     <style name="BoldStyleBNV">
         <item name="android:textStyle">bold</item>
-        <item name="android:fontFamily">@font/product_sans_regular</item>
-        <item name="fontFamily">@font/product_sans_regular</item>
+        <item name="android:fontFamily">@font/google_sans_flex</item>
+        <item name="fontFamily">@font/google_sans_flex</item>
     </style>
-    <style name="ExpandedAppBarTextStyle" parent="@style/TextAppearance.Material3.DisplaySmall">
-        <item name="android:fontFamily">@font/product_sans_regular</item>
-        <item name="fontFamily">@font/product_sans_regular</item>
+    <style name="ExpandedAppBarTextStyle">
+         <item name="android:textSize">36sp</item>
+        <item name="android:fontFamily">@font/google_sans_flex</item>
+        <item name="fontFamily">@font/google_sans_flex</item>
         <item name="android:textStyle">bold</item>
     </style>
-    <style name="CollapsedAppBarTextStyle" parent="@style/TextAppearance.Material3.TitleLarge">
-        <item name="android:fontFamily">@font/product_sans_regular</item>
-        <item name="fontFamily">@font/product_sans_regular</item>
+    <style name="CollapsedAppBarTextStyle">
         <item name="android:textStyle">bold</item>
+        <item name="android:textSize">22sp</item>
+        <item name="fontFamily">@font/google_sans_flex</item>
+        <item name="android:fontFamily">@font/google_sans_flex</item>
         <item name="android:letterSpacing">0</item>
+    </style>
+    <style name="transparent_text">
+        <item name="android:textColor">#948013</item>
     </style>
     <style name="CustomSwitch" parent="@style/Widget.Material3.CompoundButton.MaterialSwitch">
         <item name="android:clickable">false</item>
         <item name="android:focusable">false</item>
+        <item name="thumbIcon">@drawable/switch_selector</item>
     </style>    
     <style name="Base.MaterialAlertDialog.MaterialComponents.Title.Icon" parent="android:Widget">
         <item name="android:layout_width">32dip</item>
@@ -32,10 +39,8 @@
         <item name="android:contentDescription">@null</item>
         <item name="android:importantForAccessibility">no</item>
   </style>
-  <style name="MarqueeTextStyle"> 
-    <item name="marqueeIsLooping">true</item>
-    <item name="marqueeFadeToColor">@android:color/transparent</item>
-    <item name="marqueeFontFamily">@font/product_sans_regular</item>
-    <item name="android:scrollbars">none</item>
+  <style name="CustomTextViewStyle">
+    <item name="android:fontFamily">@font/google_sans_flex</item>
+    <item name="android:fontVariationSettings">\'ROND\' 100</item>
   </style>
 </resources>

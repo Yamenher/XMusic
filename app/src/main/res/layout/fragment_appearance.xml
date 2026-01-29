@@ -12,14 +12,16 @@
         android:layout_width="match_parent"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$Behavior"
         android:fitsSystemWindows="true"
-        app:liftOnScrollColor="?colorSurface"
+        android:background="@null"
+        app:liftOnScrollColor="@android:color/transparent"
         android:id="@+id/appbar">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:layout_height="?attr/collapsingToolbarLayoutLargeSize"
             android:layout_width="match_parent"
             android:id="@+id/collapsingtoolbar"
-            app:contentScrim="@android:color/transparent"
+            android:background="@null"
+            app:contentScrim="@null"
             app:expandedTitleTextAppearance="@style/ExpandedAppBarTextStyle"
             app:expandedTitleSpacing="0dp"
             app:collapsedTitleTextAppearance="@style/CollapsedAppBarTextStyle"
@@ -70,8 +72,9 @@
                         android:layout_height="wrap_content"
                         android:layout_width="wrap_content"
                         android:text="Theme"
-                        android:textSize="20sp"
-                        android:layout_marginBottom="4dp"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="2dp"
                         android:textColor="?colorOnSurface"/>
 
                     <TextView
@@ -90,6 +93,7 @@
                     android:paddingHorizontal="4dp"
                     android:background="@drawable/fully_round_bg"
                     android:layout_marginTop="12dp"
+                    app:selectionRequired="true"
                     app:singleSelection="true">
 
                     <com.google.android.material.button.MaterialButton   
@@ -117,6 +121,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_width="wrap_content"
+                        android:textSize="16dp"
                         style="@style/Widget.Material3.Button.TextButton"
                         android:text="Light"
                     />
@@ -146,7 +151,8 @@
                         android:layout_height="wrap_content"
                         android:layout_width="wrap_content"
                         android:text="Dynamic Theme"
-                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
                         android:layout_marginBottom="4dp"
                         android:textColor="?colorOnSurface"/>
 
@@ -161,6 +167,49 @@
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/first_switch"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    style="@style/CustomSwitch"
+                />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/olde_pref"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_marginTop="2dp"
+                android:padding="16dp"
+                android:background="@drawable/rv_ripple"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/oled_content"
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:text="Pure black theme"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="2dp"
+                        android:textColor="?colorOnSurface"/>
+
+                    <TextView
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:text="Use a pure black background color to save energy on Amoled devices"
+                        android:textSize="14sp"
+                        android:textColor="?colorOutline"/>
+
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/oled_switch"
                     android:layout_height="wrap_content"
                     android:layout_width="wrap_content"
                     style="@style/CustomSwitch"
@@ -199,8 +248,9 @@
                                 android:layout_height="wrap_content"
                                 android:layout_width="wrap_content"
                                 android:text="Custom Dynamic Color"
-                                android:textSize="20sp"
-                                android:layout_marginBottom="4dp"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="2dp"
                                 android:textColor="?colorOnSurface"/>
 
                             <ImageView
