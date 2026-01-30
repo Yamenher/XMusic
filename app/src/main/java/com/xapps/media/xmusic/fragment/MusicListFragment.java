@@ -37,6 +37,7 @@ import androidx.core.content.*;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.ktx.*;
 import androidx.core.splashscreen.*;
+import androidx.core.view.ViewKt;
 import androidx.customview.*;
 import androidx.customview.poolingcontainer.*;
 import androidx.emoji2.*;
@@ -95,6 +96,7 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.*;
+import kotlin.Unit;
 import me.zhanghai.android.fastscroll.FastScroller;
 import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 import org.json.*;
@@ -174,10 +176,9 @@ public class MusicListFragment extends BaseFragment {
                         public void run() {
                             binding.songsList.setAdapter(concatAdapter);
                             binding.emptyLayout.setVisibility(View.GONE);
-                            binding.collapsingToolbar.post(() -> {    
-                                binding.shuffleButton.post(() -> {
-                                    binding.shuffleButton.setTranslationY((binding.collapsingToolbar.getHeight())/2);
-                                });
+                            ViewKt.doOnLayout(binding.collapsingToolbar, v -> {
+                                binding.shuffleButton.setTranslationY(v.getHeight() / 2f);
+                                return Unit.INSTANCE;
                             });
                         }
                     });
@@ -270,12 +271,10 @@ public class MusicListFragment extends BaseFragment {
                 binding.item.setChecked(true);
                 binding.SongTitle.setTextColor(c1);
                 binding.SongArtist.setTextColor(c2);
-                //binding.songBars.setVisibility(View.VISIBLE);
             } else {
                 binding.item.setChecked(false);
                 binding.SongTitle.setTextColor(c3);
                 binding.SongArtist.setTextColor(c4);
-                //binding.songBars.setVisibility(View.INVISIBLE);
             }
 			coverUri = data.get(position).get("thumbnail") == null? "invalid" : data.get(position).get("thumbnail").toString();
 			Title = data.get(position).get("title").toString();
@@ -296,7 +295,7 @@ public class MusicListFragment extends BaseFragment {
 				binding.SongArtist.setText(Artitst);
 			}
 			binding.item.setOnClickListener(v -> {
-                if (a.getController() == null /*&& !isClickPossible*/) return;
+                if (a.getController() == null ) return;
                 if (a.bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_SETTLING || a.bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_DRAGGING) return;
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - lastClickTime < DEBOUNCE_MS) {

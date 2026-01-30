@@ -100,7 +100,7 @@ public class WelcomeActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         binding.startButton.setOnClickListener(v -> {
-            if (/*notificationsAllowed && audiAccessAllowed || Build.VERSION.SDK_INT <= 31 && audiAccessAllowed*/ true) {
+            if ( true) {
                 binding.topWindow.animate().translationYBy(-binding.topWindow.getHeight()).setDuration(200).start();
                 MaterialSharedAxis msa = new MaterialSharedAxis(MaterialSharedAxis.Z, true);
                 msa.setDuration(800);

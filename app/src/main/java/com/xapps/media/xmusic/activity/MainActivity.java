@@ -204,10 +204,11 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                     String songPath = RuntimeData.songsMap.get(mediaController.getCurrentMediaItemIndex()).get("path").toString();
                     LyricsExtractor.extract(songPath, lyrics -> {
                         if (lyrics != null) {
-                            InputStream is = new ByteArrayInputStream(lyrics.getBytes(StandardCharsets.UTF_8));
-                            binding.newTest.setLyrics(LyricsParser.parse(is));
-                            binding.newTest.setOnSeekListener(MainActivity.this);
-                            binding.newTest.configureSyncedLyrics(true, Gravity.START, 17f);
+                            LyricsParser.parse(lyrics, result -> {
+                                binding.newTest.setLyrics(result.lines);
+                                binding.newTest.configureSyncedLyrics(result.isSynced, Gravity.START, 17f);
+                                binding.newTest.setOnSeekListener(MainActivity.this);
+                            });
                             
                         } else {
                             Log.e("LyricsExtractor", "could not find any lyrics for song : "+ RuntimeData.songsMap.get(mediaController.getCurrentMediaItemIndex()).get("title").toString());
@@ -417,7 +418,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                 binding.bottomNavigation.postDelayed(() -> {
                     isBnvHidden = true;
                     HideBNV(false);
-                    //MusicListFragment.fab.animate().translationY(normalFabY).setDuration(300).start();
                 }, 100);
             }
         } else if (PlayerService.isAnythingPlaying()) {
@@ -427,7 +427,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             updateColors();
             musicListFragment.updateActiveItem(mediaController.getMediaItemCount() > 0? mediaController.getCurrentMediaItemIndex() : -1);
             binding.bottomNavigation.postDelayed(() -> {
-                //MusicListFragment.fab.animate().translationY(playingFabY).setDuration(300).start();
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                 isBnvHidden = true;
                 HideBNV(false);
@@ -437,7 +436,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             binding.bottomNavigation.postDelayed(() -> {
                 isBnvHidden = true;
                 HideBNV(false);
-                //MusicListFragment.fab.animate().translationYBy(normalFabY).setDuration(300).start();
             }, 100);
         }
         isRestoring = false;
@@ -493,7 +491,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                 if (fromUser) {
                     binding.currentDurationText.setText(SongMetadataHelper.millisecondsToDuration((int)progress));
                     binding.musicProgress.setProgress(progress);
-                    binding.newTest.onSeek(progress);
                 }
             }
 
@@ -567,7 +564,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
 						mediaController.stop();
                         mediaController.clearMediaItems();
                         PlayerService.areMediaItemsEmpty = true;
-                        //MusicListFragment.fab.animate().translationY(normalFabY).setDuration(300).start();
 						isBsInvisible = true;
 				    } else {
 						isBsInvisible = false;
@@ -745,7 +741,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                         new Handler(Looper.getMainLooper()).post(() -> {
                             if (songs.size() > 0) {
                                 wasAdjusted = true;
-                                //binding.coversPager.setAdapter(customPagerAdapter);
                                 if (PlayerService.isPlaying && !songs.isEmpty()) {
                                     updateCoverPager(PlayerService.currentPosition);
                                     binding.toggleView.startAnimation();
@@ -753,6 +748,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                                 }    
                             } else {
                                 XUtils.showMessage(context, "no songs found");
+                                MusicListFragment.fab.hide();
                             } 
                         });
                     }
@@ -770,6 +766,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                         }    
                     } else {
                         XUtils.showMessage(context, "no songs found");
+                        MusicListFragment.fab.hide();
                     } 
                 });
             }
@@ -859,7 +856,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
     public void HideBNV(boolean hide) {
         Interpolator interpolator = new PathInterpolator(0.4f, 0.0f, 0.2f, 1.0f);
         if (hide) {
-            binding.bottomNavigation.animate().alpha(0.5f).translationY(binding.bottomNavigation.getHeight()).setDuration(300).setInterpolator(interpolator)/*.withEndAction(() -> binding.bottomMixer.removeView(binding.bottomNavigation))*/.start();
+            binding.bottomNavigation.animate().alpha(0.5f).translationY(binding.bottomNavigation.getHeight()).setDuration(300).setInterpolator(interpolator).start();
             if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_COLLAPSED || bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_HIDDEN)
             binding.miniPlayerBottomSheet.animate().translationY(bnvHeight).setDuration(300).setInterpolator(interpolator).start();
         } else {
@@ -867,7 +864,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_COLLAPSED || bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_HIDDEN) { 
                 binding.miniPlayerBottomSheet.animate().translationY(0).setDuration(300).setInterpolator(interpolator).start();
             }
-            binding.bottomNavigation.animate().alpha(1f).translationY(0).setDuration(300).setInterpolator(interpolator)/*.withStartAction(() -> binding.bottomMixer.addView(binding.bottomNavigation))*/.start();
+            binding.bottomNavigation.animate().alpha(1f).translationY(0).setDuration(300).setInterpolator(interpolator).start();
         }
         isBnvHidden = hide;
     }
@@ -994,7 +991,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                 updateColors();
             } else if (callbackType == ServiceCallback.CALLBACK_PROGRESS_UPDATE && seekbarFree) {
                 updateProgress(RuntimeData.currentProgress);
-                //binding.testLyrics.updateTime(RuntimeData.currentProgress);
                 if (mediaController != null) binding.newTest.onProgress((int) RuntimeData.currentProgress);
             }
         });
@@ -1035,10 +1031,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
     
     @Override
     public void onSeekRequested(long ms) {
-        // 1. Update the Actual Music
         if (mediaController != null) {
             mediaController.seekTo(ms);
-            binding.newTest.onSeek((int) ms);
         }
     }
 

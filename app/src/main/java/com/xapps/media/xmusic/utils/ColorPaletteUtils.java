@@ -41,7 +41,6 @@ public class ColorPaletteUtils {
                 long hash = hashBitmap(bitmap);
 
                 if (hash == lastBitmapHash && lightColors != null && darkColors != null) {
-                    //if (callback != null) callback.onResult(lightColors, darkColors);
                     return;
                 }
 

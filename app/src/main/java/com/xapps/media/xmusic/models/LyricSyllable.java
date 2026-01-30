@@ -1,0 +1,14 @@
+package com.xapps.media.xmusic.models;
+
+public class LyricSyllable {
+    public final int startTime;
+    public int endTime;
+    public final String text;
+    public final int relStart;
+
+    public LyricSyllable(int startTime, String text, int relStart) {
+        this.startTime = startTime;
+        this.text = text;
+        this.relStart = relStart;
+    }
+}

@@ -53,7 +53,6 @@ class InsetsAnimationCallback extends WindowInsetsAnimationCompat.Callback {
     int endY = tmpLocation[1];
     startTranslationY = startY - endY;
 
-    // Move the view back to its original position before the insets were applied.
     view.setTranslationY(startTranslationY);
 
     return boundsCompat;
@@ -66,7 +65,6 @@ class InsetsAnimationCallback extends WindowInsetsAnimationCompat.Callback {
       @NonNull List<WindowInsetsAnimationCompat> animationList) {
     for (WindowInsetsAnimationCompat animation : animationList) {
       if ((animation.getTypeMask() & WindowInsetsCompat.Type.ime()) != 0) {
-        // Move the view to match the animated position of the keyboard.
         float translationY =
             AnimationUtils.lerp(startTranslationY, 0, animation.getInterpolatedFraction());
         view.setTranslationY(translationY);

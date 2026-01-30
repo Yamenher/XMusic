@@ -486,52 +486,8 @@ public class PlayerService extends MediaSessionService {
     }
 
     private void handleAudioFocusChange(int focusChange) {
-        /*if (isPlaying) {
-            switch (focusChange) {
-                case AudioManager.AUDIOFOCUS_GAIN:
-                    ExoPlayerHandler.post(() -> {
-                        player.setVolume(1.0f);
-                        if (wasPausedDueToFocus) {
-                            player.play();
-                            wasPausedDueToFocus = false;
-                        }
-                    });
-                    break;
-                case AudioManager.AUDIOFOCUS_LOSS:
-                    ExoPlayerHandler.post(() -> {
-                        if (player.isPlaying()) {
-                            player.pause();
-                            wasPausedDueToFocus = true;
-                        }
-                    });
-                break;
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                    ExoPlayerHandler.post(() -> {
-                        if (player.isPlaying()) {
-                            player.pause();
-                            wasPausedDueToFocus = true;
-                        }
-                    });
-                break;
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                    ExoPlayerHandler.post(() -> {
-                        if (player.isPlaying()) {
-                            player.setVolume(0.2f);
-                        }    
-                    });
-			    break;
-            }
-        }*/
     }
 
-    /*public void requestAudioFocus(String uri, String title, String artist, String coverUri, int position) {
-        int result = audioManager.requestAudioFocus(audioFocusRequest);
-        if (result == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            playMedia(uri, title, artist, coverUri, position);   
-        } else {
-			XUtils.showMessage(getApplicationContext(), "Unable to play songs at the moment");
-		}
-    }*/
 
     public void abandonAudioFocus() {
         audioManager.abandonAudioFocusRequest(audioFocusRequest);

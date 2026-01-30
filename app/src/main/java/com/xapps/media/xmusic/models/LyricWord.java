@@ -1,22 +1,28 @@
 package com.xapps.media.xmusic.models;
-import android.util.Log;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class LyricWord {
 
-    public final int timestamp;
-    public final String word;
     public final int startIndex;
-    public int endTime;
+    public final List<LyricSyllable> syllables = new ArrayList<>();
 
-    public LyricWord(int timestamp, String word, int startIndex, int endTime) {
-        this.timestamp = timestamp;
-        this.word = word;
+    public LyricWord(int startIndex) {
         this.startIndex = startIndex;
-        this.endTime = endTime;
-        Log.d("LyricWord", "Start="+String.valueOf(timestamp) + " ,end="+String.valueOf(endTime));
     }
 
-    public LyricWord(int timestamp, String word, int startIndex) {
-        this(timestamp, word, startIndex, timestamp + 1000);
+    public String getText() {
+        StringBuilder sb = new StringBuilder();
+        for (LyricSyllable s : syllables) sb.append(s.text);
+        return sb.toString();
+    }
+
+    public int getStartTime() {
+        return syllables.get(0).startTime;
+    }
+
+    public int getEndTime() {
+        return syllables.get(syllables.size() - 1).endTime;
     }
 }

@@ -27,7 +27,7 @@ public class LyricLineView extends AppCompatTextView {
 
     private static final int FADE_DURATION_MS = 250;
     private static final int MIN_WORD_DURATION_MS = 150;
-    private static final int MAX_WORD_DURATION_MS = 2500;
+    private static final int MAX_WORD_DURATION_MS = 2000;
     private static final float MIN_GLOW_INTENSITY = 0.1f;
     private static final float MAX_GLOW_INTENSITY = 3.0f;
 
@@ -125,9 +125,7 @@ public class LyricLineView extends AppCompatTextView {
 
                     if (nextSpace != -1 && (nextSpace - end) < 8) {
                         end = nextSpace;
-                    }
-
-                    else if (prevSpace > currentPos) {
+                    } else if (prevSpace > currentPos) {
                         end = prevSpace;
                     }
                 }
@@ -153,11 +151,11 @@ public class LyricLineView extends AppCompatTextView {
         }
 
         for (LyricWord w : line.words) {
-            if (w.endTime > lineEndTime) lineEndTime = w.endTime;
+            if (w.getEndTime() > lineEndTime) lineEndTime = w.getEndTime();
         }
 
         boolean isFirstWordRtl = false;
-        String firstWord = line.words.get(0).word;
+        String firstWord = line.words.get(0).getText();
         if (firstWord.length() > 0) {
             byte dir = Character.getDirectionality(firstWord.charAt(0));
             if (dir == Character.DIRECTIONALITY_RIGHT_TO_LEFT
@@ -242,7 +240,7 @@ public class LyricLineView extends AppCompatTextView {
 
     private List<VirtualWord> splitMixedScripts(LyricWord w) {
         List<VirtualWord> result = new ArrayList<>();
-        String text = w.word;
+        String text = w.getText();
         if (text.isEmpty()) return result;
 
         int len = text.length();
@@ -267,12 +265,12 @@ public class LyricLineView extends AppCompatTextView {
     private void addVirtualWord(
             List<VirtualWord> list, LyricWord parent, String subText, int relStart) {
         if (subText.isEmpty()) return;
-        long totalDuration = parent.endTime - parent.timestamp;
-        int parentLen = parent.word.length();
+        long totalDuration = parent.getEndTime() - parent.getStartTime();
+        int parentLen = parent.getText().length();
         int subLen = subText.length();
         long startOffset = (long) (totalDuration * ((double) relStart / parentLen));
         long duration = (long) (totalDuration * ((double) subLen / parentLen));
-        long subStart = parent.timestamp + startOffset;
+        long subStart = parent.getStartTime() + startOffset;
         long subEnd = subStart + duration;
         list.add(new VirtualWord(subText, subStart, subEnd, parent.startIndex + relStart));
     }
@@ -310,7 +308,7 @@ public class LyricLineView extends AppCompatTextView {
         return MIN_GLOW_INTENSITY + (progress * (MAX_GLOW_INTENSITY - MIN_GLOW_INTENSITY));
     }
 
-    public void setCurrent(boolean isCurrent) {
+    public void setCurrent(boolean isCurrent, int position) {
         this.isActiveLine = isCurrent;
 
         if (!isCurrent) {
@@ -318,7 +316,7 @@ public class LyricLineView extends AppCompatTextView {
                 isUpdating = false;
                 removeCallbacks(updateRunnable);
             }
-            animateFadeOut();
+            animateFadeOut(position);
             return;
         }
 
@@ -404,7 +402,7 @@ public class LyricLineView extends AppCompatTextView {
         }
     }
 
-    private void animateFadeOut() {
+    private void animateFadeOut(int p) {
         if (isFadedOut) return;
         isFadedOut = true;
 
@@ -417,19 +415,9 @@ public class LyricLineView extends AppCompatTextView {
                     float val = (float) animation.getAnimatedValue();
                     for (KaraokeSpan span : spanMap.values()) {
                         span.alpha = val;
-                        span.glowAlpha = val;
+                        span.glowAlpha = Math.min(span.glowAlpha, val);
                     }
                     invalidate();
-                });
-
-        spanAlphaAnimator.addListener(
-                new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        for (KaraokeSpan span : spanMap.values()) {
-                            span.progress = 1f;
-                        }
-                    }
                 });
 
         animate()
@@ -440,7 +428,8 @@ public class LyricLineView extends AppCompatTextView {
                 .withEndAction(
                         () -> {
                             for (KaraokeSpan span : spanMap.values()) {
-                                span.alpha = ACTIVE_ALPHA;
+                                span.progress = -1.0f;
+                                span.alpha = 0f;
                             }
                             invalidate();
                         })

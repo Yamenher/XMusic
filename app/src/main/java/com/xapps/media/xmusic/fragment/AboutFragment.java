@@ -53,12 +53,7 @@ public class AboutFragment extends BaseFragment {
     }
 
     private void setupUI() {
-        //binding.appbar.setPadding(0, XUtils.getStatusBarHeight(requireContext()), 0, 0);
         binding.appbar.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
-    /*int totalRange = appBarLayout.getTotalScrollRange();
-    float progress = Math.abs(verticalOffset) / (float) totalRange;
-
-    float alpha = Math.max(0f, (progress - 0.5f) / 0.5f);*/
     binding.collapsingtoolbar.setScrimVisibleHeightTrigger(binding.collapsingtoolbar.getHeight());
     binding.collapsingtoolbar.setScrimAnimationDuration(0);
 });

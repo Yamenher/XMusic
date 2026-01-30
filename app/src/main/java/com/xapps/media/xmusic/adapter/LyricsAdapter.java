@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.core.view.ViewKt;
 import androidx.media3.session.MediaController;
 import androidx.recyclerview.widget.RecyclerView;
 import com.xapps.media.xmusic.common.PlaybackControlListener;
@@ -31,6 +32,7 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
     private Typeface syncedTypeface;
     private int gravity;
     private float textSizeSp;
+    private int fallbackWidth;
 
     private int currentProgressMs = -1;
     private int activeLineIndex = -1;
@@ -48,17 +50,16 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
         listener = l;
     }
 
-    public void configureSynced(
-            boolean synced,
-            Typeface typeface,
-            int gravity,
-            float textSizeSp
-    ) {
-        this.syncedLyrics = synced;
-        this.syncedTypeface = typeface;
-        this.gravity = gravity;
-        this.textSizeSp = textSizeSp;
+    public void configureSynced(boolean s, Typeface t, int g, float ts) {
+        this.syncedLyrics = s;
+        this.syncedTypeface = t;
+        this.gravity = g;
+        this.textSizeSp = ts;
         notifyDataSetChanged();
+    }
+    
+    public void setFallbackWidth(int i) {
+        fallbackWidth = i;
     }
 
     @Override
@@ -68,7 +69,7 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
 
     @Override
     public int getItemViewType(int position) {
-        return TYPE_SYNCED;
+        return syncedLyrics? TYPE_SYNCED : TYPE_PLAIN;
     }
 
     @Override
@@ -100,7 +101,7 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
             
             if (currentProgressMs != -1) {
                 v.setCurrentProgress(currentProgressMs);
-                v.setCurrent(position == activeLineIndex);
+                v.setCurrent(position == activeLineIndex, position);
             }
             
             if (line.vocalType == 2) {
@@ -129,8 +130,6 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
         attachedHolders.remove(holder);
 
         if (holder.lineView != null) {
-            //holder.lineView.setCurrent(false);
-            //holder.lineView.
         }
 
         super.onViewRecycled(holder);

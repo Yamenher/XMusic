@@ -15,19 +15,16 @@ public class RoundTextView extends TextView {
 
     public RoundTextView(Context context) {
         super(context);
-        //typeface = ResourcesCompat.getFont(context, R.font.google_sans_shared);
         apply();
     }
 
     public RoundTextView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        //typeface = ResourcesCompat.getFont(context, R.font.google_sans_shared);
         apply();
     }
 
     public RoundTextView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        //typeface = ResourcesCompat.getFont(context, R.font.google_sans_shared);
         apply();
     }
 

@@ -219,7 +219,6 @@ public class XUtils {
                 if (DataManager.isCustomColorsOn()) {
                     DynamicColorsOptions.Builder options = new DynamicColorsOptions.Builder();
                     options.setContentBasedSource(DataManager.getCustomColor());
-                    //options.setThemeOverlay(R.style.ThemeOverlay_XMusic_OLED);
                     DynamicColors.applyToActivityIfAvailable(c, options.build());
                 } else {
                     DynamicColors.applyToActivityIfAvailable(c);

@@ -32,7 +32,6 @@ public class SquigglyProgress extends Drawable {
     
     private int mTintColor;
 	
-	// Configuration variables
 	private final float transitionPeriods = 1.5f;
 	private final float minWaveEndpoint = 0f;
 	private final float matchedWaveEndpoint = 1f;
@@ -68,17 +67,17 @@ public class SquigglyProgress extends Drawable {
 	
 	public void setWaveLength(float waveLength) {
 		this.waveLength = waveLength;
-		invalidateSelf(); // redraw with updated settings
+		invalidateSelf(); 
 	}
 	
 	public void setLineAmplitude(float amplitude) {
 		this.lineAmplitude = amplitude;
-		invalidateSelf(); // redraw with updated settings
+		invalidateSelf(); 
 	}
 	
 	public void setPhaseSpeed(float phaseSpeed) {
 		this.phaseSpeed = phaseSpeed;
-		invalidateSelf(); // redraw with updated settings
+		invalidateSelf(); 
 	}
 	
 	public void setAnimate(boolean animate) {
@@ -138,7 +137,6 @@ public class SquigglyProgress extends Drawable {
 		float waveStart = -phaseOffset - waveLength / 2f;
 		float waveEnd = transitionEnabled ? totalWidth : waveProgressPx;
 		
-		// Amplitude computation lambda equivalent
 		path.rewind();
 		path.moveTo(waveStart, 0f);
 		
