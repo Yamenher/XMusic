@@ -7,13 +7,10 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.9.1' 
-        classpath 'com.palantir.javaformat:gradle-palantir-java-format:2.86.0'
     }
 }
 
 allprojects {
-
-    apply plugin: 'com.palantir.java-format'
     
     repositories {
         maven { url 'https://jitpack.io' }
