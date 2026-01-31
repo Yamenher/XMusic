@@ -11,6 +11,7 @@ public class LyricLine {
     
     public int vocalType = 1; 
     public boolean isBackground = false; 
+    public boolean isRomaji = false;
 
     public LyricLine(int time, Spannable line, List<LyricWord> words) {
         this.time = time;

@@ -139,6 +139,15 @@ public class LyricsParser {
             }
             if (!result.isEmpty()) {
                 result.sort(Comparator.comparingLong(l -> l.time));
+                
+                for (int i = 1; i < result.size(); i++) {
+                    LyricLine prev = result.get(i - 1);
+                    LyricLine current = result.get(i);
+                    if (current.time != 0 && current.time == prev.time) {
+                        current.isRomaji = true;
+                    }
+                }
+                
                 finalizeSyllableTimings(result);
             }
         } catch (Exception ignored) {

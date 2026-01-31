@@ -99,12 +99,21 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
             if (line.isBackground) {
                 v.setTextSize(20f);
             } else {
-                v.setTextSize(32f);
+                v.setTextSize(30f);
             }
             
-            holder.itemView.findViewById(R.id.lyricContainer).setOnClickListener(v2 -> {
-                if (listener != null) listener.onSeekRequested((long) line.time);
-            });
+            if (line.isRomaji) {
+                v.setPadding(v.getPaddingLeft(), 0, v.getPaddingRight(), 0);
+                v.setTextSize(18f);
+            }
+            
+            if (!line.isRomaji) {
+                holder.itemView.findViewById(R.id.lyricContainer).setOnClickListener(v2 -> {
+                    if (listener != null) listener.onSeekRequested((long) line.time);
+                });
+            } else {
+                holder.itemView.findViewById(R.id.lyricContainer).setEnabled(false);
+            }
         } else {
             holder.textView.setText(line.line);
         }
@@ -113,7 +122,6 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
     @Override
     public void onViewRecycled(@NonNull LyricsViewHolder holder) {
         super.onViewRecycled(holder);
-        holder.lineView.setLyricLine(lines.get(holder.getAdapterPosition()));
         holder.lineView.setCurrent(false, holder.getAdapterPosition());
     }
 }

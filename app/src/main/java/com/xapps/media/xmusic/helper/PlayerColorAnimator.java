@@ -140,7 +140,7 @@ public final class PlayerColorAnimator {
             seekBar.setThumbTintList(ColorStateList.valueOf(ip));
             progressDrawable.setTint(ip);
 
-            binding.placeholder1.setIconTint(ColorStateList.valueOf(iosc));
+            binding.lyricsButton.setIconTint(ColorStateList.valueOf(iosc));
 
             binding.artistBigTitle.setTextColor(iosc);
             binding.songBigTitle.setTextColor(ios);

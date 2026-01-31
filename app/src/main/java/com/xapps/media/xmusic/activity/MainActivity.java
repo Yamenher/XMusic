@@ -44,6 +44,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
@@ -58,6 +59,7 @@ import androidx.media3.session.SessionToken;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.transition.Fade;
 import androidx.transition.TransitionManager;
+import androidx.transition.TransitionSeekController;
 import androidx.viewpager2.widget.ViewPager2;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.Priority;
@@ -65,8 +67,10 @@ import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.resources.TypefaceUtils;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.transition.MaterialFadeThrough;
+import com.google.android.material.transition.MaterialSharedAxis;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.xapps.media.xmusic.R;
@@ -119,8 +123,9 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
     private SquigglyProgress progressDrawable;
     private int bnvHeight, statusBarHeight, navBarHeight, bsbHeight, bottomSheetColor, tmpColor, playerSurface;
     private long lastClick;
-    private float currentSlideOffset;
-    private OnBackPressedCallback callback, callback2;
+    private float currentSlideOffset, tmpY;
+    private OnBackPressedCallback callback, callback2, callback3;
+    private TransitionSeekController controller;
     private CustomTarget<Drawable> coverTarget;
     private ValueAnimator colorAnimator;
     private Map<String, Integer> effectiveOldColors = new HashMap<>();
@@ -205,11 +210,10 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                     LyricsExtractor.extract(songPath, lyrics -> {
                         if (lyrics != null) {
                             LyricsParser.parse(lyrics, result -> {
-                                binding.newTest.setLyrics(result.lines);
-                                binding.newTest.configureSyncedLyrics(result.isSynced, Gravity.START, 17f);
-                                binding.newTest.setOnSeekListener(MainActivity.this);
+                                binding.lyricsView.setLyrics(result.lines);
+                                binding.lyricsView.configureSyncedLyrics(result.isSynced, ResourcesCompat.getFont(context, R.font.product_sans_regular), Gravity.START, 17f);
+                                binding.lyricsView.setOnSeekListener(MainActivity.this);
                             });
-                            
                         } else {
                             Log.e("LyricsExtractor", "could not find any lyrics for song : "+ RuntimeData.songsMap.get(mediaController.getCurrentMediaItemIndex()).get("title").toString());
                         }
@@ -468,8 +472,15 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             
         });
         
-        binding.placeholder1.setOnClickListener(v -> {
-            
+        binding.lyricsButton.setOnClickListener(v -> {
+            boolean b = binding.lyricsButton.isChecked();
+            callback3.setEnabled(b);
+            callback.setEnabled(!b);
+            innerBottomSheetBehavior.setDraggable(!b);
+            MaterialSharedAxis mft = new MaterialSharedAxis(MaterialSharedAxis.Y, b);
+            mft.setDuration(500);
+            TransitionManager.beginDelayedTransition(binding.Coordinator, mft);
+            binding.lyricsContainer.setVisibility(b? View.VISIBLE : View.GONE);
         });
 
         View.OnClickListener navClick = v -> {
@@ -651,11 +662,41 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             }
         });
         
+        callback3 = new OnBackPressedCallback(false) {
+            @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+            @Override
+            public void handleOnBackStarted(BackEventCompat backEvent) {
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+            @Override
+            public void handleOnBackProgressed(BackEventCompat backEvent) {
+                binding.lyricsContainer.setAlpha(1f - 1f*backEvent.getProgress());
+            }
+
+            @Override
+            public void handleOnBackPressed() {
+                binding.lyricsContainer.animate().alpha(0f).setDuration(100).withEndAction(() -> {
+                    binding.lyricsContainer.setVisibility(View.GONE);
+                    binding.lyricsContainer.setAlpha(1f);
+                }).start();
+                callback3.setEnabled(false);
+                callback.setEnabled(true);
+                binding.lyricsButton.setChecked(false);
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+            @Override
+            public void handleOnBackCancelled() {
+                binding.lyricsContainer.animate().alpha(1f).setDuration(100).start();
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback3);
+        
         callback2 = new OnBackPressedCallback(false) {
             @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
             @Override
             public void handleOnBackStarted(BackEventCompat backEvent) {
-
             }
 
             @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -671,7 +712,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                 binding.miniPlayerDetailsLayout.setAlpha(0);
                 binding.secondCoordinator.animate().scaleX(1f).setDuration(200).start();
                 binding.secondCoordinator.animate().scaleY(1f).setDuration(200).start();
-                binding.secondCoordinator.animate().translationY(0f).setDuration(200).start();
+                binding.secondCoordinator.animate().translationY(0).setDuration(200).start();
                 innerBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                 callback2.setEnabled(false);
             }
@@ -680,7 +721,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             @Override
             public void handleOnBackCancelled() {
                 binding.secondCoordinator.animate().scaleX(1f).setDuration(300).start();
-                binding.secondCoordinator.animate().translationY(0f).setDuration(200).start();
+                binding.secondCoordinator.animate().translationY(0).setDuration(200).start();
                 binding.secondCoordinator.animate().scaleY(1f).setDuration(300).start();
                 innerBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
             }
@@ -705,6 +746,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
 
             @Override
             public void handleOnBackPressed() {
+                boolean b = binding.lyricsButton.isChecked();
+                if (b) binding.lyricsButton.performClick();
                 binding.miniPlayerBottomSheet.animate().scaleX(1f).setDuration(200).start();
                 binding.miniPlayerBottomSheet.animate().scaleY(1f).setDuration(200).start();
                 binding.miniPlayerBottomSheet.animate().translationY(0f).setDuration(200).start();
@@ -944,6 +987,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             
             tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
             background.setColor(tmpColor);
+            binding.lyricsContainer.setBackgroundColor(playerSurface);
+            binding.lyricTopScrim.setScrimColor(playerSurface);
             
             gd.setColor(isc);
             
@@ -952,7 +997,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             seekbar.setThumbTintList(ColorStateList.valueOf(ip)); 
             progressDrawable.setTint(ip);
             
-            binding.placeholder1.setIconTint(ColorStateList.valueOf(isOledTheme? 0xffbdbdbd : iosc));
+            binding.lyricsButton.setIconTint(ColorStateList.valueOf(isOledTheme? 0xffbdbdbd : iosc));
+            binding.lyricsButton.setRippleColor(ColorStateList.valueOf(io));
             
             binding.artistBigTitle.setTextColor(iosc);
             binding.songBigTitle.setTextColor(ios);
@@ -991,7 +1037,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
                 updateColors();
             } else if (callbackType == ServiceCallback.CALLBACK_PROGRESS_UPDATE && seekbarFree) {
                 updateProgress(RuntimeData.currentProgress);
-                if (mediaController != null) binding.newTest.onProgress((int) RuntimeData.currentProgress);
+                if (mediaController != null) binding.lyricsView.onProgress((int) RuntimeData.currentProgress);
             }
         });
     }

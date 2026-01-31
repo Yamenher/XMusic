@@ -17,25 +17,25 @@
             android:layout_height="match_parent"
             android:transitionGroup="true"
             android:orientation="horizontal"
-            android:layout_weight="1" >
+            android:layout_weight="1">
             <androidx.fragment.app.FragmentContainerView
                 android:id="@+id/main_frag"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" 
+                android:layout_height="match_parent"
                 android:name="com.xapps.media.xmusic.fragment.MusicListFragment"
                 android:visibility="gone" />
             <androidx.fragment.app.FragmentContainerView
                 android:id="@+id/search_frag"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" 
-                android:name="com.xapps.media.xmusic.fragment.SearchFragment" 
-                android:visibility="gone"/>
+                android:layout_height="match_parent"
+                android:name="com.xapps.media.xmusic.fragment.SearchFragment"
+                android:visibility="gone" />
             <androidx.fragment.app.FragmentContainerView
                 android:id="@+id/settings_frag"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" 
-                android:name="com.xapps.media.xmusic.fragment.SettingsFragment" 
-                android:visibility="gone"/>
+                android:layout_height="match_parent"
+                android:name="com.xapps.media.xmusic.fragment.SettingsFragment"
+                android:visibility="gone" />
         </LinearLayout>
         <View
             android:id="@+id/Scrim"
@@ -282,47 +282,68 @@
                             android:tint="?attr/colorOnSurface" />
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </LinearLayout>
-                <androidx.coordinatorlayout.widget.CoordinatorLayout
-                    android:id="@+id/second_coordinator"
+                <FrameLayout
+                    android:id="@+id/frame"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
-                    <LinearLayout
-                        android:id="@+id/extendable_layout"
-                        app:layout_constraintBottom_toBottomOf="parent"
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/lyrics_container"
                         android:layout_height="match_parent"
                         android:layout_width="match_parent"
-                        android:orientation="vertical"
-                        app:behavior_peekHeight="85dp"
-                        android:background="@drawable/rounded_corners_bottom_sheet"
-                        app:layout_behavior="com.xapps.media.xmusic.models.CustomBottomSheetBehavior"
-                        android:forceHasOverlappingRendering="true">
-                        <LinearLayout
-                            android:id="@+id/drag_handle"
-                            android:layout_width="65dp"
-                            android:layout_height="4dp"
-                            android:layout_marginTop="8dp"
-                            android:layout_gravity="center_horizontal"
-                            android:background="@drawable/drag_shape" />
-                        <LinearLayout
-                            android:id="@+id/quick_actions_layout"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content">
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/placeholder_1"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:checkable="true"
-                                style="@style/Widget.Material3Expressive.Button.IconButton.Standard"
-                                app:icon="@drawable/ic_lyrics_selector" />
-                        </LinearLayout>
+                        android:visibility="gone"
+                        android:background="?colorSurface">
                         <com.xapps.media.xmusic.widget.LyricsView
-                            android:id="@+id/new_test"
+                            android:id="@+id/lyrics_view"
                             android:layout_height="match_parent"
                             android:layout_width="match_parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
                             android:clipChildren="false"
                             android:clipToPadding="false" />
-                    </LinearLayout>
-                </androidx.coordinatorlayout.widget.CoordinatorLayout>
+                        <com.xapps.media.xmusic.widget.StatusBarScrimView
+                            android:id="@+id/lyric_top_scrim"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+                    <androidx.coordinatorlayout.widget.CoordinatorLayout
+                        android:id="@+id/second_coordinator"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+                        <LinearLayout
+                            android:id="@+id/extendable_layout"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            android:layout_height="match_parent"
+                            android:layout_width="match_parent"
+                            android:orientation="vertical"
+                            app:behavior_peekHeight="85dp"
+                            android:background="@drawable/rounded_corners_bottom_sheet"
+                            app:layout_behavior="com.xapps.media.xmusic.models.CustomBottomSheetBehavior"
+                            android:forceHasOverlappingRendering="true">
+                            <LinearLayout
+                                android:id="@+id/drag_handle"
+                                android:layout_width="65dp"
+                                android:layout_height="4dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_gravity="center_horizontal"
+                                android:background="@drawable/drag_shape" />
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_gravity="center_horizontal">
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/lyrics_button"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:checkable="true"
+                                    style="@style/Widget.Material3Expressive.Button.IconButton.Standard"
+                                    app:icon="@drawable/ic_lyrics_selector" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+                </FrameLayout>
             </androidx.constraintlayout.motion.widget.MotionLayout>
             <com.google.android.material.bottomnavigation.BottomNavigationView
                 android:id="@+id/bottomNavigation"

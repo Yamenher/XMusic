@@ -1,35 +1,20 @@
 {
   "allFiles": [
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/widget/LyricsView.java",
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/utils/LyricsParser.java",
       "selection": {
         "end": {
-          "column": 0,
-          "index": 8265,
-          "line": 217
+          "column": 16,
+          "index": 6249,
+          "line": 141
         },
         "start": {
-          "column": 0,
-          "index": 8265,
-          "line": 217
-        }
-      }
-    },
-    {
-      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/adapter/LyricsAdapter.java",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 3558,
-          "line": 117
-        },
-        "start": {
-          "column": 0,
-          "index": 3558,
-          "line": 117
+          "column": 16,
+          "index": 6249,
+          "line": 141
         }
       }
     }
   ],
-  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/adapter/LyricsAdapter.java"
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/utils/LyricsParser.java"
 }

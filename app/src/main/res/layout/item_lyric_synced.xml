@@ -18,7 +18,6 @@
         android:textFontWeight="700"
         android:textColor="?colorOnSurface"
         android:clipToPadding="false"
-        android:clipChildren="false"
         android:clipToOutline="false"
         android:paddingTop="16dp"
         android:paddingBottom="16dp"

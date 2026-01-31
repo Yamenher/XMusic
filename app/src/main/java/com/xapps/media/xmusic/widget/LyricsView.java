@@ -1,6 +1,7 @@
 package com.xapps.media.xmusic.widget;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
@@ -62,7 +63,7 @@ public class LyricsView extends RecyclerView {
         scrollHandler.removeCallbacksAndMessages(null);
     }
 
-    public void configureSyncedLyrics(boolean synced, int gravity, float textSizeSp) {
+    public void configureSyncedLyrics(boolean synced, Typeface t, int gravity, float textSizeSp) {
         if (adapter == null) return;
         adapter.configureSynced(synced, null, gravity, textSizeSp);
     }

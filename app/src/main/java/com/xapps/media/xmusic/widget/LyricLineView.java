@@ -4,7 +4,10 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.Region;
 import android.graphics.text.LineBreaker;
 import android.text.Layout;
 import android.text.SpannableString;
@@ -94,6 +97,7 @@ public class LyricLineView extends AppCompatTextView {
 
     public LyricLineView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        setClipToOutline(false);
     }
 
     public void setLyricLine(LyricLine line) {
@@ -463,4 +467,5 @@ public class LyricLineView extends AppCompatTextView {
         isUpdating = false;
         setCurrent(false, currentPos);
     }
+
 }
