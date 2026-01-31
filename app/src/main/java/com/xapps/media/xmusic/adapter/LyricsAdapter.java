@@ -7,16 +7,12 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
-import androidx.core.view.ViewKt;
-import androidx.media3.session.MediaController;
 import androidx.recyclerview.widget.RecyclerView;
 import com.xapps.media.xmusic.common.PlaybackControlListener;
 import com.xapps.media.xmusic.models.LyricLine;
 import com.xapps.media.xmusic.R;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
 
@@ -24,15 +20,12 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
     public static final int TYPE_SYNCED = 2;
 
     private final List<LyricLine> lines;
-    public final Set<LyricsViewHolder> attachedHolders = new HashSet<>();
-    
     private PlaybackControlListener listener;
 
     private boolean syncedLyrics;
     private Typeface syncedTypeface;
     private int gravity;
     private float textSizeSp;
-    private int fallbackWidth;
 
     private int currentProgressMs = -1;
     private int activeLineIndex = -1;
@@ -57,10 +50,6 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
         this.textSizeSp = ts;
         notifyDataSetChanged();
     }
-    
-    public void setFallbackWidth(int i) {
-        fallbackWidth = i;
-    }
 
     @Override
     public int getItemCount() {
@@ -69,34 +58,31 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
 
     @Override
     public int getItemViewType(int position) {
-        return syncedLyrics? TYPE_SYNCED : TYPE_PLAIN;
+        return syncedLyrics ? TYPE_SYNCED : TYPE_PLAIN;
     }
 
+    @NonNull
     @Override
-    public LyricsViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public LyricsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-
         View view;
         if (viewType == TYPE_SYNCED) {
             view = inflater.inflate(R.layout.item_lyric_synced, parent, false);
         } else {
             view = inflater.inflate(R.layout.item_lyric_plain, parent, false);
         }
-
         return new LyricsViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(LyricsViewHolder holder, int position) {
-        attachedHolders.add(holder);
-
+    public void onBindViewHolder(@NonNull LyricsViewHolder holder, int position) {
         LyricLine line = lines.get(position);
 
         if (getItemViewType(position) == TYPE_SYNCED) {
             LyricLineView v = holder.lineView;
-            v.setGravity(gravity);
             v.setLyricLine(line);
             v.setAlpha(1f);
+            v.setGravity(gravity);
             if (syncedTypeface != null) v.setTypeface(syncedTypeface);
             
             if (currentProgressMs != -1) {
@@ -119,7 +105,6 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
             holder.itemView.findViewById(R.id.lyricContainer).setOnClickListener(v2 -> {
                 if (listener != null) listener.onSeekRequested((long) line.time);
             });
-
         } else {
             holder.textView.setText(line.line);
         }
@@ -127,11 +112,6 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
 
     @Override
     public void onViewRecycled(@NonNull LyricsViewHolder holder) {
-        attachedHolders.remove(holder);
-
-        if (holder.lineView != null) {
-        }
-
         super.onViewRecycled(holder);
     }
 }

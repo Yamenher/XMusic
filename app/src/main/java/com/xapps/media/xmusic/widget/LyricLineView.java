@@ -77,7 +77,7 @@ public class LyricLineView extends AppCompatTextView {
             new Runnable() {
                 @Override
                 public void run() {
-                    if (isUpdating) {
+                    if (/*isUpdating*/false) {
                         long elapsed = System.currentTimeMillis() - lastUpdateTime;
                         updateSpanProgress(lastProgressMs + (int) elapsed);
                         invalidate();
@@ -407,7 +407,6 @@ public class LyricLineView extends AppCompatTextView {
         isFadedOut = true;
 
         if (spanAlphaAnimator != null) spanAlphaAnimator.cancel();
-
         spanAlphaAnimator = ValueAnimator.ofFloat(ACTIVE_ALPHA, 0.0f);
         spanAlphaAnimator.setDuration(FADE_DURATION_MS);
         spanAlphaAnimator.addUpdateListener(

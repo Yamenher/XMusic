@@ -26,22 +26,19 @@ public class LyricsView extends RecyclerView {
 
     private LyricsAdapter adapter;
     private final List<LyricLine> lines = new ArrayList<>();
-
     private List<Integer> currentActiveIndices = new ArrayList<>();
-    private List<Integer> previousActiveIndices = new ArrayList<>();
-
+    private int lastTopActiveIndex = -1;
     private long lastUserTouchTime = -1;
-    private boolean isUserTouching = false;
 
     private static final long AUTO_SCROLL_DELAY_MS = 1500;
-
     private final Handler scrollHandler = new Handler(Looper.getMainLooper());
-    private final Runnable snapBackRunnable =
-            () -> {
-                if (!currentActiveIndices.isEmpty()) {
-                    maybeAutoScroll(currentActiveIndices.get(0), false);
-                }
-            };
+
+    private final Runnable snapBackRunnable = () -> {
+        if (!currentActiveIndices.isEmpty()) {
+            int topIndex = Collections.min(currentActiveIndices);
+            performDynamicScroll(topIndex);
+        }
+    };
 
     public LyricsView(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -59,10 +56,8 @@ public class LyricsView extends RecyclerView {
         lines.addAll(lyricLines);
         adapter = new LyricsAdapter(lines);
         setAdapter(adapter);
-
         currentActiveIndices.clear();
-        previousActiveIndices.clear();
-
+        lastTopActiveIndex = -1;
         scrollHandler.removeCallbacksAndMessages(null);
     }
 
@@ -72,14 +67,14 @@ public class LyricsView extends RecyclerView {
     }
 
     public void setOnSeekListener(PlaybackControlListener l) {
-        adapter.setListener(l);
+        if (adapter != null) adapter.setListener(l);
     }
 
     public void onProgress(int progressMs) {
-        updateActiveLine(progressMs, true);
+        updateActiveLine(progressMs);
     }
 
-    private void updateActiveLine(int progressMs, boolean isAutoUpdate) {
+    private void updateActiveLine(int progressMs) {
         if (adapter == null || lines.isEmpty()) return;
 
         final int EXIT_ANTICIPATION_MS = 10;
@@ -88,11 +83,8 @@ public class LyricsView extends RecyclerView {
         for (int i = 0; i < lines.size(); i++) {
             LyricLine line = lines.get(i);
             long startTime = line.time;
-
             long actualWordEnd = getLineEndTime(line);
-            long nextLineStart =
-                    (i + 1 < lines.size()) ? lines.get(i + 1).time : actualWordEnd + 2000;
-
+            long nextLineStart = (i + 1 < lines.size()) ? lines.get(i + 1).time : actualWordEnd + 2000;
             long disappearTime = Math.max(actualWordEnd, nextLineStart) - EXIT_ANTICIPATION_MS;
 
             if (progressMs >= startTime && progressMs <= disappearTime) {
@@ -109,12 +101,8 @@ public class LyricsView extends RecyclerView {
                     break;
                 }
             }
-
             if (fallbackIndex != -1) {
-                long nextStart =
-                        (fallbackIndex + 1 < lines.size())
-                                ? lines.get(fallbackIndex + 1).time
-                                : Long.MAX_VALUE;
+                long nextStart = (fallbackIndex + 1 < lines.size()) ? lines.get(fallbackIndex + 1).time : Long.MAX_VALUE;
                 if (progressMs < nextStart - EXIT_ANTICIPATION_MS) {
                     newActiveIndices.add(fallbackIndex);
                 }
@@ -123,15 +111,35 @@ public class LyricsView extends RecyclerView {
 
         List<Integer> toDeactivate = new ArrayList<>(currentActiveIndices);
         toDeactivate.removeAll(newActiveIndices);
-
         currentActiveIndices = newActiveIndices;
+
+        if (!currentActiveIndices.isEmpty()) {
+            int currentTopIndex = Collections.min(currentActiveIndices);
+            if (currentTopIndex != lastTopActiveIndex) {
+                lastTopActiveIndex = currentTopIndex;
+                
+                LinearLayoutManager lm = (LinearLayoutManager) getLayoutManager();
+                if (lm != null) {
+                    int first = lm.findFirstVisibleItemPosition();
+                    int last = lm.findLastVisibleItemPosition();
+                    boolean isFarAway = currentTopIndex < first || currentTopIndex > last;
+
+                    if (isFarAway) {
+                        scrollHandler.removeCallbacks(snapBackRunnable);
+                        scrollHandler.postDelayed(snapBackRunnable, 10);
+                    } else if (System.currentTimeMillis() - lastUserTouchTime > AUTO_SCROLL_DELAY_MS) {
+                        scrollHandler.removeCallbacks(snapBackRunnable);
+                        performDynamicScroll(currentTopIndex);
+                    }
+                }
+            }
+        }
 
         for (int i = 0; i < getChildCount(); i++) {
             ViewHolder vh = getChildViewHolder(getChildAt(i));
             if (vh instanceof LyricsViewHolder) {
                 LyricsViewHolder holder = (LyricsViewHolder) vh;
                 int pos = holder.getBindingAdapterPosition();
-
                 if (currentActiveIndices.contains(pos)) {
                     holder.lineView.setCurrent(true, pos);
                     holder.lineView.setCurrentProgress(progressMs);
@@ -142,20 +150,20 @@ public class LyricsView extends RecyclerView {
         }
     }
 
-    private LyricsViewHolder findHolder(int position) {
-        if (adapter == null) return null;
-        for (LyricsViewHolder holder : adapter.attachedHolders) {
-            if (holder.getBindingAdapterPosition() == position) {
-                return holder;
-            }
-        }
-        return null;
+    private void performDynamicScroll(int targetIndex) {
+        LinearLayoutManager lm = (LinearLayoutManager) getLayoutManager();
+        if (lm == null) return;
+
+        int firstVisible = lm.findFirstVisibleItemPosition();
+        int distance = Math.abs(targetIndex - firstVisible);
+
+        CenterSmoothScroller scroller = new CenterSmoothScroller(getContext(), distance);
+        scroller.setTargetPosition(targetIndex);
+        lm.startSmoothScroll(scroller);
     }
 
     private long getLineEndTime(LyricLine line) {
-        if (line.words == null || line.words.isEmpty()) {
-            return line.time + 5;
-        }
+        if (line.words == null || line.words.isEmpty()) return line.time + 5;
         long max = 0;
         for (LyricWord w : line.words) {
             int wEnd = w.getEndTime();
@@ -164,50 +172,14 @@ public class LyricsView extends RecyclerView {
         return max;
     }
 
-    private void maybeAutoScroll(int targetIndex, boolean isSequential) {
-        if (targetIndex == -1) return;
-        if (System.currentTimeMillis() - lastUserTouchTime < AUTO_SCROLL_DELAY_MS) return;
-
-        LinearLayoutManager lm = (LinearLayoutManager) getLayoutManager();
-        if (lm == null) return;
-
-        int firstVisible = lm.findFirstVisibleItemPosition();
-        int lastVisible = lm.findLastVisibleItemPosition();
-
-        boolean isAtAbsoluteTop = !canScrollVertically(-1);
-        boolean isAtAbsoluteBottom = !canScrollVertically(1);
-
-        if (isAtAbsoluteTop && targetIndex <= firstVisible) return;
-        if (isAtAbsoluteBottom && targetIndex >= lastVisible) return;
-
-        smoothScrollWithDynamicSpeed(targetIndex, isSequential);
-    }
-
-    private void smoothScrollWithDynamicSpeed(int position, boolean isSequential) {
-        LinearLayoutManager lm = (LinearLayoutManager) getLayoutManager();
-        if (lm == null) return;
-
-        int first = lm.findFirstVisibleItemPosition();
-        int last = lm.findLastVisibleItemPosition();
-        boolean isOffScreen = position < first || position > last;
-        boolean fastMode = !isSequential || isOffScreen;
-
-        CenterSmoothScroller scroller = new CenterSmoothScroller(getContext(), fastMode);
-        scroller.setTargetPosition(position);
-        lm.startSmoothScroll(scroller);
-    }
-
     @Override
     public boolean onTouchEvent(MotionEvent e) {
         int action = e.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
-            isUserTouching = true;
             scrollHandler.removeCallbacks(snapBackRunnable);
             lastUserTouchTime = System.currentTimeMillis();
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-            isUserTouching = false;
             lastUserTouchTime = System.currentTimeMillis();
-            scrollHandler.removeCallbacks(snapBackRunnable);
             scrollHandler.postDelayed(snapBackRunnable, AUTO_SCROLL_DELAY_MS);
         }
         return super.onTouchEvent(e);
@@ -220,16 +192,15 @@ public class LyricsView extends RecyclerView {
     }
 
     private static class CenterSmoothScroller extends LinearSmoothScroller {
-        private final boolean fastMode;
+        private final int itemDistance;
 
-        CenterSmoothScroller(Context context, boolean fastMode) {
+        CenterSmoothScroller(Context context, int itemDistance) {
             super(context);
-            this.fastMode = fastMode;
+            this.itemDistance = itemDistance;
         }
 
         @Override
-        public int calculateDtToFit(
-                int viewStart, int viewEnd, int boxStart, int boxEnd, int snapPreference) {
+        public int calculateDtToFit(int viewStart, int viewEnd, int boxStart, int boxEnd, int snapPreference) {
             int boxOneThird = boxStart + (boxEnd - boxStart) / 3;
             int viewCenter = viewStart + (viewEnd - viewStart) / 2;
             return boxOneThird - viewCenter;
@@ -237,7 +208,10 @@ public class LyricsView extends RecyclerView {
 
         @Override
         protected float calculateSpeedPerPixel(DisplayMetrics displayMetrics) {
-            return (fastMode ? 40f : 300f) / displayMetrics.densityDpi;
+            float baseMillisPerPixel = 150f;
+            float speedReduction = itemDistance * 12f;
+            float finalSpeed = Math.max(20f, baseMillisPerPixel - speedReduction);
+            return finalSpeed / displayMetrics.densityDpi;
         }
     }
 }
