@@ -86,7 +86,12 @@ public class LyricsView extends RecyclerView {
             LyricLine line = lines.get(i);
             long startTime = line.time;
             long actualWordEnd = getLineEndTime(line);
-            long nextLineStart = (i + 1 < lines.size()) ? lines.get(i + 1).time : actualWordEnd + 2000;
+            long nextLineStart;
+            if (i+2 < lines.size() && lines.get(i+1).isRomaji) {
+                nextLineStart = (i + 2 < lines.size()) ? lines.get(i + 2).time : actualWordEnd + 2000;
+            } else {
+                nextLineStart = (i + 1 < lines.size()) ? lines.get(i + 1).time : actualWordEnd + 2000;
+            }
             long disappearTime = Math.max(actualWordEnd, nextLineStart) - EXIT_ANTICIPATION_MS;
 
             if (progressMs >= startTime && progressMs <= disappearTime) {

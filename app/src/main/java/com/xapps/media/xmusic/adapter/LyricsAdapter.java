@@ -12,6 +12,7 @@ import com.xapps.media.xmusic.common.PlaybackControlListener;
 import com.xapps.media.xmusic.models.LyricLine;
 import com.xapps.media.xmusic.R;
 
+import com.xapps.media.xmusic.utils.XUtils;
 import java.util.List;
 
 public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
@@ -103,17 +104,17 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
             }
             
             if (line.isRomaji) {
-                v.setPadding(v.getPaddingLeft(), 0, v.getPaddingRight(), 0);
+                v.setPadding(v.getPaddingLeft(), 0, v.getPaddingRight(), v.getPaddingBottom());
                 v.setTextSize(18f);
-            }
-            
-            if (!line.isRomaji) {
-                holder.itemView.findViewById(R.id.lyricContainer).setOnClickListener(v2 -> {
-                    if (listener != null) listener.onSeekRequested((long) line.time);
-                });
             } else {
-                holder.itemView.findViewById(R.id.lyricContainer).setEnabled(false);
+                v.setPadding(v.getPaddingLeft(), v.getPaddingBottom(), v.getPaddingRight(), v.getPaddingBottom());
             }
+        
+            holder.itemView.setEnabled(!line.isRomaji);
+            
+            holder.itemView.findViewById(R.id.lyricContainer).setOnClickListener(v2 -> {
+                if (listener != null) listener.onSeekRequested((long) line.time);
+            });
         } else {
             holder.textView.setText(line.line);
         }
@@ -122,6 +123,7 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
     @Override
     public void onViewRecycled(@NonNull LyricsViewHolder holder) {
         super.onViewRecycled(holder);
-        holder.lineView.setCurrent(false, holder.getAdapterPosition());
+        int i = holder.getAdapterPosition();
+        holder.lineView.setCurrent(false, i);
     }
 }

@@ -477,6 +477,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             callback3.setEnabled(b);
             callback.setEnabled(!b);
             innerBottomSheetBehavior.setDraggable(!b);
+            bottomSheetBehavior.setDraggable(!b);
             MaterialSharedAxis mft = new MaterialSharedAxis(MaterialSharedAxis.Y, b);
             mft.setDuration(500);
             TransitionManager.beginDelayedTransition(binding.Coordinator, mft);

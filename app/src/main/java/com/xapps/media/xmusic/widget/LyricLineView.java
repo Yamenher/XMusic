@@ -49,7 +49,7 @@ public class LyricLineView extends AppCompatTextView {
     private boolean isUpdating = false;
     private boolean isActiveLine = false;
     private boolean isFadedOut = true;
-    
+
     private int currentPos = -1;
 
     private long lastUpdateTime = 0;
@@ -86,7 +86,8 @@ public class LyricLineView extends AppCompatTextView {
             new Runnable() {
                 @Override
                 public void run() {
-                    if (/*isUpdating*/false) {
+                    if (
+                    /*isUpdating*/ false) {
                         long elapsed = System.currentTimeMillis() - lastUpdateTime;
                         updateSpanProgress(lastProgressMs + (int) elapsed);
                         invalidate();
@@ -120,56 +121,49 @@ public class LyricLineView extends AppCompatTextView {
         this.lineEndTime = 0;
 
         if (line.words == null || line.words.isEmpty()) {
-    CharSequence raw = line.line;
-    String text = raw.toString();
-    SpannableString spannable = new SpannableString(text);
-    TextPaint paint = getPaint();
+            CharSequence raw = line.line;
+            String text = raw.toString();
+            SpannableString spannable = new SpannableString(text);
+            TextPaint paint = getPaint();
 
-    int width = getWidth() - getPaddingLeft() - getPaddingRight();
-    if (width <= 0) {
-        post(() -> setLyricLine(line));
-        return;
-    }
+            int width = getWidth() - getPaddingLeft() - getPaddingRight();
+            if (width <= 0) {
+                post(() -> setLyricLine(line));
+                return;
+            }
 
-    StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, width)
-            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-            .setIncludePad(false)
-            .setBreakStrategy(LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)
-            .setHyphenationFrequency(LineBreaker.HYPHENATION_FREQUENCY_NONE)
-            .build();
+            StaticLayout layout =
+                    StaticLayout.Builder.obtain(text, 0, text.length(), paint, width)
+                            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                            .setIncludePad(false)
+                            .setBreakStrategy(LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)
+                            .setHyphenationFrequency(LineBreaker.HYPHENATION_FREQUENCY_NONE)
+                            .build();
 
-    for (int i = 0; i < layout.getLineCount(); i++) {
-        int start = layout.getLineStart(i);
-        int end = layout.getLineEnd(i);
+            for (int i = 0; i < layout.getLineCount(); i++) {
+                int start = layout.getLineStart(i);
+                int end = layout.getLineEnd(i);
 
-        if (start >= end) continue;
+                if (start >= end) continue;
 
-        String lineText = text.substring(start, end);
-        int actualEnd = end;
-        if (lineText.endsWith(" ") && end > start) {
-            actualEnd = end - 1;
+                String lineText = text.substring(start, end);
+                int actualEnd = end;
+                if (lineText.endsWith(" ") && end > start) {
+                    actualEnd = end - 1;
+                }
+
+                createAndAttachSpan(
+                        spannable, start, actualEnd, line.time, line.time, MIN_GLOW_INTENSITY);
+            }
+
+            for (KaraokeSpan span : spanMap.values()) {
+                span.progress = 1f;
+                span.alpha = 0f;
+            }
+
+            setText(spannable, BufferType.SPANNABLE);
+            return;
         }
-
-        createAndAttachSpan(
-                spannable,
-                start,
-                actualEnd,
-                line.time,
-                line.time,
-                MIN_GLOW_INTENSITY
-        );
-    }
-
-    for (KaraokeSpan span : spanMap.values()) {
-        span.progress = 1f;
-        span.alpha = 0f;
-    }
-
-    setText(spannable, BufferType.SPANNABLE);
-    return;
-}
-
-
 
         for (LyricWord w : line.words) {
             if (w.getEndTime() > lineEndTime) lineEndTime = w.getEndTime();
@@ -330,7 +324,7 @@ public class LyricLineView extends AppCompatTextView {
     }
 
     public void setCurrent(boolean isCurrent, int position) {
-        currentPos = position;
+        this.currentPos = position;
         this.isActiveLine = isCurrent;
 
         if (!isCurrent) {
@@ -383,6 +377,66 @@ public class LyricLineView extends AppCompatTextView {
         animate().scaleX(ACTIVE_SCALE).scaleY(ACTIVE_SCALE).setDuration(FADE_DURATION_MS).start();
     }
 
+    private void animateFadeOut(int nextActivePos) {
+        if (isFadedOut) return;
+
+        boolean isWordedLine =
+                lyricLine != null
+                        && !lyricLine.isRomaji
+                        && lyricLine.words != null
+                        && !lyricLine.words.isEmpty();
+
+        if (isWordedLine && (nextActivePos > currentPos && nextActivePos <= currentPos + 2)) {
+            if (spanAlphaAnimator != null) spanAlphaAnimator.cancel();
+
+            animate()
+                    .alpha(1.0f)
+                    .scaleX(INACTIVE_SCALE)
+                    .scaleY(INACTIVE_SCALE)
+                    .setDuration(FADE_DURATION_MS)
+                    .start();
+
+            for (KaraokeSpan span : spanMap.values()) {
+                span.glowAlpha = 0f;
+                span.alpha = ACTIVE_ALPHA;
+                span.progress = 1.0f;
+            }
+            invalidate();
+            return;
+        }
+
+        isFadedOut = true;
+        if (spanAlphaAnimator != null) spanAlphaAnimator.cancel();
+
+        spanAlphaAnimator = ValueAnimator.ofFloat(ACTIVE_ALPHA, 0.0f);
+        spanAlphaAnimator.setDuration(FADE_DURATION_MS);
+        spanAlphaAnimator.addUpdateListener(
+                animation -> {
+                    float val = (float) animation.getAnimatedValue();
+                    for (KaraokeSpan span : spanMap.values()) {
+                        span.alpha = val;
+                        span.glowAlpha = Math.min(span.glowAlpha, val);
+                    }
+                    invalidate();
+                });
+
+        animate()
+                .scaleX(INACTIVE_SCALE)
+                .scaleY(INACTIVE_SCALE)
+                .setDuration(FADE_DURATION_MS)
+                .withEndAction(
+                        () -> {
+                            for (KaraokeSpan span : spanMap.values()) {
+                                span.progress = -1.0f;
+                                span.alpha = 0f;
+                            }
+                            invalidate();
+                        })
+                .start();
+
+        spanAlphaAnimator.start();
+    }
+
     public void setCurrentProgress(int progressMs) {
         if (!isActiveLine) return;
         this.lastProgressMs = progressMs;
@@ -424,7 +478,7 @@ public class LyricLineView extends AppCompatTextView {
         }
     }
 
-    private void animateFadeOut(int p) {
+    /*private void animateFadeOut(int p) {
         if (isFadedOut) return;
         isFadedOut = true;
 
@@ -457,7 +511,7 @@ public class LyricLineView extends AppCompatTextView {
                 .start();
 
         spanAlphaAnimator.start();
-    }
+    }*/
 
     @Override
     protected void onDetachedFromWindow() {
@@ -467,5 +521,4 @@ public class LyricLineView extends AppCompatTextView {
         isUpdating = false;
         setCurrent(false, currentPos);
     }
-
 }
