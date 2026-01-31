@@ -22,6 +22,7 @@ public class LyricsParser {
             Pattern.compile("\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})\\](.*)");
     private static final Pattern WORD_TIME_PATTERN =
             Pattern.compile("<(\\d{2}):(\\d{2})\\.(\\d{2,3})>([^<]*)");
+    private static final Pattern WORD_SPACING_PATTERN = Pattern.compile("(\\S+\\s*)");
 
     public interface LyricsListener {
         void onParsed(LyricsResult result);
@@ -148,7 +149,6 @@ public class LyricsParser {
     private static LyricLine processContent(String content, long lineStartTime, long globalOffset) {
         List<LyricWord> words = new ArrayList<>();
         String t = content;
-
         int vocalType = 1;
         boolean isBackground = false;
 
@@ -169,19 +169,15 @@ public class LyricsParser {
             t = t.substring(3).trim();
         }
 
+        boolean isNonSpace = isNonSpaceLanguage(t);
         Matcher wm = WORD_TIME_PATTERN.matcher(t);
-        StringBuilder rawTextBuilder = new StringBuilder();
-        LyricWord currentWord = null;
-        int cursor = 0;
-        long explicitEnd = -1;
-
         List<Integer> timestamps = new ArrayList<>();
         List<String> fragments = new ArrayList<>();
+        long explicitEnd = -1;
 
         while (wm.find()) {
             int ts = (int) (parseTimestamp(wm.group(1), wm.group(2), wm.group(3)) + globalOffset);
             String fragment = wm.group(4);
-
             if (fragment == null || fragment.isEmpty()) {
                 explicitEnd = ts;
                 continue;
@@ -190,43 +186,88 @@ public class LyricsParser {
             fragments.add(fragment);
         }
 
-        if (fragments.isEmpty()) return null;
+        if (fragments.isEmpty()) {
+            if (t.isEmpty()) return null;
+            List<String> parts = isNonSpace ? splitIntoCharacters(t) : splitIntoWordsPreservingSpaces(t);
+            if (parts.isEmpty()) return null;
+            words.clear();
+            int cursor = 0;
+            int uStart = (int) lineStartTime;
+            int uEnd = (int) lineStartTime;
+            for (String p : parts) {
+                LyricWord word = new LyricWord(cursor);
+                LyricSyllable syl = new LyricSyllable(uStart, p, 0);
+                syl.endTime = uEnd;
+                word.syllables.add(syl);
+                words.add(word);
+                cursor += p.length();
+            }
+            StringBuilder rebuilt = new StringBuilder();
+            for (String p : parts) rebuilt.append(p);
+            LyricLine line = new LyricLine(uStart, new SpannableString(rebuilt.toString()), words);
+            line.vocalType = vocalType;
+            line.isBackground = isBackground;
+            return line;
+        }
 
+        StringBuilder rawTextBuilder = new StringBuilder();
+        LyricWord currentWord = null;
+        int cursor = 0;
         boolean lastHadTrailingSpace = false;
+
         for (int i = 0; i < fragments.size(); i++) {
             String frag = fragments.get(i);
-            if (currentWord == null || frag.startsWith(" ") || lastHadTrailingSpace) {
+            if (currentWord == null || frag.startsWith(" ") || lastHadTrailingSpace || isNonSpace) {
                 currentWord = new LyricWord(cursor);
                 words.add(currentWord);
             }
-
-            LyricSyllable syl =
-                    new LyricSyllable(timestamps.get(i), frag, cursor - currentWord.startIndex);
-
+            LyricSyllable syl = new LyricSyllable(timestamps.get(i), frag, cursor - currentWord.startIndex);
             if (i + 1 < timestamps.size()) {
                 syl.endTime = timestamps.get(i + 1);
             } else {
                 syl.endTime = (explicitEnd > 0) ? (int) explicitEnd - 50 : syl.startTime + 300;
             }
-
             currentWord.syllables.add(syl);
             rawTextBuilder.append(frag);
             cursor += frag.length();
             lastHadTrailingSpace = frag.endsWith(" ");
         }
 
-        int firstTag = words.get(0).syllables.get(0).startTime;
-        int effectiveLineTrigger = Math.max(0, firstTag);
-
-        LyricLine line =
-                new LyricLine(
-                        effectiveLineTrigger,
-                        new SpannableString(rawTextBuilder.toString()),
-                        words);
+        LyricLine line = new LyricLine((int) lineStartTime, new SpannableString(rawTextBuilder.toString()), words);
         line.vocalType = vocalType;
         line.isBackground = isBackground;
-
         return line;
+    }
+
+    private static boolean isNonSpaceLanguage(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
+            if (block == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS
+                    || block == Character.UnicodeBlock.HIRAGANA
+                    || block == Character.UnicodeBlock.KATAKANA
+                    || block == Character.UnicodeBlock.THAI) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<String> splitIntoCharacters(String text) {
+        List<String> chars = new ArrayList<>();
+        for (int i = 0; i < text.length(); i++) {
+            chars.add(String.valueOf(text.charAt(i)));
+        }
+        return chars;
+    }
+
+    private static List<String> splitIntoWordsPreservingSpaces(String text) {
+        List<String> parts = new ArrayList<>();
+        Matcher matcher = WORD_SPACING_PATTERN.matcher(text);
+        while (matcher.find()) {
+            parts.add(matcher.group());
+        }
+        return parts;
     }
 
     private static long parseTimestamp(String min, String sec, String msStr) {
@@ -237,9 +278,9 @@ public class LyricsParser {
     }
 
     private static void finalizeSyllableTimings(List<LyricLine> lines) {
-        for (LyricLine line : lines) {
+        for (int i = 0; i < lines.size(); i++) {
+            LyricLine line = lines.get(i);
             if (line.words.isEmpty()) continue;
-
             line.time = line.words.get(0).getStartTime();
         }
     }

@@ -49,6 +49,7 @@ public class LyricsView extends RecyclerView {
         setLayoutManager(new LinearLayoutManager(context));
         setItemAnimator(null);
         addItemDecoration(new LyricOffsetDecoration());
+        setItemViewCacheSize(0);
     }
 
     public void setLyrics(List<LyricLine> lyricLines) {

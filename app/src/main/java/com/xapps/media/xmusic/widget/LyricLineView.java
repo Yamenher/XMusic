@@ -5,8 +5,12 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Paint;
+import android.graphics.text.LineBreaker;
+import android.text.Layout;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.View;
@@ -42,6 +46,8 @@ public class LyricLineView extends AppCompatTextView {
     private boolean isUpdating = false;
     private boolean isActiveLine = false;
     private boolean isFadedOut = true;
+    
+    private int currentPos = -1;
 
     private long lastUpdateTime = 0;
     private int lastProgressMs = 0;
@@ -110,45 +116,56 @@ public class LyricLineView extends AppCompatTextView {
         this.lineEndTime = 0;
 
         if (line.words == null || line.words.isEmpty()) {
-            SpannableString spannable = new SpannableString(line.line);
-            String text = line.line.toString();
-            int totalLen = text.length();
-            int targetChunkSize = 16;
-            int currentPos = 0;
+    CharSequence raw = line.line;
+    String text = raw.toString();
+    SpannableString spannable = new SpannableString(text);
+    TextPaint paint = getPaint();
 
-            while (currentPos < totalLen) {
-                int end = Math.min(currentPos + targetChunkSize, totalLen);
+    int width = getWidth() - getPaddingLeft() - getPaddingRight();
+    if (width <= 0) {
+        post(() -> setLyricLine(line));
+        return;
+    }
 
-                if (end < totalLen) {
-                    int nextSpace = text.indexOf(' ', end);
-                    int prevSpace = text.lastIndexOf(' ', end);
+    StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, width)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setIncludePad(false)
+            .setBreakStrategy(LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)
+            .setHyphenationFrequency(LineBreaker.HYPHENATION_FREQUENCY_NONE)
+            .build();
 
-                    if (nextSpace != -1 && (nextSpace - end) < 8) {
-                        end = nextSpace;
-                    } else if (prevSpace > currentPos) {
-                        end = prevSpace;
-                    }
-                }
+    for (int i = 0; i < layout.getLineCount(); i++) {
+        int start = layout.getLineStart(i);
+        int end = layout.getLineEnd(i);
 
-                if (end <= currentPos) end = Math.min(currentPos + targetChunkSize, totalLen);
+        if (start >= end) continue;
 
-                createAndAttachSpan(
-                        spannable, currentPos, end, line.time, line.time + 1, MIN_GLOW_INTENSITY);
-
-                currentPos = end;
-                while (currentPos < totalLen && text.charAt(currentPos) == ' ') {
-                    currentPos++;
-                }
-            }
-
-            for (KaraokeSpan span : spanMap.values()) {
-                span.progress = 1.0f;
-                span.alpha = 0f;
-            }
-
-            setText(spannable, BufferType.SPANNABLE);
-            return;
+        String lineText = text.substring(start, end);
+        int actualEnd = end;
+        if (lineText.endsWith(" ") && end > start) {
+            actualEnd = end - 1;
         }
+
+        createAndAttachSpan(
+                spannable,
+                start,
+                actualEnd,
+                line.time,
+                line.time,
+                MIN_GLOW_INTENSITY
+        );
+    }
+
+    for (KaraokeSpan span : spanMap.values()) {
+        span.progress = 1f;
+        span.alpha = 0f;
+    }
+
+    setText(spannable, BufferType.SPANNABLE);
+    return;
+}
+
+
 
         for (LyricWord w : line.words) {
             if (w.getEndTime() > lineEndTime) lineEndTime = w.getEndTime();
@@ -309,6 +326,7 @@ public class LyricLineView extends AppCompatTextView {
     }
 
     public void setCurrent(boolean isCurrent, int position) {
+        currentPos = position;
         this.isActiveLine = isCurrent;
 
         if (!isCurrent) {
@@ -443,5 +461,6 @@ public class LyricLineView extends AppCompatTextView {
         removeCallbacks(updateRunnable);
         if (spanAlphaAnimator != null) spanAlphaAnimator.cancel();
         isUpdating = false;
+        setCurrent(false, currentPos);
     }
 }

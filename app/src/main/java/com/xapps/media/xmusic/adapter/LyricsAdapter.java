@@ -113,5 +113,7 @@ public class LyricsAdapter extends RecyclerView.Adapter<LyricsViewHolder> {
     @Override
     public void onViewRecycled(@NonNull LyricsViewHolder holder) {
         super.onViewRecycled(holder);
+        holder.lineView.setLyricLine(lines.get(holder.getAdapterPosition()));
+        holder.lineView.setCurrent(false, holder.getAdapterPosition());
     }
 }
