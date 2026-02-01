@@ -4,6 +4,7 @@ public interface ServiceCallback {
     
     public static int CALLBACK_COLORS_UPDATE = 1;
     public static int CALLBACK_PROGRESS_UPDATE = 2;
+    public static int CALLBACK_VUMETER_UPDATE = 3;
     
     void onServiceEvent(int data);
 

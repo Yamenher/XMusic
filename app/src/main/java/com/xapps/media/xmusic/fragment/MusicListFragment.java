@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.savedstate.*;
 import androidx.media.*;
 import androidx.media3.common.*;
 import androidx.media3.exoplayer.*;
+import androidx.media3.session.MediaController;
 import androidx.palette.*;
 import androidx.profileinstaller.*;
 import androidx.recyclerview.widget.*;
@@ -175,6 +176,7 @@ public class MusicListFragment extends BaseFragment {
                         @Override
                         public void run() {
                             binding.songsList.setAdapter(concatAdapter);
+                            binding.songsList.setItemAnimator(null);
                             binding.emptyLayout.setVisibility(View.GONE);
                             ViewKt.doOnLayout(binding.collapsingToolbar, v -> {
                                 binding.shuffleButton.setTranslationY(v.getHeight() / 2f);
@@ -269,10 +271,12 @@ public class MusicListFragment extends BaseFragment {
             binding = SongItemMiddleBinding.bind(view);
             if (position == currentPos) {
                 binding.item.setChecked(true);
+                binding.vumeterFrame.setVisibility(View.VISIBLE);
                 binding.SongTitle.setTextColor(c1);
                 binding.SongArtist.setTextColor(c2);
             } else {
                 binding.item.setChecked(false);
+                binding.vumeterFrame.setVisibility(View.INVISIBLE);
                 binding.SongTitle.setTextColor(c3);
                 binding.SongArtist.setTextColor(c4);
             }

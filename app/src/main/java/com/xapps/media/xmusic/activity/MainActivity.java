@@ -27,6 +27,7 @@ import android.util.Log;
 import android.view.Choreographer;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsetsController;
@@ -474,14 +475,35 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
         
         binding.lyricsButton.setOnClickListener(v -> {
             boolean b = binding.lyricsButton.isChecked();
+            if (binding.lyricsContainer.getVisibility() != View.GONE && !(binding.lyricsContainer.getVisibility() == View.VISIBLE && binding.lyricsContainer.getAlpha() == 1f)) {
+                binding.lyricsButton.setChecked(!b);
+                return;
+            }
             callback3.setEnabled(b);
             callback.setEnabled(!b);
             innerBottomSheetBehavior.setDraggable(!b);
             bottomSheetBehavior.setDraggable(!b);
-            MaterialSharedAxis mft = new MaterialSharedAxis(MaterialSharedAxis.Y, b);
-            mft.setDuration(500);
-            TransitionManager.beginDelayedTransition(binding.Coordinator, mft);
-            binding.lyricsContainer.setVisibility(b? View.VISIBLE : View.GONE);
+            binding.lyricsContainer.setClickable(b);
+            binding.lyricsContainer.setFocusable(b);
+            binding.lyricsContainer.setFocusableInTouchMode(b);
+            if (b) {
+                binding.lyricsContainer.setAlpha(0f);
+                binding.lyricsContainer.setScaleX(1.1f);
+                binding.lyricsContainer.setScaleY(1.1f);
+                binding.lyricsContainer.animate().alpha(1f).setDuration(250).withStartAction(() -> {
+                    binding.lyricsContainer.setVisibility(View.VISIBLE);
+                }).start();
+                binding.lyricsContainer.animate().scaleY(1f).scaleX(1f).setDuration(240).start();
+            } else {
+                binding.lyricsContainer.animate().alpha(0f).setDuration(250).withEndAction(() -> {
+                    binding.lyricsContainer.setVisibility(View.GONE);
+                }).start();
+                binding.lyricsContainer.animate().scaleY(1.1f).scaleX(1.1f).setDuration(240).start();
+            }
+        });
+        
+        binding.miniPlayerBottomSheet.setOnTouchListener((v, event) -> {
+            return true;
         });
 
         View.OnClickListener navClick = v -> {
@@ -672,15 +694,22 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
             @Override
             public void handleOnBackProgressed(BackEventCompat backEvent) {
-                binding.lyricsContainer.setAlpha(1f - 1f*backEvent.getProgress());
+                binding.lyricsContainer.setAlpha(1f - 0.7f*backEvent.getProgress());
+                binding.lyricsContainer.setScaleY(1f + 0.1f*backEvent.getProgress());
+                binding.lyricsContainer.setScaleX(1f + 0.1f*backEvent.getProgress());
             }
 
             @Override
             public void handleOnBackPressed() {
-                binding.lyricsContainer.animate().alpha(0f).setDuration(100).withEndAction(() -> {
+                binding.lyricsContainer.animate().alpha(0f).setDuration(125).withEndAction(() -> {
                     binding.lyricsContainer.setVisibility(View.GONE);
                     binding.lyricsContainer.setAlpha(1f);
+                    binding.lyricsContainer.setScaleY(1f);
+                    binding.lyricsContainer.setScaleX(1f);
                 }).start();
+                binding.lyricsContainer.animate().scaleY(1.1f).scaleX(1.1f).setDuration(110).start();
+                bottomSheetBehavior.setDraggable(true);
+                innerBottomSheetBehavior.setDraggable(true);
                 callback3.setEnabled(false);
                 callback.setEnabled(true);
                 binding.lyricsButton.setChecked(false);
@@ -690,6 +719,7 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             @Override
             public void handleOnBackCancelled() {
                 binding.lyricsContainer.animate().alpha(1f).setDuration(100).start();
+                binding.lyricsContainer.animate().scaleY(1f).scaleX(1f).setDuration(100).start();
             }
         };
         getOnBackPressedDispatcher().addCallback(this, callback3);
@@ -944,6 +974,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
         int onSurface = colors.get("onSurface");
         int oldOnSurface = effectiveOldColors.get("onSurface");
         
+        binding.mesh.setColors(surface, onPrimary, onTertiary);
+        
         Drawable nextBg = binding.nextButton.getBackground();
         Drawable favBg  = binding.favoriteButton.getBackground();
         Drawable saveBg = binding.saveButton.getBackground();
@@ -1039,6 +1071,8 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             } else if (callbackType == ServiceCallback.CALLBACK_PROGRESS_UPDATE && seekbarFree) {
                 updateProgress(RuntimeData.currentProgress);
                 if (mediaController != null) binding.lyricsView.onProgress((int) RuntimeData.currentProgress);
+            } else if (callbackType == ServiceCallback.CALLBACK_VUMETER_UPDATE && mediaController != null && mediaController.isPlaying()) {
+                musicListFragment.updateActiveItem(mediaController.getCurrentMediaItemIndex());
             }
         });
     }

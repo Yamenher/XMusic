@@ -179,6 +179,7 @@ public class PlayerService extends MediaSessionService {
                             player.addListener(new Player.Listener() {
                             @Override
                             public void onPlaybackStateChanged(int state) {
+                                ServiceCallback.Hub.send(ServiceCallback.CALLBACK_VUMETER_UPDATE);
                                 if (state == Player.STATE_READY) {
                                     currentPosition = player.getCurrentMediaItemIndex();
                                     sendUpdate(true);

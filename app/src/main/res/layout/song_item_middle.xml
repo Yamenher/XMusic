@@ -7,17 +7,36 @@
     android:background="@drawable/rv_ripple"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
-    <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/songCover"
-        android:focusable="false"
+    <FrameLayout
+        android:id="@+id/frame"
         android:layout_width="45dp"
         android:layout_height="45dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="12dp"
-        android:scaleType="centerCrop"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:shapeAppearanceOverlay="@style/SmallRoundedCornersImage" />
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="12dp">
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/songCover"
+            android:focusable="false"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/SmallRoundedCornersImage" />
+        <FrameLayout
+            android:id="@+id/vumeter_frame"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:visibility="invisible"
+            android:background="@drawable/active_item_scrim">
+            <ImageView
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:src="@drawable/ic_play_arrow_round"
+                android:padding="4dp"
+                android:tint="?colorPrimaryFixed" 
+                android:scaleType="fitCenter" />
+        </FrameLayout>
+    </FrameLayout>
     <TextView
         android:id="@+id/SongTitle"
         android:focusable="false"
@@ -32,7 +51,7 @@
         android:lines="1"
         android:textColor="?colorOnSurface"
         android:ellipsize="end"
-        app:layout_constraintStart_toEndOf="@+id/songCover"
+        app:layout_constraintStart_toEndOf="@+id/frame"
         app:layout_constraintEnd_toStartOf="@+id/options_icon"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/SongArtist"
@@ -49,7 +68,7 @@
         android:singleLine="true"
         android:textColor="?colorOutline"
         android:ellipsize="end"
-        app:layout_constraintStart_toEndOf="@+id/songCover"
+        app:layout_constraintStart_toEndOf="@+id/frame"
         app:layout_constraintTop_toBottomOf="@+id/SongTitle"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/options_icon" />

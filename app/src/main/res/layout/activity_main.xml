@@ -222,6 +222,8 @@
                         android:paddingTop="8dp"
                         android:paddingBottom="8dp"
                         android:enabled="false"
+                        android:focusable="false"
+                        android:focusableInTouchMode="false"
                         android:progress="0"
                         android:thumb="@drawable/seekbar_thumb" />
                     <LinearLayout
@@ -292,6 +294,10 @@
                         android:layout_width="match_parent"
                         android:visibility="gone"
                         android:background="?colorSurface">
+                        <com.xapps.media.xmusic.widget.AppleMeshGradientView
+                            android:id="@+id/mesh"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent" />
                         <com.xapps.media.xmusic.widget.LyricsView
                             android:id="@+id/lyrics_view"
                             android:layout_height="match_parent"

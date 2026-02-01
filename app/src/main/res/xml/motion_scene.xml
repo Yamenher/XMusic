@@ -28,10 +28,10 @@
             <KeyPosition
                 motion:framePosition="65"
                 motion:motionTarget="@+id/covers_pager"
-                motion:percentX="1"
-                motion:percentY="1"
+                motion:percentX="0.7"
+                motion:percentY="0.7"
                 motion:pathMotionArc="startVertical"
-                motion:sizePercent="1" />
+                motion:sizePercent="0.7" />
         </KeyFrameSet>
     </Transition>
     <ConstraintSet
