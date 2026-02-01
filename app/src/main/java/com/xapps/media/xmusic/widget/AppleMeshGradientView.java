@@ -51,17 +51,17 @@ public class AppleMeshGradientView extends View {
         drawBlob(canvas, 
             w * 0.5f + (float) Math.sin(time * 0.3f) * (w * 0.1f), 
             h * 0.5f + (float) Math.cos(time * 0.3f) * (h * 0.1f), 
-            w * 1.8f, dominantColor, 140);
+            w * 2.5f, dominantColor, 180);
 
         drawBlob(canvas, 
             w * 0.2f + (float) Math.cos(time * 0.8f) * (w * 0.4f), 
             h * 0.8f + (float) Math.sin(time * 0.6f) * (h * 0.3f), 
-            w * 1.2f, accentColor1, 160);
+            w * 1.1f, accentColor1, 100);
 
         drawBlob(canvas, 
             w * 0.8f + (float) Math.sin(time * 0.5f) * (w * 0.3f), 
             h * 0.2f + (float) Math.cos(time * 0.9f) * (h * 0.4f), 
-            w * 1.1f, accentColor2, 160);
+            w * 1.0f, accentColor2, 80);
 
         postInvalidateOnAnimation();
     }

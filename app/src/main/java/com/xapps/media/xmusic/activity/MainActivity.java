@@ -1021,7 +1021,6 @@ public class MainActivity extends AppCompatActivity implements ServiceCallback, 
             tmpColor = XUtils.interpolateColor(bottomSheetColor, playerSurface, currentSlideOffset);
             background.setColor(tmpColor);
             binding.lyricsContainer.setBackgroundColor(playerSurface);
-            binding.lyricTopScrim.setScrimColor(playerSurface);
             
             gd.setColor(isc);
             

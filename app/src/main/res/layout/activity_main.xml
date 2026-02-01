@@ -307,11 +307,6 @@
                             app:layout_constraintEnd_toEndOf="parent"
                             android:clipChildren="false"
                             android:clipToPadding="false" />
-                        <com.xapps.media.xmusic.widget.StatusBarScrimView
-                            android:id="@+id/lyric_top_scrim"
-                            android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            app:layout_constraintTop_toTopOf="parent" />
                     </androidx.constraintlayout.widget.ConstraintLayout>
                     <androidx.coordinatorlayout.widget.CoordinatorLayout
                         android:id="@+id/second_coordinator"
