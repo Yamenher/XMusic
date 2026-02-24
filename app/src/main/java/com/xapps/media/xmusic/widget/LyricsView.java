@@ -229,6 +229,8 @@ public class LyricsView extends ScrollingView2 {
         for (int i = 0; i < lineViews.size(); i++) {
             if (!lines.get(i).isRomaji && i != 0) {
                 y += normalLineSpacingPx;
+            } else {
+                y += normalLineSpacingPx/4;
             }
 
             LyricLineCanvasView v = lineViews.get(i);

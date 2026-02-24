@@ -115,21 +115,43 @@ public class SongMetadataHelper {
         final String dateModified = cursor.getString(13);
 
         executorService.execute(() -> {
-            try {
-                HashMap<String, Object> map = new HashMap<>();
-                map.put("path", index);
+                try {
+                    HashMap<String, Object> map = new HashMap<>();
+                
+                    HashMap<String, String> wavTags = null;
+
+                if (mimeType != null && mimeType.equals("audio/x-wav")) {
+                    try {
+                        wavTags = readWavMetadata(path);
+                    } catch (Exception ignored) {}
+                }
+    
+                String finalTitle = title;
+                String finalArtist = artist;
+                String finalAlbum = album;
+                String finalYear = year;
+                String finalTrack = track;
+
+                if (wavTags != null && !wavTags.isEmpty()) {
+                    if (wavTags.containsKey("INAM")) finalTitle = wavTags.get("INAM");
+                    if (wavTags.containsKey("IART")) finalArtist = wavTags.get("IART");
+                    if (wavTags.containsKey("IALB")) finalAlbum = wavTags.get("IALB");
+                    if (wavTags.containsKey("ICRD")) finalYear = wavTags.get("ICRD");
+                    if (wavTags.containsKey("ITRK")) finalTrack = wavTags.get("ITRK");
+                }
+                
                 map.put("path", path);
                 map.put("id", songId);
-                map.put("title", title != null && !title.isEmpty() ? title : "Unknown Title");
-                map.put("author", artist != null && !artist.isEmpty() ? artist.trim() : "Unknown Artist");
+                map.put("title", finalTitle != null && !finalTitle.isEmpty() ? finalTitle : "Unknown Title");
+                map.put("author", finalArtist != null && !finalArtist.isEmpty() ? finalArtist : "Unknown Artist");
+                map.put("album", finalAlbum);
+                map.put("year", finalYear);
+                map.put("track", finalTrack);
                 map.put("artistId", artistId);
-                map.put("album", album);
                 map.put("albumArtist", albumArtist);
                 map.put("data", path);
-                map.put("year", year);
                 map.put("albumId", albumId);
                 map.put("mimeType", mimeType);
-                map.put("track", track);
                 map.put("duration", duration > 0 ? millisecondsToDuration(duration) : "00:00");
                 map.put("total", String.valueOf((int) duration));
                 map.put("dateAdded", dateAdded);
@@ -308,6 +330,86 @@ public class SongMetadataHelper {
 		}
 		return stringBuilder.toString();
 	}
+    
+    public static HashMap<String, String> readWavMetadata(String path) throws IOException {
+        HashMap<String, String> out = new HashMap<>();
+
+        try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(path, "r")) {
+            byte[] buf4 = new byte[4];
+
+            raf.readFully(buf4);
+            if (!"RIFF".equals(new String(buf4))) return out;
+    
+            raf.skipBytes(4);
+            raf.readFully(buf4);
+            if (!"WAVE".equals(new String(buf4))) return out;
+
+            while (raf.getFilePointer() < raf.length()) {
+                raf.readFully(buf4);
+                String chunkId = new String(buf4);
+                int chunkSize = Integer.reverseBytes(raf.readInt());
+                long next = raf.getFilePointer() + chunkSize + (chunkSize & 1);
+
+                if ("LIST".equals(chunkId)) {
+                    raf.readFully(buf4);
+                    if ("INFO".equals(new String(buf4))) {
+                        long end = raf.getFilePointer() + chunkSize - 4;
+                        while (raf.getFilePointer() < end) {
+                            raf.readFully(buf4);
+                            String tag = new String(buf4);
+                            int size = Integer.reverseBytes(raf.readInt());
+                            byte[] data = new byte[size];
+                            raf.readFully(data);
+
+                            String value;
+                            if (size >= 2 && data[1] == 0) {
+                                value = new String(data, java.nio.charset.StandardCharsets.UTF_16LE).trim();
+                            } else {
+                                value = new String(data, java.nio.charset.StandardCharsets.ISO_8859_1).trim();
+                            }
+
+                            if (!value.isEmpty()) out.put(tag, value);
+                            if ((size & 1) == 1) raf.skipBytes(1);
+                        }
+                    }
+                }
+
+                else if ("ID3 ".equals(chunkId)) {
+                    byte[] id3 = new byte[chunkSize];
+                    raf.readFully(id3);
+
+                    File tmp = File.createTempFile("wav_id3", ".mp3");
+                    try (FileOutputStream fos = new FileOutputStream(tmp)) {
+                        fos.write(id3);
+                    }
+
+                    try {
+                        AudioFile af = AudioFileIO.read(tmp);
+                        Tag tag = af.getTag();
+                        if (tag != null) {
+                            if (tag.hasField(org.jaudiotagger.tag.FieldKey.TITLE))
+                                out.put("INAM", tag.getFirst(org.jaudiotagger.tag.FieldKey.TITLE));
+                            if (tag.hasField(org.jaudiotagger.tag.FieldKey.ARTIST))
+                                out.put("IART", tag.getFirst(org.jaudiotagger.tag.FieldKey.ARTIST));
+                            if (tag.hasField(org.jaudiotagger.tag.FieldKey.ALBUM))
+                                out.put("IALB", tag.getFirst(org.jaudiotagger.tag.FieldKey.ALBUM));
+                            if (tag.hasField(org.jaudiotagger.tag.FieldKey.YEAR))
+                                out.put("ICRD", tag.getFirst(org.jaudiotagger.tag.FieldKey.YEAR));
+                            if (tag.hasField(org.jaudiotagger.tag.FieldKey.TRACK))
+                                out.put("ITRK", tag.getFirst(org.jaudiotagger.tag.FieldKey.TRACK));
+                        }
+                    } catch (Exception ignored) {
+                    } finally {
+                        tmp.delete();
+                    }
+                }
+
+                raf.seek(next);
+            }
+        }
+
+        return out;
+    }
 	
 	public static String millisecondsToDuration(long milliseconds) {
 		long seconds = milliseconds / 1000;

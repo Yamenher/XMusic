@@ -114,7 +114,7 @@ public class LyricsParser {
         }
         return result != null ? result : Collections.emptyList();
     } catch (Exception e) {
-        Log.e(TAG, "Critical failure in parseInternal", e);
+        Log.e(TAG, "failure in parseInternal", e);
         return Collections.emptyList();
     }
 }
@@ -183,9 +183,10 @@ public class LyricsParser {
                 LyricLine prev = result.get(i - 1);
                 LyricLine current = result.get(i);
 
-                if (current.time == prev.time && current.vocalType == prev.vocalType) {
+                if (current.time == prev.time && current.isSimpleLRC) {
                     if (!current.isBackground && !prev.isBackground) {
                         current.isRomaji = true;
+                        current.vocalType = prev.vocalType;
                     }
                 }
             }
