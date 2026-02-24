@@ -1,50 +1,20 @@
 {
   "allFiles": [
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/activity/MainActivity.java",
+      "file": "/storage/emulated/0/AndroidIDEProjects/XMusicHighlyUnstable/.github/workflows/main.yml",
       "selection": {
         "end": {
-          "column": 13,
-          "index": 22161,
-          "line": 491
+          "column": 96,
+          "index": 2419,
+          "line": 77
         },
         "start": {
-          "column": 13,
-          "index": 22161,
-          "line": 491
-        }
-      }
-    },
-    {
-      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/widget/AppleMeshGradientView.java",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 2916,
-          "line": 80
-        },
-        "start": {
-          "column": 0,
-          "index": 0,
-          "line": 0
-        }
-      }
-    },
-    {
-      "file": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/res/layout/activity_main.xml",
-      "selection": {
-        "end": {
-          "column": 56,
-          "index": 18270,
-          "line": 307
-        },
-        "start": {
-          "column": 56,
-          "index": 18270,
-          "line": 307
+          "column": 96,
+          "index": 2419,
+          "line": 77
         }
       }
     }
   ],
-  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/XMusic/app/src/main/java/com/xapps/media/xmusic/activity/MainActivity.java"
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/XMusicHighlyUnstable/.github/workflows/main.yml"
 }

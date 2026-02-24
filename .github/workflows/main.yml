@@ -29,8 +29,8 @@ jobs:
           chat_id: ${{ secrets.CHAT_ID }}
           topic_id: 4
 
-  build_debug_apk:
-    name: Build App Debug APKs
+  build_preview_apk:
+    name: Build App Preview APKs
     runs-on: ubuntu-latest
     env:
         TG_BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
@@ -74,8 +74,8 @@ jobs:
       - name: Rename APKs with commit hash
         run: |
           HASH=${GITHUB_SHA::8}
-          mv app/build/outputs/apk/debug/preview-arm64-v8a.apk app/build/outputs/apk/debug/preview-arm64-v8a-${HASH}.apk
-          mv app/build/outputs/apk/debug/preview-armeabi-v7a.apk app/build/outputs/apk/debug/preview-armeabi-v7a-${HASH}.apk
+          mv app/build/outputs/apk/preview/preview-arm64-v8a.apk app/build/outputs/apk/preview/preview-arm64-v8a-${HASH}.apk
+          mv app/build/outputs/apk/preview/preview-armeabi-v7a.apk app/build/outputs/apk/preview/preview-armeabi-v7a-${HASH}.apk
 
       - name: Upload preview arm64 apk
         uses: actions/upload-artifact@v4
@@ -89,7 +89,7 @@ jobs:
           name: preview-armeabi
           path: app/build/outputs/apk/preview/preview-armeabi-v7a-*.apk
 
-  send_debug_apks:
+  send_preview_apks:
     name: Send Preview APKs
     runs-on: ubuntu-latest
     needs: build_preview_apk
