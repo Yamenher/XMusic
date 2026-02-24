@@ -81,33 +81,21 @@
                     app:layout_constraintBottom_toBottomOf="@+id/covers_pager"
                     app:layout_constraintStart_toEndOf="@+id/covers_pager"
                     app:layout_constraintTop_toTopOf="@+id/covers_pager">
-                    <TextView
+                    <com.xapps.media.xmusic.widget.MarqueeTextView
                         android:id="@+id/currentSongTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="No song is being played"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="?colorOnSurface"
-                        android:singleLine="true"
-                        android:ellipsize="marquee"
-                        android:marqueeRepeatLimit="marquee_forever"
-                        android:focusable="true"
-                        android:focusableInTouchMode="true"
-                        android:scrollHorizontally="true" />
-                    <TextView
+                        android:textColor="?colorOnSurface"/>
+                    <com.xapps.media.xmusic.widget.MarqueeTextView
                         android:id="@+id/currentSongArtist"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Artist"
                         android:textSize="12sp"
-                        android:textColor="?colorOutline"
-                        android:singleLine="true"
-                        android:ellipsize="marquee"
-                        android:marqueeRepeatLimit="marquee_forever"
-                        android:focusable="true"
-                        android:focusableInTouchMode="true"
-                        android:scrollHorizontally="true" />
+                        android:textColor="?colorOutline" />
                 </LinearLayout>
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     android:id="@+id/musicProgress"
@@ -165,37 +153,25 @@
                                     android:id="@+id/texts_layout"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content">
-                                    <TextView
+                                    <com.xapps.media.xmusic.widget.MarqueeTextView
                                         android:id="@+id/song_big_title"
                                         android:layout_width="0dp"
                                         android:layout_height="wrap_content"
                                         android:paddingTop="5dp"
                                         android:paddingBottom="2dp"
                                         android:textSize="22sp"
-                                        android:singleLine="true"
-                                        android:ellipsize="marquee"
-                                        android:marqueeRepeatLimit="marquee_forever"
-                                        android:scrollHorizontally="true"
                                         android:gravity="center"
                                         android:textColor="?colorOnSurface"
-                                        android:focusable="true"
-                                        android:focusableInTouchMode="true"
                                         app:layout_constraintStart_toStartOf="parent"
                                         app:layout_constraintEnd_toEndOf="parent"
                                         app:layout_constraintTop_toTopOf="parent" />
-                                    <TextView
+                                    <com.xapps.media.xmusic.widget.MarqueeTextView
                                         android:id="@+id/artist_big_title"
                                         android:layout_width="0dp"
                                         android:layout_height="wrap_content"
                                         android:paddingTop="5dp"
                                         android:paddingBottom="5dp"
                                         android:textSize="16sp"
-                                        android:singleLine="true"
-                                        android:ellipsize="marquee"
-                                        android:marqueeRepeatLimit="marquee_forever"
-                                        android:scrollHorizontally="true"
-                                        android:focusable="true"
-                                        android:focusableInTouchMode="true"
                                         android:gravity="center"
                                         android:textColor="?colorOutline"
                                         app:layout_constraintStart_toStartOf="parent"
@@ -284,6 +260,27 @@
                             android:tint="?attr/colorOnSurface" />
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/song_info_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/pill_rounded"
+                    app:layout_constraintTop_toBottomOf="@+id/controls_layout"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/song_info_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#BDBDBD"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:paddingVertical="5dp"
+                        android:paddingHorizontal="12dp"
+                        android:text="Unknown" />
+                </LinearLayout>
                 <FrameLayout
                     android:id="@+id/frame"
                     android:layout_width="match_parent"
@@ -292,9 +289,8 @@
                         android:id="@+id/lyrics_container"
                         android:layout_height="match_parent"
                         android:layout_width="match_parent"
-                        android:visibility="gone"
-                        android:background="?colorSurface">
-                        <com.xapps.media.xmusic.widget.AppleMeshGradientView
+                        android:visibility="gone">
+                        <com.xapps.media.xmusic.widget.GradientView
                             android:id="@+id/mesh"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent" />
@@ -319,7 +315,7 @@
                             android:layout_width="match_parent"
                             android:orientation="vertical"
                             app:behavior_peekHeight="85dp"
-                            android:background="@drawable/rounded_corners_bottom_sheet"
+                            android:background="@drawable/round_corners_inner_bottom_sheet"
                             app:layout_behavior="com.xapps.media.xmusic.models.CustomBottomSheetBehavior"
                             android:forceHasOverlappingRendering="true">
                             <LinearLayout

@@ -66,7 +66,6 @@ public class MainActivityViewModel extends ViewModel {
             int bnvpos = mSavedStateHandle.get(KEY_BNV_POSITION);
             return bnvpos; 
         } catch (NullPointerException e) {
-            Log.e("MainActivityViewModel", "selected tab id was null");
             return R.id.menuHomeFragment;
         }
     }

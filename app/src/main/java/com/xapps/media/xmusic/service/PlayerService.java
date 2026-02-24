@@ -28,9 +28,12 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import com.xapps.media.xmusic.activity.*;
 import com.xapps.media.xmusic.R;
 import com.xapps.media.xmusic.application.XApplication;
+import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.data.RuntimeData;
 import com.xapps.media.xmusic.helper.ServiceCallback;
 import com.xapps.media.xmusic.utils.*;
@@ -41,7 +44,7 @@ import java.util.function.*;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Futures;
 
-public class PlayerService extends MediaSessionService {
+public class PlayerService extends MediaLibraryService {
 	
 	private static final String CHANNEL_ID = "music_channel";  
 	private static final int NOTIFICATION_ID = 1;  
@@ -72,7 +75,7 @@ public class PlayerService extends MediaSessionService {
     private Bitmap current;
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
 	private ScheduledFuture<?> currentTask;
-	private MediaSession mediaSession;  
+	private MediaLibrarySession mediaSession;  
     public static List<MediaItem> mediaItems;
     public static boolean isReceiving = false;
     HandlerThread handlerThread = new HandlerThread("ExoPlayerThread");
@@ -86,6 +89,8 @@ public class PlayerService extends MediaSessionService {
     private Callback callback;
     
     private volatile long currentPlayerPositionMs = 0;
+    
+    private Choreographer choreographer;
     
     private final Runnable queryPlayerPositionRunnable = () -> {
         currentProgress = player.getCurrentPosition();
@@ -105,7 +110,7 @@ public class PlayerService extends MediaSessionService {
     
     @Nullable
     @Override
-    public MediaSession onGetSession(@NonNull ControllerInfo controllerInfo) {
+    public MediaLibrarySession onGetSession(@NonNull ControllerInfo controllerInfo) {
         return mediaSession; 
     }
     
@@ -138,6 +143,7 @@ public class PlayerService extends MediaSessionService {
         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
         .build();
         ExoPlayerHandler.post(() -> {
+            choreographer = Choreographer.getInstance();
             player.setAudioAttributes(attrs, true);
         });
 		handler = new Handler(Looper.getMainLooper());  
@@ -156,11 +162,14 @@ public class PlayerService extends MediaSessionService {
 		return binder;
 	}  
 	
+    private String data = "";
+    
 	@Override  
 	public int onStartCommand(Intent intent, int flags, int startId) {  
 		if (intent != null && intent.getAction() != null ) {  
 			if (intent.getAction().equals("ACTION_UPDATE")) {
                 mediaItems = new ArrayList<>();
+                data = "";
                 ArrayList<HashMap<String, Object>> song = RuntimeData.songsMap;
                 executor.execute(() -> {
                     for (int i = 0; i < song.size(); i++) {
@@ -171,9 +180,11 @@ public class PlayerService extends MediaSessionService {
                         }
                         String path = song.get(i).get("path").toString();
                         Uri uri2 = Uri.fromFile(new File(path));
+                        data = data + song.get(i).get("title").toString() + "|s|" + song.get(i).get("author").toString() + "|s|" + path + "#i#";
                         MediaItem mediaItem = new MediaItem.Builder().setMediaMetadata(mt).setUri(uri2).build();
                         mediaItems.add(mediaItem);
                     }
+                    DataManager.saveItemsList(data);
                     ExoPlayerHandler.post(() -> {
                         if (player.getMediaItemCount() == 0) {
                             player.addListener(new Player.Listener() {
@@ -181,6 +192,7 @@ public class PlayerService extends MediaSessionService {
                             public void onPlaybackStateChanged(int state) {
                                 ServiceCallback.Hub.send(ServiceCallback.CALLBACK_VUMETER_UPDATE);
                                 if (state == Player.STATE_READY) {
+                                    anySongActive = true;
                                     currentPosition = player.getCurrentMediaItemIndex();
                                     sendUpdate(true);
                                     long duration = player.getDuration();
@@ -189,6 +201,10 @@ public class PlayerService extends MediaSessionService {
                                         isRunning = true;
                                     }
                                     lastMax = (int) duration;
+                                } else if (state == Player.STATE_BUFFERING || state == Player.STATE_ENDED) {
+                                    anySongActive = true;
+                                } else {
+                                    anySongActive = false;
                                 }
                             }
                                 
@@ -201,12 +217,13 @@ public class PlayerService extends MediaSessionService {
                             @Override
                             public void onIsPlayingChanged(boolean playing) {
                                 isPlaying = playing;
+                                ServiceCallback.Hub.send(ServiceCallback.CALLBACK_VUMETER_UPDATE);
                             }
                     
                             });
                         }
                     });
-                    });
+                });
             }
 		}     
 		return START_STICKY;  
@@ -227,11 +244,19 @@ public class PlayerService extends MediaSessionService {
                 Object thumb = RuntimeData.songsMap.get(currentPosition).get("thumbnail");
                 bmp = thumb == null? transparentBitmap : loadBitmapFromPath(thumb.toString());
             }
-            ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
-                lightColors = light;
-                darkColors = dark;
-                ServiceCallback.Hub.send(ServiceCallback.CALLBACK_COLORS_UPDATE);
-            });
+            if (DataManager.areStableColors()) {
+                ColorPaletteUtils.generateFromColor(MaterialColorUtils.colorPrimary, (light, dark) -> {
+                    lightColors = light;
+                    darkColors = dark;
+                    ServiceCallback.Hub.send(ServiceCallback.CALLBACK_COLORS_UPDATE);
+                });
+            } else {
+                ColorPaletteUtils.generateFromBitmap(bmp, (light, dark) -> {
+                    lightColors = light;
+                    darkColors = dark;
+                    ServiceCallback.Hub.send(ServiceCallback.CALLBACK_COLORS_UPDATE);
+                });
+            }
         });
     }
     
@@ -275,19 +300,29 @@ public class PlayerService extends MediaSessionService {
         }
     }
     
-    private final Choreographer.FrameCallback frameCallback =
-        new Choreographer.FrameCallback() {
+    private final Choreographer.FrameCallback playerProgressCallback = new Choreographer.FrameCallback() {
         @Override
         public void doFrame(long frameTimeNanos) {
-                ExoPlayerHandler.post(queryPlayerPositionRunnable);
-                Choreographer.getInstance().postFrameCallback(this);
+            if (player != null && isExecutorStarted) {
+                currentProgress = player.getCurrentPosition();
+                RuntimeData.currentProgress = currentProgress;
+                ServiceCallback.Hub.send(ServiceCallback.CALLBACK_PROGRESS_UPDATE);
+            }
+            choreographer.postFrameCallback(this);
         }
     };
 
     private void startUpdates() {
-        Choreographer.getInstance().postFrameCallback(frameCallback);
+        if (isExecutorStarted) return;
         isExecutorStarted = true;
+        choreographer.postFrameCallback(playerProgressCallback);
     }
+
+    private void stopUpdates() {
+        isExecutorStarted = false;
+        choreographer.removeFrameCallback(playerProgressCallback);
+    }
+
 	
     
 	private Notification buildNotification(String title, String artist, String cover) {
@@ -416,21 +451,57 @@ public class PlayerService extends MediaSessionService {
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent sessionActivity = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        mediaSession = new androidx.media3.session.MediaSession.Builder(this, player).setId("XMusicMediaSession").setSessionActivity(sessionActivity).setCallback(new CustomCallback()).build();
+        mediaSession = new androidx.media3.session.MediaLibraryService.MediaLibrarySession.Builder(this, player, new CustomCallback()).setId("XMusicMediaSession").setSessionActivity(sessionActivity).build();
     }
     
-    public class CustomCallback implements MediaSession.Callback {
-        private int loopIcon = R.drawable.ic_repeat_one;
-        private String loopMode = "LOOP_ONCE";
-        private String shuffleMode = "SHUFFLE_ON";
-        private String nextLoopAction = "LOOP_OFF";
+    public class CustomCallback implements MediaLibrarySession.Callback {
+        private String loopMode = DataManager.getLatestRepeatMode();
+        private String shuffleMode = DataManager.getLatestShuffleMode();
+        
+        private int loopIcon = loopMode.equals("LOOP_OFF")? R.drawable.ic_repeat_off : loopMode.equals("LOOP_SINGLE")? R.drawable.ic_repeat_one : R.drawable.ic_repeat;
+        private int shuffleIcon = shuffleMode.equals("SHUFFLE_ON")? R.drawable.ic_shuffle : R.drawable.ic_shuffle_off;
      
-        SessionCommand loopCommand = new SessionCommand(nextLoopAction, Bundle.EMPTY);
-        CommandButton loopButton = new CommandButton.Builder().setIconResId(loopIcon).setDisplayName("repeat").setSessionCommand(loopCommand).setSlots(CommandButton.SLOT_FORWARD_SECONDARY).build();
-        List<CommandButton> commandsList = ImmutableList.of(loopButton);
-        SessionCommands sessionCommands = SessionCommands.EMPTY.buildUpon().add(new SessionCommand("LOOP_ALL", Bundle.EMPTY)).add(new SessionCommand("LOOP_ONCE", Bundle.EMPTY)).add(new SessionCommand("LOOP_OFF", Bundle.EMPTY)).build();
-        @Override
+        SessionCommand loopCommand = new SessionCommand(loopMode, Bundle.EMPTY);
+        CommandButton loopButton = new CommandButton.Builder()
+                                    .setIconResId(loopIcon)
+                                    .setDisplayName("repeat")
+                                    .setSessionCommand(loopCommand)
+                                    .setSlots(CommandButton.SLOT_FORWARD)
+                                    .build();
+                                    
+        SessionCommand shuffleCommand = new SessionCommand(shuffleMode, Bundle.EMPTY);
+        CommandButton shuffleButton = new CommandButton.Builder()
+                                        .setIconResId(shuffleIcon)
+                                        .setDisplayName("shuffle")
+                                        .setSessionCommand(shuffleCommand)
+                                        .setSlots(CommandButton.SLOT_FORWARD_SECONDARY)
+                                        .build();
+        List<CommandButton> commandsList = ImmutableList.of(loopButton, shuffleButton);
+        SessionCommands sessionCommands = SessionCommands.EMPTY.buildUpon()
+                                            .add(new SessionCommand("LOOP_ALL", Bundle.EMPTY))
+                                            .add(new SessionCommand("LOOP_SINGLE", Bundle.EMPTY))
+                                            .add(new SessionCommand("LOOP_OFF", Bundle.EMPTY))
+                                            .add(new SessionCommand("SHUFFLE_ON", Bundle.EMPTY))
+                                            .add(new SessionCommand("SHUFFLE_OFF", Bundle.EMPTY))
+                                            .build();
+            @Override
             public ConnectionResult onConnect(MediaSession mediaSession, ControllerInfo controllerInfo) {
+                ExoPlayerHandler.post(() -> {
+                    if (loopMode.equals("LOOP_OFF")) {
+                        player.setRepeatMode(Player.REPEAT_MODE_OFF);
+                        player.setPauseAtEndOfMediaItems(true);
+                    } else if (loopMode.equals("LOOP_SINGLE")) {
+                        player.setRepeatMode(Player.REPEAT_MODE_ONE);
+                    } else if (loopMode.equals("LOOP_ALL")) {
+                        player.setPauseAtEndOfMediaItems(false);
+                        player.setRepeatMode(Player.REPEAT_MODE_ALL);
+                    }
+                    if (shuffleMode.equals("SHUFFLE_ON")) {
+                        player.setShuffleModeEnabled(true);
+                    } else {
+                        player.setShuffleModeEnabled(false);
+                    }
+                });
                 return ConnectionResult.accept(sessionCommands, playerCommands);
             }
             
@@ -443,13 +514,13 @@ public class PlayerService extends MediaSessionService {
             @Override
             public ListenableFuture<SessionResult> onCustomCommand(MediaSession mediaSession, ControllerInfo controllerInfo, SessionCommand sessionCommand, Bundle bundle) {
                 ExoPlayerHandler.post(() -> {
-                    nextLoopAction = switch (sessionCommand.customAction) {
+                    loopMode = switch (sessionCommand.customAction) {
                         case "LOOP_ALL" -> {
                             loopIcon = R.drawable.ic_repeat_one;
                             player.setRepeatMode(Player.REPEAT_MODE_ONE);
-                            yield "LOOP_ONCE"; 
+                            yield "LOOP_SINGLE"; 
                         }
-                        case "LOOP_ONCE" -> {
+                        case "LOOP_SINGLE" -> {
                             player.setPauseAtEndOfMediaItems(true);
                             loopIcon = R.drawable.ic_repeat_off;
                             player.setRepeatMode(Player.REPEAT_MODE_OFF);
@@ -461,19 +532,69 @@ public class PlayerService extends MediaSessionService {
                             loopIcon = R.drawable.ic_repeat;
                             yield "LOOP_ALL"; 
                         }
-                        default -> {
-                            loopIcon = R.drawable.ic_repeat_one;
-                            yield "LOOP_ONCE";
-                        }
+                        default -> loopMode;
                     };
+                
+                    shuffleMode = switch (sessionCommand.customAction) {
+                        case "SHUFFLE_ON" -> {
+                            player.setShuffleModeEnabled(false);
+                            shuffleIcon = R.drawable.ic_shuffle_off;
+                            yield "SHUFFLE_OFF";
+                        }
+                        case "SHUFFLE_OFF" -> {
+                            player.setShuffleModeEnabled(true);
+                            shuffleIcon = R.drawable.ic_shuffle;
+                            yield "SHUFFLE_ON"; 
+                        }
+                        default -> shuffleMode;
+                    };
+
+                    loopCommand = new SessionCommand(loopMode, Bundle.EMPTY);
+                    loopButton = new CommandButton.Builder()
+                        .setIconResId(loopIcon)
+                        .setDisplayName("repeat")
+                        .setSessionCommand(loopCommand)
+                        .setSlots(CommandButton.SLOT_FORWARD)
+                        .build();
+                    shuffleCommand = new SessionCommand(shuffleMode, Bundle.EMPTY);
+                    shuffleButton = new CommandButton.Builder()
+                                        .setIconResId(shuffleIcon)
+                                        .setDisplayName("shuffle")
+                                        .setSessionCommand(shuffleCommand)
+                                        .setSlots(CommandButton.SLOT_FORWARD_SECONDARY)
+                                        .build();
+                    commandsList = ImmutableList.of(loopButton, shuffleButton);
+                    DataManager.saveLatestRepeatMode(loopMode);
+                    DataManager.saveLatestShuffleMode(shuffleMode);
+                    mediaSession.setCustomLayout(controllerInfo, commandsList);
                 });
-                loopCommand = new SessionCommand(nextLoopAction, Bundle.EMPTY);
-                loopButton = new CommandButton.Builder().setIconResId(loopIcon).setDisplayName("repeat").setSessionCommand(loopCommand).setSlots(CommandButton.SLOT_FORWARD_SECONDARY).build();
-                commandsList = ImmutableList.of(loopButton);
-                mediaSession.setCustomLayout(controllerInfo, commandsList);
+
                 return Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS));
             }
-        
+            
+            
+            /*@Override
+            public ListenableFuture<MediaSession.MediaItemsWithStartPosition> onPlaybackResumption(MediaSession mediaSession, ControllerInfo controller) {
+                MediaItemsWithStartPosition resumptionPlaylist = restorePlaylist();
+                return Futures.immediateFuture(resumptionPlaylist);
+            }*/
+
+    }
+    
+    private MediaSession.MediaItemsWithStartPosition restorePlaylist() {
+        String data = DataManager.loadItemsList();
+        String[] items = data.split("#i#");
+        mediaItems = new ArrayList<>();
+        for (int i = 0; i < items.length; i++) {
+            String itemString = items[i].toString();
+            if (!itemString.trim().isEmpty()) {
+                String[] itemData = itemString.split("\\|s\\|");
+                MediaMetadata metadata = new MediaMetadata.Builder().setTitle(itemData[0].toString()).setArtist(itemData[1].toString()).build();
+                MediaItem item = new MediaItem.Builder().setMediaMetadata(metadata).setUri(Uri.parse("file://"+itemData[2].toString())).build();
+                mediaItems.add(item);
+            }
+        }
+        return new MediaSession.MediaItemsWithStartPosition(mediaItems, 0, 0);
     }
 
     private void setupAudioFocusRequest() {
@@ -487,6 +608,7 @@ public class PlayerService extends MediaSessionService {
     }
 
     private void handleAudioFocusChange(int focusChange) {
+        
     }
 
 
@@ -497,6 +619,17 @@ public class PlayerService extends MediaSessionService {
     public interface Callback {
         void onData(String data);
     }
+    
+    private final BroadcastReceiver noisyReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
+                if (player.isPlaying()) {
+                    player.pause();
+                }
+            }
+        }
+    };
 
     public class LocalBinder extends Binder {
         public PlayerService getService() {
@@ -519,8 +652,9 @@ public class PlayerService extends MediaSessionService {
     }
     
     public static boolean areMediaItemsEmpty = true;
+    public static boolean anySongActive;
 
     public static boolean isAnythingPlaying() {
-        return !areMediaItemsEmpty;
+        return !areMediaItemsEmpty && anySongActive;
     }
 }

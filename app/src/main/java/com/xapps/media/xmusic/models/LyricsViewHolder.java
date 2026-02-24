@@ -10,17 +10,18 @@ import com.xapps.media.xmusic.R;
 public class LyricsViewHolder extends RecyclerView.ViewHolder {
 
     public final TextView textView;
-    public final LyricLineView lineView;
+    public LyricLineCanvasView canvasLine;
 
     public LyricsViewHolder(@NonNull View itemView) {
         super(itemView);
 
         textView = itemView.findViewById(R.id.lyricText);
-
-        if (textView instanceof LyricLineView) {
-            lineView = (LyricLineView) textView;
+        canvasLine = itemView.findViewById(R.id.lyricCanvas);
+        
+        if (canvasLine instanceof LyricLineCanvasView) {
+            canvasLine = (LyricLineCanvasView) canvasLine;
         } else {
-            lineView = null;
+            canvasLine = null;
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.xapps.media.xmusic.fragment;
 
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -21,6 +23,8 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.transition.MaterialSharedAxis;
 import com.rtugeek.android.colorseekbar.thumb.DefaultThumbDrawer;
 import com.rtugeek.android.colorseekbar.thumb.ThumbDrawer;
+import com.xapps.media.xmusic.LauncherAlt;
+import com.xapps.media.xmusic.LauncherDefault;
 import com.xapps.media.xmusic.activity.MainActivity;
 import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.databinding.FragmentAppearanceBinding;
@@ -46,6 +50,7 @@ public class AppearanceFragment extends BaseFragment {
         DefaultThumbDrawer dtd = new DefaultThumbDrawer(XUtils.convertToPx(getActivity(), 35), Color.WHITE, Color.WHITE);
         dtd.setRingBorderSize(XUtils.convertToPx(getActivity(), 1.5f));
         binding.colorSeekBar.setThumbDrawer(dtd);
+        binding.iconSwitch.setChecked(DataManager.isNewIconEnabled());
         binding.colorSeekBar.setProgress(DataManager.getProgress());
         binding.firstSwitch.setChecked(DataManager.isDynamicColorsOn());
         binding.oledSwitch.setChecked(DataManager.isOledThemeEnabled());
@@ -114,6 +119,11 @@ public class AppearanceFragment extends BaseFragment {
             DataManager.setCustomColor(XUtils.normalizeColor(binding.colorSeekBar.getColor()));
             getActivity().recreate();
         });
+        binding.iconPref.setOnClickListener(v -> {
+            binding.iconSwitch.setChecked(!binding.iconSwitch.isChecked());
+            DataManager.setNewIconEnabled(binding.iconSwitch.isChecked());
+            setNewIconEnabled(binding.iconSwitch.isChecked());
+        });
     }
 
     private void showViews(boolean b) {
@@ -133,6 +143,23 @@ public class AppearanceFragment extends BaseFragment {
             binding.applyButton.setVisibility(View.GONE);
         }
     }
+    
+    private void setNewIconEnabled(boolean b) {
+        PackageManager pm = getActivity().getPackageManager();
+        Class<?> enable = b? LauncherAlt.class : LauncherDefault.class;
+        Class<?> disable = b? LauncherDefault.class : LauncherAlt.class;
 
+        pm.setComponentEnabledSetting(
+            new ComponentName(getActivity(), enable),
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP
+        );
+
+        pm.setComponentEnabledSetting(
+            new ComponentName(getActivity(), disable),
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.DONT_KILL_APP
+        );
+    }
 
 }

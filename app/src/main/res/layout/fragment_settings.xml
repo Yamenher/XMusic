@@ -151,6 +151,8 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:padding="12dp"
+                android:alpha="0.5"
+                android:visibility="gone"
                 android:background="@drawable/rv_ripple">
 
                 <ImageView

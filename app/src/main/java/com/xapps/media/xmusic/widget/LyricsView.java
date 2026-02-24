@@ -1,226 +1,401 @@
 package com.xapps.media.xmusic.widget;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.xapps.media.xmusic.common.PlaybackControlListener;
 import com.xapps.media.xmusic.models.LyricLine;
-import com.xapps.media.xmusic.models.LyricOffsetDecoration;
 import com.xapps.media.xmusic.models.LyricWord;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class LyricsView extends RecyclerView {
+public class LyricsView extends ScrollingView2 {
 
-    private LyricsAdapter adapter;
     private final List<LyricLine> lines = new ArrayList<>();
-    private List<Integer> currentActiveIndices = new ArrayList<>();
+    private final List<LyricLineCanvasView> lineViews = new ArrayList<>();
+
+    private final List<Integer> currentActiveIndices = new ArrayList<>();
+    private final List<Integer> persistedActiveIndices = new ArrayList<>();
+
+    private int[] lineTops = new int[0];
+    private int contentHeight;
+
     private int lastTopActiveIndex = -1;
-    private long lastUserTouchTime = -1;
+    private boolean allowAutoScroll = true;
 
-    private static final long AUTO_SCROLL_DELAY_MS = 1500;
-    private final Handler scrollHandler = new Handler(Looper.getMainLooper());
+    private static final long AUTO_SCROLL_DELAY_MS = 2000;
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
-    private final Runnable snapBackRunnable = () -> {
-        if (!currentActiveIndices.isEmpty()) {
-            int topIndex = Collections.min(currentActiveIndices);
-            performDynamicScroll(topIndex);
-        }
-    };
+    private PlaybackControlListener seekListener;
+
+    private int normalLineSpacingPx;
+    private int horizontalPaddingPx;
 
     public LyricsView(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        init(context);
+        float d = context.getResources().getDisplayMetrics().density;
+        normalLineSpacingPx = (int) (48 * d);
+        horizontalPaddingPx = (int) (16 * d);
     }
 
-    private void init(Context context) {
-        setLayoutManager(new LinearLayoutManager(context));
-        setItemAnimator(null);
-        addItemDecoration(new LyricOffsetDecoration());
-        setItemViewCacheSize(0);
-    }
+    /* ---------------------------------------- */
+
+    private final Runnable frameTick = new Runnable() {
+        @Override
+        public void run() {
+            boolean needsRedraw = false;
+
+            int scrollY = getScrollY();
+            int h = getHeight();
+    
+            int max = Math.min(lineViews.size(), lineTops.length);
+
+            for (int i = 0; i < max; i++) {
+                int top = lineTops[i];
+                int bottom = top + lineViews.get(i).getMeasuredHeight();
+
+                if (bottom < scrollY || top > scrollY + h) continue;
+
+                if (lineViews.get(i).consumeDirty()) {
+                    needsRedraw = true;
+                }
+            }
+            invalidate();
+            postOnAnimation(this);
+        }
+    };
+
+    /* --------------------------------------- */
 
     public void setLyrics(List<LyricLine> lyricLines) {
         lines.clear();
-        lines.addAll(lyricLines);
-        adapter = new LyricsAdapter(lines);
-        setAdapter(adapter);
+        lineViews.clear();
         currentActiveIndices.clear();
+        persistedActiveIndices.clear();
         lastTopActiveIndex = -1;
-        scrollHandler.removeCallbacksAndMessages(null);
+
+        removeCallbacks(frameTick);
+        handler.removeCallbacksAndMessages(null);
+
+        if (lyricLines != null) {
+            lines.addAll(lyricLines);
+            for (LyricLine l : lines) {
+                LyricLineCanvasView v = new LyricLineCanvasView(getContext(), null);
+                boolean small = l.isRomaji || l.isBackground;
+                v.setTextSizeSp(small ? 18f : 35f);
+                v.setLyricLine(l);
+                lineViews.add(v);
+            }
+        }
+
+        requestLayout();
+        invalidate();
+        smoothScrollTo(0, 0, 350);
     }
 
-    public void configureSyncedLyrics(boolean synced, Typeface t, int gravity, float textSizeSp) {
-        if (adapter == null) return;
-        adapter.configureSynced(synced, null, gravity, textSizeSp);
+    public void configureSyncedLyrics(boolean synced, Typeface tf, int gravity, float textSizeSp) {
+        for (LyricLineCanvasView v : lineViews) {
+            v.setTypeface(tf);
+        }
+        requestLayout();
+        invalidate();
+    }
+
+    public void setLyricColor(int color) {
+        for (LyricLineCanvasView v : lineViews) {
+            v.setColor(color);
+        }
+        invalidate();
     }
 
     public void setOnSeekListener(PlaybackControlListener l) {
-        if (adapter != null) adapter.setListener(l);
+        seekListener = l;
     }
 
     public void onProgress(int progressMs) {
-        updateActiveLine(progressMs);
+        updateActiveLines(progressMs);
     }
 
-    private void updateActiveLine(int progressMs) {
-        if (adapter == null || lines.isEmpty()) return;
+    /* ---------------------------------------- */
 
-        final int EXIT_ANTICIPATION_MS = 10;
-        List<Integer> newActiveIndices = new ArrayList<>();
+    private void updateActiveLines(int progressMs) {
+        if (lines.isEmpty()) return;
+
+        List<Integer> newActive = new ArrayList<>();
 
         for (int i = 0; i < lines.size(); i++) {
             LyricLine line = lines.get(i);
-            long startTime = line.time;
-            long actualWordEnd = getLineEndTime(line);
-            long nextLineStart;
-            if (lines.get(i).isBackground) {
-                nextLineStart = actualWordEnd;
-            } else if (!lines.get(i).isRomaji && !lines.get(i).isBackground && i+2 < lines.size() && lines.get(i+1).isRomaji) {
-                nextLineStart = (i + 2 < lines.size()) ? lines.get(i + 2).time : actualWordEnd + 2000;
+            if (line.isRomaji) continue;
+
+            long start = line.time;
+            long end = getLineEndTime(i);
+
+            if (progressMs >= start && progressMs <= end) {
+                newActive.add(i);
+            }
+        }
+
+        if (newActive.isEmpty() && !persistedActiveIndices.isEmpty()) {
+            newActive.addAll(persistedActiveIndices);
+        }
+
+        currentActiveIndices.clear();
+        currentActiveIndices.addAll(newActive);
+
+        persistedActiveIndices.clear();
+        persistedActiveIndices.addAll(newActive);
+
+        int max = Math.min(
+            Math.min(lines.size(), lineViews.size()),
+            lineTops.length
+        );
+
+        for (int i = 0; i < max; i++) {
+            LyricLineCanvasView v = lineViews.get(i);
+
+            boolean isActive;
+            if (lines.get(i).isRomaji) {
+                isActive = i > 0 && currentActiveIndices.contains(i - 1);
             } else {
-                nextLineStart = (i + 1 < lines.size()) ? lines.get(i + 1).time : actualWordEnd + 2000;
+                isActive = currentActiveIndices.contains(i);
             }
-            long disappearTime = Math.max(actualWordEnd, nextLineStart) - EXIT_ANTICIPATION_MS;
 
-            if (progressMs >= startTime && progressMs <= disappearTime) {
-                newActiveIndices.add(i);
-            }
-        }
-
-        if (newActiveIndices.isEmpty()) {
-            int fallbackIndex = -1;
-            for (int i = 0; i < lines.size(); i++) {
-                if (lines.get(i).time <= progressMs) {
-                    fallbackIndex = i;
-                } else {
-                    break;
-                }
-            }
-            if (fallbackIndex != -1) {
-                long nextStart = (fallbackIndex + 1 < lines.size()) ? lines.get(fallbackIndex + 1).time : Long.MAX_VALUE;
-                if (progressMs < nextStart - EXIT_ANTICIPATION_MS) {
-                    newActiveIndices.add(fallbackIndex);
-                }
+            v.setCurrent(isActive, i);
+            if (isActive) {
+                v.setCurrentProgress(progressMs);
             }
         }
 
-        List<Integer> toDeactivate = new ArrayList<>(currentActiveIndices);
-        toDeactivate.removeAll(newActiveIndices);
-        currentActiveIndices = newActiveIndices;
+        maybeStartFrameLoop();
+        maybeAutoScroll();
+    }
 
-        if (!currentActiveIndices.isEmpty()) {
-            int currentTopIndex = Collections.min(currentActiveIndices);
-            if (currentTopIndex != lastTopActiveIndex) {
-                lastTopActiveIndex = currentTopIndex;
-                
-                LinearLayoutManager lm = (LinearLayoutManager) getLayoutManager();
-                if (lm != null) {
-                    int first = lm.findFirstVisibleItemPosition();
-                    int last = lm.findLastVisibleItemPosition();
-                    boolean isFarAway = currentTopIndex < first || currentTopIndex > last;
+    private void maybeStartFrameLoop() {
+        int scrollY = getScrollY();
+        int h = getHeight();
 
-                    if (isFarAway) {
-                        scrollHandler.removeCallbacks(snapBackRunnable);
-                        scrollHandler.postDelayed(snapBackRunnable, 10);
-                    } else if (System.currentTimeMillis() - lastUserTouchTime > AUTO_SCROLL_DELAY_MS) {
-                        scrollHandler.removeCallbacks(snapBackRunnable);
-                        performDynamicScroll(currentTopIndex);
-                    }
-                }
-            }
-        }
+        int topsLen = lineTops.length;
+        int viewsLen = lineViews.size();
 
-        for (int i = 0; i < getChildCount(); i++) {
-            ViewHolder vh = getChildViewHolder(getChildAt(i));
-            if (vh instanceof LyricsViewHolder) {
-                LyricsViewHolder holder = (LyricsViewHolder) vh;
-                int pos = holder.getBindingAdapterPosition();
-                if (currentActiveIndices.contains(pos)) {
-                    holder.lineView.setCurrent(true, pos);
-                    holder.lineView.setCurrentProgress(progressMs);
-                } else if (toDeactivate.contains(pos)) {
-                    holder.lineView.setCurrent(false, pos);
-                }
+        for (int idx : persistedActiveIndices) {
+            if (idx < 0 || idx >= topsLen || idx >= viewsLen) continue;
+
+            int top = lineTops[idx];
+            int bottom = top + lineViews.get(idx).getMeasuredHeight();
+
+            if (bottom >= scrollY && top <= scrollY + h) {
+                removeCallbacks(frameTick);
+                postOnAnimation(frameTick);
+                return;
             }
         }
     }
 
-    private void performDynamicScroll(int targetIndex) {
-        LinearLayoutManager lm = (LinearLayoutManager) getLayoutManager();
-        if (lm == null) return;
+    private void maybeAutoScroll() {
+        if (!allowAutoScroll || persistedActiveIndices.isEmpty()) return;
 
-        int firstVisible = lm.findFirstVisibleItemPosition();
-        int distance = Math.abs(targetIndex - firstVisible);
-
-        CenterSmoothScroller scroller = new CenterSmoothScroller(getContext(), distance);
-        scroller.setTargetPosition(targetIndex);
-        lm.startSmoothScroll(scroller);
+        int top = Collections.min(persistedActiveIndices);
+        if (top != lastTopActiveIndex) {
+            lastTopActiveIndex = top;
+            centerLine(top);
+        }
     }
 
-    private long getLineEndTime(LyricLine line) {
-        if (line.words == null || line.words.isEmpty()) return line.time + 5;
-        long max = 0;
-        for (LyricWord w : line.words) {
-            int wEnd = w.getEndTime();
-            if (wEnd > max) max = wEnd;
+    /* -------------------------------------- */
+
+    @Override
+    protected void onMeasureForChild(int widthSpec, int heightSpec) {
+        int fullWidth = MeasureSpec.getSize(widthSpec);
+        int viewHeight = MeasureSpec.getSize(heightSpec);
+        if (viewHeight <= 0) {
+            viewHeight = getResources().getDisplayMetrics().heightPixels;
         }
-        return max;
+
+        int width = fullWidth - horizontalPaddingPx * 2;
+        int y = viewHeight / 3;
+
+        lineTops = new int[lineViews.size()];
+
+        for (int i = 0; i < lineViews.size(); i++) {
+            if (!lines.get(i).isRomaji && i != 0) {
+                y += normalLineSpacingPx;
+            }
+
+            LyricLineCanvasView v = lineViews.get(i);
+            v.measure(
+                    MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+            );
+
+            lineTops[i] = y;
+            y += v.getMeasuredHeight();
+        }
+
+        contentHeight = y + viewHeight / 3;
+        setChildMeasuredDimension(fullWidth, contentHeight);
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent e) {
-        int action = e.getActionMasked();
-        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
-            scrollHandler.removeCallbacks(snapBackRunnable);
-            lastUserTouchTime = System.currentTimeMillis();
-        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-            lastUserTouchTime = System.currentTimeMillis();
-            scrollHandler.postDelayed(snapBackRunnable, AUTO_SCROLL_DELAY_MS);
+    protected void onDrawForChild(@NonNull Canvas canvas) {
+        int topVisible = getTopVisibleIndex();
+        int bottomVisible = getBottomVisibleIndex();
+
+        if (topVisible < 0 || bottomVisible < 0) return;
+
+        int max = Math.min(lineViews.size(), lineTops.length);
+        int start = Math.max(0, topVisible);
+        int end = Math.min(bottomVisible, max - 1);
+
+        for (int i = start; i <= end; i++) {
+            int top = lineTops[i];
+
+            canvas.save();
+            canvas.translate(horizontalPaddingPx, top);
+            lineViews.get(i).draw(canvas);
+            canvas.restore();
+        }
+    }
+
+    @Override
+    protected void onLayoutForChild(int l, int t, int r, int b) {}
+    
+    private final android.view.GestureDetector gestureDetector = new android.view.GestureDetector(getContext(), new android.view.GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+                handleLineClick(e.getX(), e.getY());
+                return true;
+            }
+        }
+    );
+    
+    private void handleLineClick(float x, float y) {
+        if (lines.isEmpty() || lineTops.length == 0 || seekListener == null) return;
+
+        int contentY = (int) y + getScrollY();
+
+        int topIndex = getTopVisibleIndex();
+        int bottomIndex = getBottomVisibleIndex();
+
+        if (topIndex < 0 || bottomIndex < 0) return;
+
+        int start = Math.max(0, topIndex);
+        int end = Math.min(bottomIndex, lineTops.length - 1);
+
+        for (int i = start; i <= end; i++) {
+            int top = lineTops[i];
+            int bottom = top + lineViews.get(i).getMeasuredHeight();
+
+            if (contentY >= top && contentY <= bottom) {
+                LyricLine clicked = lines.get(i);
+                if (clicked.isRomaji && i > 0) {
+                    seekListener.onSeekRequested(lines.get(i - 1).time);
+                } else {
+                    seekListener.onSeekRequested(clicked.time);
+                }
+                return;
+            }
+        }
+    }
+
+    /* --------------------------------------- */
+
+    @Override
+    public boolean onTouchEvent(@NonNull MotionEvent e) {
+        gestureDetector.onTouchEvent(e);
+        if (e.getActionMasked() == MotionEvent.ACTION_MOVE) {
+            allowAutoScroll = false;
+            handler.removeCallbacksAndMessages(null);
+        } else if (e.getActionMasked() == MotionEvent.ACTION_UP || e.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+            handler.postDelayed(() -> allowAutoScroll = true, AUTO_SCROLL_DELAY_MS);
         }
         return super.onTouchEvent(e);
     }
-
+    
     @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        scrollHandler.removeCallbacksAndMessages(null);
+    protected boolean onTouchEventForChild(@NonNull MotionEvent event) {
+        return false;
     }
 
-    private static class CenterSmoothScroller extends LinearSmoothScroller {
-        private final int itemDistance;
+    /* ---------------------------------------- */
 
-        CenterSmoothScroller(Context context, int itemDistance) {
-            super(context);
-            this.itemDistance = itemDistance;
+    private void centerLine(int index) {
+        if (index < 0) return;
+        if (index >= lineTops.length) return;
+        if (index >= lineViews.size()) return;
+    
+        int target = lineTops[index] - getHeight() / 3;
+        smoothScrollTo(0, Math.max(0, target));
+    }
+    
+    private int getTopVisibleIndex() {
+        int scrollY = getScrollY();
+
+        int low = 0;
+        int high = Math.min(lineTops.length, lineViews.size()) - 1;
+        if (high < 0) return -1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            int bottom = lineTops[mid] + lineViews.get(mid).getMeasuredHeight();
+
+            if (bottom <= scrollY) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
         }
 
-        @Override
-        public int calculateDtToFit(int viewStart, int viewEnd, int boxStart, int boxEnd, int snapPreference) {
-            int boxOneThird = boxStart + (boxEnd - boxStart) / 3;
-            int viewCenter = viewStart + (viewEnd - viewStart) / 2;
-            return boxOneThird - viewCenter;
+        return low <= high + 1 ? low : -1;
+    }
+    
+    private int getBottomVisibleIndex() {
+        int viewportBottom = getScrollY() + getHeight();
+
+        int low = 0;
+        int high = Math.min(lineTops.length, lineViews.size()) - 1;
+        if (high < 0) return -1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+    
+            if (lineTops[mid] < viewportBottom) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
         }
 
-        @Override
-        protected float calculateSpeedPerPixel(DisplayMetrics displayMetrics) {
-            float baseMillisPerPixel = 150f;
-            float speedReduction = itemDistance * 12f;
-            float finalSpeed = Math.max(20f, baseMillisPerPixel - speedReduction);
-            return finalSpeed / displayMetrics.densityDpi;
+        return high >= 0 ? high : -1;
+    }
+
+    private long getLineEndTime(int index) {
+        if (index < 0 || index >= lines.size()) return 0;
+
+        LyricLine line = lines.get(index);
+
+        if (line.isSimpleLRC) {
+            if (line.endTime > 0) return line.endTime -250;
+
+            for (int i = index + 1; i < lines.size(); i++) {
+                if (!lines.get(i).isRomaji) return lines.get(i).time;
+            }
+            return line.time + 10000;
+        } else {
+            long max = 0;
+            for (LyricWord w : line.words) {
+                max = Math.max(max, w.getEndTime());
+            }
+            return max;
         }
     }
 }

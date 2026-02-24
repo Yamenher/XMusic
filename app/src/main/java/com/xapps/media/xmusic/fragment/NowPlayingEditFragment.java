@@ -12,37 +12,49 @@ import java.util.List;
 public class NowPlayingEditFragment extends BasePrefsFragment {
     
     @Override
-protected List<SettingsItem> provideItems() {
-    List<SettingsItem> items = new ArrayList<>();
+    protected List<SettingsItem> provideItems() {
+        List<SettingsItem> items = new ArrayList<>();
 
-    items.add(new SettingsItem(
+        items.add(new SettingsItem(
             SettingsItem.TYPE_HEADER,
+            "",
             "Components","", 
             null
-    ));
+        ));
+        
+    
 
-    items.add(new SettingsItem(
+        /*items.add(new SettingsItem(
             SettingsItem.TYPE_NAV,
+            "seekbar_customize",
             "Seekbar",
             "Customize your seekbar with a set of tweaks",
             null
-    ));
+        ));
 
-    items.add(new SettingsItem(
+        items.add(new SettingsItem(
             SettingsItem.TYPE_NAV,
+            "toggle_customize",
             "Play/Pause toggle",
             "Customize states shapes and animation speed",
             new AppearanceFragment()
-    ));
+        ));*/
+        
+        items.add(new SettingsItem(
+            SettingsItem.TYPE_SWITCH,
+            "stable_colors",
+            "Use Dynamic Colors for Now Playing UI",
+            "All components in the Now Playing interface will use App Colors instead of Album Art's",
+            null
+        ));
 
-    return items;
-}
+        return items;
+    }
 
-@Override
-protected void onNavigate(SettingsItem item) {
-    if (item.destinationFragment == null) return;
+    @Override
+    protected void onNavigate(SettingsItem item) {
 
-    try {
+        try {
         Fragment f = item.destinationFragment;
         requireActivity()
                 .getSupportFragmentManager()
@@ -50,6 +62,6 @@ protected void onNavigate(SettingsItem item) {
                 .replace(R.id.settings_frag, f)
                 .addToBackStack(null)
                 .commit();
-    } catch (Exception ignored) {}
-}
+        } catch (Exception ignored) {}
+    }
 }

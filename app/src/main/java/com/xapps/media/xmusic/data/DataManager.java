@@ -3,7 +3,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class DataManager {
-    private static SharedPreferences sp;
+    public static SharedPreferences sp;
 
     public static void init(Context c) {
         sp = c.getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
@@ -63,5 +63,45 @@ public class DataManager {
 
     public static boolean isOledThemeEnabled() {
         return sp.getBoolean("oledTheme", false);
+    }
+
+    public static void setNewIconEnabled(boolean b) {
+        sp.edit().putBoolean("newIcon", b).apply();
+    }
+
+    public static boolean isNewIconEnabled() {
+        return sp.getBoolean("newIcon", false);
+    }
+
+    public static void setStableColors(boolean b) {
+        sp.edit().putBoolean("stable_colors", b).apply();
+    }
+
+    public static boolean areStableColors() {
+        return sp.getBoolean("stable_colors", false);
+    }
+
+    public static void saveLatestRepeatMode(String s) {
+        sp.edit().putString("repeatMode", s).apply();
+    }
+
+    public static String getLatestRepeatMode() {
+        return sp.getString("repeatMode", "LOOP_OFF");
+    }
+
+    public static void saveLatestShuffleMode(String s) {
+        sp.edit().putString("shuffleMode", s).apply();
+    }
+
+    public static String getLatestShuffleMode() {
+        return sp.getString("shuffleMode", "SHUFFLE_OFF");
+    }
+
+    public static void saveItemsList(String s) {
+        sp.edit().putString("listData", s).apply();
+    }
+
+    public static String loadItemsList() {
+        return sp.getString("listData", "");
     }
 }

@@ -6,12 +6,14 @@ import java.util.List;
 
 public class LyricLine {
     public int time;
+    public int endTime;
     public Spannable line;
     public final List<LyricWord> words;
     
     public int vocalType = 1; 
     public boolean isBackground = false; 
     public boolean isRomaji = false;
+    public boolean isSimpleLRC;
 
     public LyricLine(int time, Spannable line, List<LyricWord> words) {
         this.time = time;

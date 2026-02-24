@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class SettingsData {
-    public static List<SettingsItem> getNPEItems() {
+    /*public static List<SettingsItem> getNPEItems() {
         ArrayList<SettingsItem> list = new ArrayList<>();
         list.add(new SettingsItem(SettingsItem.TYPE_HEADER, "Components", "", null));
         list.add(new SettingsItem(SettingsItem.TYPE_NAV, "Adjust Seekbar", "Adjust Seekbar line and thumb to your needs", new AppearanceFragment()));
         return list;
-    }
+    }*/
 }

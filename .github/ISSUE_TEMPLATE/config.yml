@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions or support
+    url: https://t.me/yourlink
+    about: Ask questions here. Issues are for bugs only.

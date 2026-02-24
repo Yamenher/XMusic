@@ -36,8 +36,10 @@
                 android:gravity="center_horizontal"
                 android:layout_gravity="bottom|center_horizontal">
                 <ImageView
+                    android:id="@+id/app_logo"
                     android:layout_width="86dp"
                     android:layout_height="86dp"
+                    android:transitionName="shared_app_icon"
                     android:src="@drawable/service_icon"
                     android:tint="?colorPrimary" />
                 <TextView
@@ -52,13 +54,26 @@
             <com.google.android.material.appbar.MaterialToolbar
                 android:layout_height="?attr/actionBarSize"
                 android:layout_width="match_parent"
-                app:title="About XMusic"
+                app:title=""
                 android:background="@null"
                 app:liftOnScroll="false"
                 app:navigationIcon="@drawable/ic_arrow_back"
                 android:theme="@style/ThemeOverlay.Material3.Toolbar.CircleNavigationButton"
                 app:layout_collapseMode="pin"
-                android:id="@+id/toolbar" />
+                android:id="@+id/toolbar" >
+
+                <TextView
+                    android:id="@+id/toolbar_text"
+                    android:textSize="24.0sp"
+                    android:textColor="?colorOnSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="8.0dp"
+                    android:text="About XMusic"
+                    android:layout_marginHorizontal="10.0dp" />
+
+            </com.google.android.material.appbar.MaterialToolbar>
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
 
@@ -68,15 +83,14 @@
         android:id="@+id/nested_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingTop="24dp"
         android:clipChildren="false"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_marginTop="16dp"
             android:padding="16dp"
-            
             android:orientation="vertical">
 
             <TextView
@@ -87,8 +101,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:layout_marginBottom="8.0dp"
-                android:text="Header"
-                android:layout_marginHorizontal="20.0dp" />
+                android:textStyle="bold"
+                android:text="App Informations"
+                android:layout_marginHorizontal="16.0dp" />
 
             <LinearLayout
                 android:id="@+id/first_item"
@@ -144,7 +159,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:layout_marginBottom="2dp"
-                android:background="@drawable/rv_ripple"
+                android:background="@drawable/rv_ripple_bottom"
                 android:padding="16dp">
 
                 <TextView
@@ -152,7 +167,7 @@
                     android:textColor="?colorOnSurface"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Version" />
+                    android:text="Build Type" />
                 <TextView
                     android:id="@+id/build_text"
                     android:textSize="14.0sp"
@@ -160,179 +175,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/forth_item"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/rv_ripple"
-                android:padding="16dp">
-
-                <TextView
-                    android:textSize="16.0sp"
-                    android:textColor="?colorOnSurface"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Version" />
-                <TextView
-                    android:id="@+id/build_teffgxt"
-                    android:textSize="14.0sp"
-                    android:textColor="?colorOutline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/fifth_item"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/rv_ripple"
-                android:padding="16dp">
-
-                <TextView
-                    android:textSize="16.0sp"
-                    android:textColor="?colorOnSurface"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Version" />
-                <TextView
-                    android:id="@+id/build_ffftext"
-                    android:textSize="14.0sp"
-                    android:textColor="?colorOutline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/sixth_item"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/rv_ripple"
-                android:padding="16dp">
-
-                <TextView
-                    android:textSize="16.0sp"
-                    android:textColor="?colorOnSurface"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Version" />
-                <TextView
-                    android:id="@+id/jejzk"
-                    android:textSize="14.0sp"
-                    android:textColor="?colorOutline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/seventh_item"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/rv_ripple"
-                android:padding="16dp">
-
-                <TextView
-                    android:textSize="16.0sp"
-                    android:textColor="?colorOnSurface"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Version" />
-                <TextView
-                    android:id="@+id/jejhhzfk"
-                    android:textSize="14.0sp"
-                    android:textColor="?colorOutline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/eightth_item"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/rv_ripple"
-                android:padding="16dp">
-
-                <TextView
-                    android:textSize="16.0sp"
-                    android:textColor="?colorOnSurface"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Version" />
-                <TextView
-                    android:id="@+id/jejhhfzk"
-                    android:textSize="14.0sp"
-                    android:textColor="?colorOutline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="" />
-
-            </LinearLayout>    
-
-            <LinearLayout
-                android:id="@+id/ninth_item"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/rv_ripple"
-                android:padding="16dp">
-
-                <TextView
-                    android:textSize="16.0sp"
-                    android:textColor="?colorOnSurface"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Version" />
-                <TextView
-                    android:id="@+id/jegehjzk"
-                    android:textSize="14.0sp"
-                    android:textColor="?colorOutline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="" />
-
-            </LinearLayout>   
-
-            <LinearLayout
-                android:id="@+id/tenth_item"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/rv_ripple"
-                android:padding="16dp">
-
-                <TextView
-                    android:textSize="16.0sp"
-                    android:textColor="?colorOnSurface"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Version" />
-                <TextView
-                    android:id="@+id/jefj4zk"
-                    android:textSize="14.0sp"
-                    android:textColor="?colorOutline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="" />
-
             </LinearLayout>
 
         </LinearLayout>

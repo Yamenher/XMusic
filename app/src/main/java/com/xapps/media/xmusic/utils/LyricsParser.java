@@ -3,9 +3,11 @@ package com.xapps.media.xmusic.lyric;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.SpannableString;
+import android.util.Log;
 import com.xapps.media.xmusic.models.LyricLine;
 import com.xapps.media.xmusic.models.LyricSyllable;
 import com.xapps.media.xmusic.models.LyricWord;
+import com.xapps.media.xmusic.utils.TtmlParser;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -13,6 +15,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class LyricsParser {
+
+    private static final String TAG = "LyricsParserDBG";
 
     private static final Pattern OFFSET_PATTERN =
             Pattern.compile("\\[offset:([+-]?\\d+)\\]", Pattern.CASE_INSENSITIVE);
@@ -75,85 +79,121 @@ public class LyricsParser {
     }
 
     private static List<LyricLine> parseInternal(InputStream inputStream) {
-        try (PushbackInputStream pb = new PushbackInputStream(inputStream, 20)) {
-            int firstByte = pb.read();
-            if (firstByte == -1) return Collections.emptyList();
-            pb.unread(firstByte);
-            return firstByte == '<' ? handleTtml(pb) : parseLrcStream(pb);
-        } catch (Exception e) {
-            return Collections.emptyList();
+    try (PushbackInputStream pb = new PushbackInputStream(inputStream, 20)) {
+        int firstByte = pb.read();
+        if (firstByte == -1) return Collections.emptyList();
+        pb.unread(firstByte);
+
+        List<LyricLine> result;
+        if (firstByte == '<') {
+            result = handleTtml(pb);
+        } else {
+            result = parseLrcStream(pb);
         }
+
+        if (result != null && !result.isEmpty()) {
+            finalizeSyllableTimings(result);
+
+            Collections.sort(result, (l1, l2) -> {
+                if (l1.time != l2.time) {
+                    return Integer.compare(l1.time, l2.time);
+                }
+                return 0;
+            });
+
+            for (int i = 1; i < result.size(); i++) {
+                LyricLine prev = result.get(i - 1);
+                LyricLine current = result.get(i);
+                
+                if (current.time == prev.time && current.vocalType == prev.vocalType) {
+                    if (!current.isBackground && !prev.isBackground) {
+                        current.isRomaji = true;
+                    }
+                }
+            }
+        }
+        return result != null ? result : Collections.emptyList();
+    } catch (Exception e) {
+        Log.e(TAG, "Critical failure in parseInternal", e);
+        return Collections.emptyList();
     }
+}
+
 
     private static List<LyricLine> handleTtml(InputStream in) throws Exception {
         StringBuilder sb = new StringBuilder();
         try (BufferedReader reader =
                 new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             String line;
-            while ((line = reader.readLine()) != null) sb.append(line);
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
         }
-        byte[] bytes = TtmlToElrc.convert(sb.toString()).getBytes(StandardCharsets.UTF_8);
-        return parseLrcStream(new ByteArrayInputStream(bytes));
+        return TtmlParser.parse(sb.toString());
     }
 
     private static List<LyricLine> parseLrcStream(InputStream in) {
-        List<LyricLine> result = new ArrayList<>();
-        long globalOffset = 0;
-        try (BufferedReader br =
-                new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-            String rawLine;
-            while ((rawLine = br.readLine()) != null) {
-                String line = rawLine.trim();
-                if (line.isEmpty() || METADATA_IGNORE_PATTERN.matcher(line).matches()) continue;
+    List<LyricLine> result = new ArrayList<>();
+    long globalOffset = 0;
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+        String rawLine;
+        while ((rawLine = br.readLine()) != null) {
+            String line = rawLine.trim();
+            if (line.isEmpty() || METADATA_IGNORE_PATTERN.matcher(line).matches()) continue;
 
-                Matcher om = OFFSET_PATTERN.matcher(line);
-                if (om.find()) {
-                    globalOffset = Long.parseLong(om.group(1));
-                    continue;
-                }
-
-                if (line.startsWith("[bg:") && line.endsWith("]")) {
-                    String inner = line.substring(4, line.length() - 1).trim();
-                    Matcher wm = WORD_TIME_PATTERN.matcher(inner);
-                    if (wm.find()) {
-                        long startTime =
-                                parseTimestamp(wm.group(1), wm.group(2), wm.group(3))
-                                        + globalOffset;
-                        LyricLine lyricLine =
-                                processContent("bg: " + inner, startTime, globalOffset);
-                        if (lyricLine != null) result.add(lyricLine);
-                    }
-                    continue;
-                }
-
-                Matcher lm = LINE_TIME_PATTERN.matcher(line);
-                if (lm.find()) {
-                    long startTime =
-                            parseTimestamp(lm.group(1), lm.group(2), lm.group(3)) + globalOffset;
-                    LyricLine lyricLine =
-                            processContent(lm.group(4).trim(), startTime, globalOffset);
-                    if (lyricLine != null) result.add(lyricLine);
-                } else if (!line.startsWith("[")) {
-                    result.add(new LyricLine(0, new SpannableString(line), new ArrayList<>()));
-                }
+            Matcher om = OFFSET_PATTERN.matcher(line);
+            if (om.find()) {
+                globalOffset = Long.parseLong(om.group(1));
+                continue;
             }
-            if (!result.isEmpty()) {
-                result.sort(Comparator.comparingLong(l -> l.time));
-                
-                for (int i = 1; i < result.size(); i++) {
-                    LyricLine prev = result.get(i - 1);
-                    LyricLine current = result.get(i);
-                    if (current.time != 0 && current.time == prev.time) {
+
+            if (line.startsWith("[bg:") && line.endsWith("]")) {
+                String inner = line.substring(4, line.length() - 1).trim();
+                Matcher wm = WORD_TIME_PATTERN.matcher(inner);
+                if (wm.find()) {
+                    long startTime = parseTimestamp(wm.group(1), wm.group(2), wm.group(3)) + globalOffset;
+                    LyricLine lyricLine = processContent("bg: " + inner, startTime, globalOffset);
+                    if (lyricLine != null) result.add(lyricLine);
+                }
+                continue;
+            }
+
+            Matcher lm = LINE_TIME_PATTERN.matcher(line);
+            if (lm.find()) {
+                long startTime = parseTimestamp(lm.group(1), lm.group(2), lm.group(3)) + globalOffset;
+                LyricLine lyricLine = processContent(lm.group(4).trim(), startTime, globalOffset);
+                if (lyricLine != null) result.add(lyricLine);
+            } else if (!line.startsWith("[")) {
+                result.add(new LyricLine(0, new SpannableString(line), new ArrayList<>()));
+            }
+        }
+
+        if (!result.isEmpty()) {
+            finalizeSyllableTimings(result);
+
+            // in-metadata position. ordering 
+            Collections.sort(result, (l1, l2) -> {
+                if (l1.time != l2.time) {
+                    return Integer.compare(l1.time, l2.time);
+                }
+                return 0;
+            });
+
+            for (int i = 1; i < result.size(); i++) {
+                LyricLine prev = result.get(i - 1);
+                LyricLine current = result.get(i);
+
+                if (current.time == prev.time && current.vocalType == prev.vocalType) {
+                    if (!current.isBackground && !prev.isBackground) {
                         current.isRomaji = true;
                     }
                 }
-                
-                finalizeSyllableTimings(result);
             }
-        } catch (Exception ignored) {
         }
-        return result;
-    }
+    } catch (Exception ignored) {}
+    return result;
+}
+
 
     private static LyricLine processContent(String content, long lineStartTime, long globalOffset) {
         List<LyricWord> words = new ArrayList<>();
@@ -195,27 +235,49 @@ public class LyricsParser {
             fragments.add(fragment);
         }
 
+        boolean allBackground = !fragments.isEmpty(); 
+        for (String f : fragments) {
+            String trimmed = f.trim();
+            if (trimmed.isEmpty()) continue;
+
+            if (!(trimmed.startsWith("(") && trimmed.endsWith(")"))) {
+                allBackground = false;
+                break;
+            }
+        }
+
+        if (allBackground) {
+            isBackground = true;
+            for (int i = 0; i < fragments.size(); i++) {
+                fragments.set(i, fragments.get(i).replace("(", "").replace(")", ""));
+            }        
+        }
+
         if (fragments.isEmpty()) {
             if (t.isEmpty()) return null;
-            List<String> parts = isNonSpace ? splitIntoCharacters(t) : splitIntoWordsPreservingSpaces(t);
+            List<String> parts =
+                    isNonSpace ? splitIntoCharacters(t) : splitIntoWordsPreservingSpaces(t);
             if (parts.isEmpty()) return null;
-            words.clear();
+
             int cursor = 0;
-            int uStart = (int) lineStartTime;
-            int uEnd = (int) lineStartTime;
             for (String p : parts) {
                 LyricWord word = new LyricWord(cursor);
-                LyricSyllable syl = new LyricSyllable(uStart, p, 0);
-                syl.endTime = uEnd;
+                LyricSyllable syl = new LyricSyllable((int) lineStartTime, p, 0);
+                syl.endTime = (int) lineStartTime;
                 word.syllables.add(syl);
                 words.add(word);
                 cursor += p.length();
             }
+
             StringBuilder rebuilt = new StringBuilder();
             for (String p : parts) rebuilt.append(p);
-            LyricLine line = new LyricLine(uStart, new SpannableString(rebuilt.toString()), words);
+
+            LyricLine line =
+                    new LyricLine(
+                            (int) lineStartTime, new SpannableString(rebuilt.toString()), words);
             line.vocalType = vocalType;
             line.isBackground = isBackground;
+            line.isSimpleLRC = true;
             return line;
         }
 
@@ -225,26 +287,50 @@ public class LyricsParser {
         boolean lastHadTrailingSpace = false;
 
         for (int i = 0; i < fragments.size(); i++) {
-            String frag = fragments.get(i);
-            if (currentWord == null || frag.startsWith(" ") || lastHadTrailingSpace || isNonSpace) {
-                currentWord = new LyricWord(cursor);
-                words.add(currentWord);
-            }
-            LyricSyllable syl = new LyricSyllable(timestamps.get(i), frag, cursor - currentWord.startIndex);
-            if (i + 1 < timestamps.size()) {
-                syl.endTime = timestamps.get(i + 1);
-            } else {
-                syl.endTime = (explicitEnd > 0) ? (int) explicitEnd - 50 : syl.startTime + 300;
-            }
-            currentWord.syllables.add(syl);
-            rawTextBuilder.append(frag);
-            cursor += frag.length();
-            lastHadTrailingSpace = frag.endsWith(" ");
-        }
+    String frag = fragments.get(i);
+    int cut = frag.length();
+    while (cut > 0 && frag.charAt(cut - 1) == ' ') cut--;
 
-        LyricLine line = new LyricLine((int) lineStartTime, new SpannableString(rawTextBuilder.toString()), words);
+    String core = frag.substring(0, cut);
+    String trailing = frag.substring(cut);
+
+    if (currentWord == null || lastHadTrailingSpace || isNonSpace) {
+        currentWord = new LyricWord(cursor);
+        words.add(currentWord);
+    }
+
+    LyricSyllable syl = new LyricSyllable(timestamps.get(i), core, cursor - currentWord.startIndex);
+
+    if (i + 1 < timestamps.size()) {
+        syl.endTime = timestamps.get(i + 1);
+    } else {
+        
+        syl.endTime = (explicitEnd > 0) ? (int) explicitEnd : syl.startTime + 1000;
+    }
+
+    currentWord.syllables.add(syl);
+    rawTextBuilder.append(core);
+    cursor += core.length();
+
+    if (!trailing.isEmpty()) {
+        rawTextBuilder.append(trailing);
+        cursor += trailing.length();
+        lastHadTrailingSpace = true;
+    } else {
+        lastHadTrailingSpace = false;
+    }
+}
+
+
+        LyricLine line =
+                new LyricLine(
+                        (int) lineStartTime, new SpannableString(rawTextBuilder.toString()), words);
         line.vocalType = vocalType;
         line.isBackground = isBackground;
+
+        for (int i = 0; i < words.size(); i++) {
+            LyricWord w = words.get(i);
+        }
         return line;
     }
 
@@ -287,10 +373,39 @@ public class LyricsParser {
     }
 
     private static void finalizeSyllableTimings(List<LyricLine> lines) {
-        for (int i = 0; i < lines.size(); i++) {
-            LyricLine line = lines.get(i);
-            if (line.words.isEmpty()) continue;
+    for (int i = 0; i < lines.size(); i++) {
+        LyricLine line = lines.get(i);
+        if (line.words.isEmpty()) continue;
+
+        if (line.isSimpleLRC) {
+            int lineEndTime = -1;
+            
+            for (int j = i + 1; j < lines.size(); j++) {
+                if (!lines.get(j).isRomaji) {
+                    lineEndTime = lines.get(j).time;
+                    break;
+                }
+            }
+
+            if (lineEndTime == -1) {
+                lineEndTime = line.time + 10000;
+            }
+
+            for (LyricWord word : line.words) {
+                for (LyricSyllable syl : word.syllables) {
+                    syl.startTime = line.time;
+                    syl.endTime = line.time; 
+                }
+            }
+            
+            line.endTime = lineEndTime;
+        } else {
             line.time = line.words.get(0).getStartTime();
         }
     }
+}
+
+
+
+
 }

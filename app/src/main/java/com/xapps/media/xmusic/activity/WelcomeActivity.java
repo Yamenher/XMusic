@@ -41,7 +41,6 @@ import com.xapps.media.xmusic.common.SongLoadListener;
 import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.databinding.ActivityWelcomeBinding;
 import com.xapps.media.xmusic.utils.MaterialColorUtils;
-import com.xapps.media.xmusic.utils.SerializationUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;

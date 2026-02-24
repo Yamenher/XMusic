@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -116,6 +117,7 @@ public class SongMetadataHelper {
         executorService.execute(() -> {
             try {
                 HashMap<String, Object> map = new HashMap<>();
+                map.put("path", index);
                 map.put("path", path);
                 map.put("id", songId);
                 map.put("title", title != null && !title.isEmpty() ? title : "Unknown Title");
@@ -133,7 +135,8 @@ public class SongMetadataHelper {
                 map.put("dateAdded", dateAdded);
                 map.put("dateModified", dateModified);
                 map.put("thumbnail", getSongCover(context, path, mimeType, songId));
-
+                map.put("searchKey", ("{t}" + map.get("title") + "{/t}{a}" + map.get("author") + "{/a}{al}" + map.get("album") + "{/al}{aa}" + map.get("albumArtist") + "{/aa}").toLowerCase(Locale.ROOT));
+                
                 synchronized (lock) {
                     songListMap.set(index, map);
                 }
@@ -161,6 +164,11 @@ public class SongMetadataHelper {
         }
     });
 }
+    
+    public static void clearCachedList() {
+        songsData.clear();
+        songsData = new ArrayList<>();
+    }
 	
 	public static String getSongCover(Context context, String songFilePath, String mimeType, long id) {
     String cached = getCachedCoverPath(context, songFilePath);
@@ -246,7 +254,7 @@ public class SongMetadataHelper {
         return inSampleSize;
     }
 	
-	private static String getCachedCoverPath(Context context, String songFilePath) {
+	public static String getCachedCoverPath(Context context, String songFilePath) {
 		String hashedFileName = hashFilePath(songFilePath);
 		File cacheDir = new File(context.getCacheDir(), CACHE_DIR_NAME);
 		if (!cacheDir.exists()) {
@@ -273,7 +281,6 @@ public class SongMetadataHelper {
 			bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
 			return coverFile.getAbsolutePath();
 		} catch (IOException e) {
-			Log.e("SongMetadataHelper", "Error saving cover to cache", e);
 		}
 		
 		return null;
@@ -289,7 +296,6 @@ public class SongMetadataHelper {
 			}
 			return hexString.toString();
 		} catch (NoSuchAlgorithmException e) {
-			Log.e("SongMetadataHelper", "Error hashing file path", e);
 		}
 		return String.valueOf(filePath.hashCode());
 	}

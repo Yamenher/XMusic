@@ -156,10 +156,10 @@ public class ColorPaletteUtils {
         tones.put("onPrimaryContainer", Hct.from(hue, chroma, isDark ? 90 : 10).toInt());
 
         tones.put("surface", Hct.from(hue, lowChroma ? chroma : 25, isDark ? 7 : 92).toInt());
-        tones.put("onSurface", Hct.from(hue, lowChroma ? chroma : 30, isDark ? 75 : 10).toInt());
+        tones.put("onSurface", Hct.from(hue, lowChroma ? chroma : 30, isDark ? 92 : 10).toInt());
 
         tones.put("surfaceContainer", Hct.from(hue, lowChroma ? chroma : 25, isDark ? 15 : 88).toInt());
-        tones.put("onSurfaceContainer", Hct.from(hue, lowChroma ? chroma : 30, isDark ? 60 : 10).toInt());
+        tones.put("onSurfaceContainer", Hct.from(hue, lowChroma ? chroma : 30, isDark ? 70 : 10).toInt());
 
         tones.put("outline", Hct.from(hue, lowChroma ? chroma : 25, isDark ? 30 : 70).toInt());
 

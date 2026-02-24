@@ -56,8 +56,6 @@ public class TtmlToElrc {
                 }
             }
 
-            Log.e("TTMLTOELRC", sb.toString());
-
             return sb.toString();
 
         } catch (Exception e) {

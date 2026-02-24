@@ -58,10 +58,10 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
-      - name: Build both ABIs
+      - name: Build Preview build for both ABIs
         if: github.event_name != 'pull_request'
         run: | # Use the pipe for multi-line commands
-          ./gradlew assembleDebug \
+          ./gradlew assemblePreview \
           -DLOG_CHAT_ID="${{ secrets.LOG_CHAT_ID }}" \
           -DTG_BOT_TOKEN="${{ secrets.BOT_TOKEN }}" \
           -DTG_CHAT_ID="${{ secrets.CHAT_ID }}" \
@@ -74,37 +74,37 @@ jobs:
       - name: Rename APKs with commit hash
         run: |
           HASH=${GITHUB_SHA::8}
-          mv app/build/outputs/apk/debug/debug-arm64-v8a.apk app/build/outputs/apk/debug/debug-arm64-v8a-${HASH}.apk
-          mv app/build/outputs/apk/debug/debug-armeabi-v7a.apk app/build/outputs/apk/debug/debug-armeabi-v7a-${HASH}.apk
+          mv app/build/outputs/apk/debug/preview-arm64-v8a.apk app/build/outputs/apk/debug/preview-arm64-v8a-${HASH}.apk
+          mv app/build/outputs/apk/debug/preview-armeabi-v7a.apk app/build/outputs/apk/debug/preview-armeabi-v7a-${HASH}.apk
 
-      - name: Upload debug arm64 apk
+      - name: Upload preview arm64 apk
         uses: actions/upload-artifact@v4
         with:
-          name: debug-arm64
-          path: app/build/outputs/apk/debug/debug-arm64-v8a-*.apk
+          name: preview-arm64
+          path: app/build/outputs/apk/preview/preview-arm64-v8a-*.apk
 
-      - name: Upload debug armeabi apk
+      - name: Upload preview armeabi apk
         uses: actions/upload-artifact@v4
         with:
-          name: debug-armeabi
-          path: app/build/outputs/apk/debug/debug-armeabi-v7a-*.apk
+          name: preview-armeabi
+          path: app/build/outputs/apk/preview/preview-armeabi-v7a-*.apk
 
   send_debug_apks:
-    name: Send Debug APKs
+    name: Send Preview APKs
     runs-on: ubuntu-latest
-    needs: build_debug_apk
+    needs: build_preview_apk
     environment: Release
     steps:
       - name: Download arm64 apk
         uses: actions/download-artifact@v4
         with:
-          name: debug-arm64
+          name: preview-arm64
           path: .
 
       - name: Download armeabi apk
         uses: actions/download-artifact@v4
         with:
-          name: debug-armeabi
+          name: preview-armeabi
           path: .
 
       - name: Send arm64 APK to Telegram
@@ -115,7 +115,7 @@ jobs:
           curl -X POST "https://api.telegram.org/bot${{ secrets.BOT_TOKEN }}/sendDocument" \
             -F chat_id="${{ secrets.CHAT_ID }}" \
             -F message_thread_id="4" \
-            -F document=@"debug-arm64-v8a-${HASH}.apk" \
+            -F document=@"preview-arm64-v8a-${HASH}.apk" \
             -F caption="arm64-v8a Build"
 
       - name: Send armeabi APK to Telegram
@@ -126,5 +126,5 @@ jobs:
           curl -X POST "https://api.telegram.org/bot${{ secrets.BOT_TOKEN }}/sendDocument" \
             -F chat_id="${{ secrets.CHAT_ID }}" \
             -F message_thread_id="4" \
-            -F document=@"debug-armeabi-v7a-${HASH}.apk" \
+            -F document=@"preview-armeabi-v7a-${HASH}.apk" \
             -F caption="armeabi-v7a Build"

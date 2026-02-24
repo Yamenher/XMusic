@@ -21,7 +21,7 @@
             android:layout_width="match_parent"
             android:id="@+id/collapsingtoolbar"
             android:background="@null"
-            app:contentScrim="@null"
+            app:contentScrim="@android:color/transparent"
             app:expandedTitleTextAppearance="@style/ExpandedAppBarTextStyle"
             app:expandedTitleSpacing="0dp"
             app:collapsedTitleTextAppearance="@style/CollapsedAppBarTextStyle"
@@ -52,6 +52,17 @@
             android:layout_height="match_parent"
             android:padding="16dp"
             android:orientation="vertical">
+
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="12dp"
+                android:layout_marginHorizontal="16dp"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="?colorPrimary"
+                android:text="Theme and Colors" />
 
             <LinearLayout
                 android:id="@+id/top_pref"
@@ -297,6 +308,60 @@
                         android:layout_margin="16dp"
                         android:text="Apply" />
                 
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="12dp"
+                android:layout_marginHorizontal="16dp"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="?colorPrimary"
+                android:text="App icon" />
+
+            <LinearLayout
+                android:id="@+id/icon_pref"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_marginTop="2dp"
+                android:padding="16dp"
+                android:background="@drawable/rv_ripple_single"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/icon_content"
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:text="Use redesigned icon style"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="2dp"
+                        android:textColor="?colorOnSurface"/>
+
+                    <TextView
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:text="Try this if the default icon is boring"
+                        android:textSize="14sp"
+                        android:textColor="?colorOutline"/>
+
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/icon_switch"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    style="@style/CustomSwitch"
+                />
+
             </LinearLayout>
 
         </LinearLayout>

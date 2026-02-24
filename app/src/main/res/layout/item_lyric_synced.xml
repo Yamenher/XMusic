@@ -7,21 +7,12 @@
     android:clipChildren="false"
     android:clipToOutline="false"
     android:background="?selectableItemBackground">
-
-    <com.xapps.media.xmusic.widget.LyricLineView
-        android:id="@+id/lyricText"
+    <com.xapps.media.xmusic.widget.LyricLineCanvasView
+        android:id="@+id/lyricCanvas"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="start"
-        android:lineSpacingExtra="2dp"
-        android:letterSpacing="0.0"
-        android:textFontWeight="700"
-        android:textColor="?colorOnSurface"
-        android:clipToPadding="false"
-        android:clipToOutline="false"
         android:paddingTop="16dp"
         android:paddingBottom="16dp"
         android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        android:textSize="28sp" />
+        android:paddingEnd="24dp" />
 </com.xapps.media.xmusic.widget.GlowSafeFrameLayout>

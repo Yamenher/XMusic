@@ -73,8 +73,8 @@ private final float[] uPoints = {
     }
 
     private void setupShader() {
-        shader = new RuntimeShader(loadShader(R.raw.bg_frag));
-        paint.setShader(shader);
+      //  shader = new RuntimeShader(loadShader(R.raw.bg_frag));
+      //  paint.setShader(shader);
 
         currentColors = colorsFromInts(
                 XUtils.interpolateColor(MaterialColorUtils.colorOnPrimary, MaterialColorUtils.colorSurface, 0.5f),

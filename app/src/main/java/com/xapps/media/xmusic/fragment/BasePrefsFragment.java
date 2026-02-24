@@ -24,6 +24,7 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.xapps.media.xmusic.R;
 import com.xapps.media.xmusic.activity.MainActivity;
 import com.xapps.media.xmusic.common.SettingsItem;
+import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.databinding.*;
 import com.xapps.media.xmusic.utils.XUtils;
 
@@ -61,12 +62,14 @@ public abstract class BasePrefsFragment extends BaseFragment {
         private final Drawable top;
         private final Drawable middle;
         private final Drawable bottom;
+        private final Drawable single;
         private final List<SettingsItem> data;
         private BasePrefsFragment frag;
 
         public ItemsListAdapter(BasePrefsFragment fragment, Context context, List<SettingsItem> data) {
             setHasStableIds(true);
             frag = fragment;
+            this.single = ContextCompat.getDrawable(context, R.drawable.rv_ripple_single);
             this.top = ContextCompat.getDrawable(context, R.drawable.rv_ripple_top);
             this.middle = ContextCompat.getDrawable(context, R.drawable.rv_ripple);
             this.bottom = ContextCompat.getDrawable(context, R.drawable.rv_ripple_bottom);
@@ -96,7 +99,7 @@ public abstract class BasePrefsFragment extends BaseFragment {
 
                 Drawable bg;
                 if (!hasPrev && !hasNext) {
-                    bg = top.getConstantState().newDrawable().mutate();
+                    bg = single.getConstantState().newDrawable().mutate();
                 } else if (!hasPrev) {
                     bg = top.getConstantState().newDrawable().mutate();
                 } else if (!hasNext) {
@@ -193,6 +196,7 @@ public abstract class BasePrefsFragment extends BaseFragment {
         }
 
         void bind(BasePrefsFragment host, SettingsItem item) {
+            binding.prefSwitch.setChecked(DataManager.sp.getBoolean(item.id, false));
             binding.prefSwitch.setOnCheckedChangeListener(null);
             binding.prefTitle.setText(item.title);
             binding.prefTitle.setTypeface(binding.prefTitle.getTypeface(), Typeface.BOLD);
@@ -208,7 +212,15 @@ public abstract class BasePrefsFragment extends BaseFragment {
     
     protected void onNavigate(SettingsItem item) {}
     
-    protected void onSwitchChanged(SettingsItem item, boolean value) {}
+    protected void onSwitchChanged(SettingsItem item, boolean value) {
+        switch (item.id) {
+            case "stable_colors" :
+                DataManager.setStableColors(value);
+            break;
+            default :
+            break;
+        }
+    }
 
     public static class SpacingDecoration extends ItemDecoration {
 

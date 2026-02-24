@@ -64,7 +64,6 @@ public class CustomPagerAdapter extends RecyclerView.Adapter<CustomPagerAdapter.
                     .priority(Priority.LOW)
                     .skipMemoryCache(false))
                     .into(holder.thumbnail);
-                Log.i("warning", "No cover at pos: " + position);
             }
         }
 

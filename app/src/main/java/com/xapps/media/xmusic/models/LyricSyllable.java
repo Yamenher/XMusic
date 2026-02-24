@@ -1,7 +1,7 @@
 package com.xapps.media.xmusic.models;
 
 public class LyricSyllable {
-    public final int startTime;
+    public int startTime;
     public int endTime;
     public final String text;
     public final int relStart;

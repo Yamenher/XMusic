@@ -9,10 +9,12 @@ public class SettingsItem {
 
     public int type;
     public String title;
+    public String id;
     public String description;
     public Fragment destinationFragment;
 
-    public SettingsItem(int itemType, String title, String desc, Fragment frag) {
+    public SettingsItem(int itemType, String id, String title, String desc, Fragment frag) {
+        this.id = id;
         this.type = itemType;
         this.title = title;
         this.description = desc;

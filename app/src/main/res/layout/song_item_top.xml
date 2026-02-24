@@ -28,13 +28,14 @@
             android:layout_height="45dp"
             android:visibility="invisible"
             android:background="@drawable/active_item_scrim">
-            <ImageView
-                android:layout_width="45dp"
-                android:layout_height="45dp"
-                android:src="@drawable/ic_play_arrow_round"
-                android:padding="4dp"
-                android:tint="?colorPrimaryFixed" 
-                android:scaleType="fitCenter" />
+            <com.xapps.media.xmusic.widget.VuMeterView
+                android:id="@+id/vumeter_view"
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:padding="6dp"
+                app:vumeter_blockSpacing="4dp"
+                app:vumeter_blockNumber="3"
+                app:vumeter_backgroundColor="?colorPrimary" />
         </FrameLayout>
     </FrameLayout>
     <TextView
