@@ -170,7 +170,7 @@
         app:elevation="0dp"
         android:elevation="0dp"
         app:menu="@menu/bnv_menu"
-        app:labelVisibilityMode="selected"
+        app:labelVisibilityMode="auto"
         app:itemTextAppearanceActive="@style/TabTextStyle"
         app:itemTextAppearanceInactive="@style/TabTextStyle"
         app:paddingBottomSystemWindowInsets="false" />

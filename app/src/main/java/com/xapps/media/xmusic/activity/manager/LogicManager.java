@@ -257,6 +257,7 @@ public class LogicManager {
         });
 
         binding.expandedPlayer.speedButton.setOnClickListener(v -> showSpeedDialog());
+        binding.collapsedPlayer.getRoot().setOnClickListener(v -> binding.miniPlayer.setState(ExpressiveSliderLayout.STATE_EXPANDED));
     }
 
     public void applySavedPlaybackParameters() {
