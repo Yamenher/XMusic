@@ -25,7 +25,6 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDragHandleView;
-import com.google.android.material.search.SearchView;
 import com.google.android.material.search.SearchView.TransitionState;
 import com.xapps.media.xmusic.R;
 import com.xapps.media.xmusic.activity.RootActivity;
@@ -46,6 +45,7 @@ import com.xapps.media.xmusic.utils.XUtils;
 import com.xapps.media.xmusic.widget.ExpressiveSliderLayout;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -83,6 +83,39 @@ public class SearchFragment extends BaseFragment implements FragmentCallback {
 
     private SearchListAdapter searchAdapter;
 
+    public interface ContextAction {
+        void run(@NonNull Context context);
+    }
+
+    private final List<ContextAction> pendingContextActions = new ArrayList<>();
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        for (ContextAction action : new ArrayList<>(pendingContextActions)) {
+            action.run(context);
+        }
+        pendingContextActions.clear();
+    }
+
+    public void runWithContext(@NonNull ContextAction action) {
+        Context context = getContext();
+        if (context != null && isAdded()) {
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                action.run(context);
+            } else {
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    Context ctx = getContext();
+                    if (ctx != null && isAdded()) {
+                        action.run(ctx);
+                    }
+                });
+            }
+        } else {
+            pendingContextActions.add(action);
+        }
+    }
+
     @NonNull
     @Override
     public View onCreateView(
@@ -112,7 +145,7 @@ public class SearchFragment extends BaseFragment implements FragmentCallback {
 
     private void initializeLogic() {
         CallbackInterface.setSrFragCallback(this);
-        binding.searchRecycler.setLayoutManager(new LinearLayoutManager(getActivity()));
+        runWithContext(context -> binding.searchRecycler.setLayoutManager(new LinearLayoutManager(context)));
         /*DefaultItemAnimator animator = new DefaultItemAnimator();
         animator.setSupportsChangeAnimations(true);
         animator.setMoveDuration(0);
@@ -122,7 +155,11 @@ public class SearchFragment extends BaseFragment implements FragmentCallback {
         Until I find a fix for ugly animations*/
         binding.searchRecycler.setItemAnimator(null);
         activity.bottomNavigation.post(() -> {
-            binding.searchRecycler.addItemDecoration(new BottomSpacingDecoration(XUtils.convertToPx(requireContext(), activity.bottomNavigation.getHeight())));
+            runWithContext(context -> {
+                if (binding != null) {
+                    binding.searchRecycler.addItemDecoration(new BottomSpacingDecoration(XUtils.convertToPx(context, activity.bottomNavigation.getHeight())));
+                }
+            });
         });
         loadSongs();
     }
@@ -180,13 +217,13 @@ public class SearchFragment extends BaseFragment implements FragmentCallback {
         
         binding.searchView.addTransitionListener(
         (searchView, previousState, newState) -> {
-            if (newState == SearchView.TransitionState.SHOWING) {
+            if (newState == TransitionState.SHOWING) {
                 currentState = UIManager.LAYOUT_STATE_EXPOSE_PLAYER_ONLY;
                 //a.bottomSheetBehavior.setDraggable(false);
                 //a.HideBNV(true);
-            } else if (newState == SearchView.TransitionState.SHOWN) {
+            } else if (newState == TransitionState.SHOWN) {
                 //a.bottomSheetBehavior.setDraggable(true);
-            } else if (newState == SearchView.TransitionState.HIDING) {
+            } else if (newState == TransitionState.HIDING) {
                 currentState = UIManager.LAYOUT_STATE_EXPOSE_PLAYER_ONLY;
                 //a.HideBNV(false);
             }
@@ -424,27 +461,29 @@ public class SearchFragment extends BaseFragment implements FragmentCallback {
     }
 
     private void loadSongs() {
-        executor.execute(() -> {
-            SongMetadataHelper.getAllSongs(getActivity(), new SongLoadListener() {
-                @Override
-                public void onComplete(ArrayList<Song> map) {
-                    bindInitial();
-                }
-			});
+        runWithContext(context -> {
+            executor.execute(() -> {
+                SongMetadataHelper.getAllSongs(context, new SongLoadListener() {
+                    @Override
+                    public void onComplete(ArrayList<Song> map) {
+                        bindInitial();
+                    }
+                });
+            });
         });
     }
     
     private void bindInitial() {
-        if (!isAdded() || getContext() == null) return;
-        new Handler(Looper.getMainLooper()).post(() -> {
+        runWithContext(context -> {
+            if (binding == null) return;
             ArrayList<Song> initial = SongSearchHelper.search("", true, true, true, true);
-            searchAdapter = new SearchListAdapter(requireContext(), initial);
+            searchAdapter = new SearchListAdapter(context, initial);
             binding.searchRecycler.setAdapter(searchAdapter);
         });
     }
     
     @Override
-    public SearchView.TransitionState getSearchViewState() {
+    public TransitionState getSearchViewState() {
         return binding.searchView.getCurrentTransitionState();
     }
     

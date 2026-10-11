@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.*;
 import android.util.Log;
 import android.view.*;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.*;
 import androidx.annotation.NonNull;
@@ -21,16 +20,13 @@ import androidx.transition.TransitionManager;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
-import com.google.android.material.appbar.AppBarLayout;
+import com.bumptech.glide.signature.ObjectKey;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.android.material.bottomsheet.BottomSheetDragHandleView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialSplitButton;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.transition.MaterialSharedAxis;
 import com.xapps.media.xmusic.R;
-import com.xapps.media.xmusic.activity.MainActivity;
 import com.xapps.media.xmusic.activity.RootActivity;
 import com.xapps.media.xmusic.callback.CallbackInterface;
 import com.xapps.media.xmusic.callback.FragmentCallback;
@@ -38,11 +34,8 @@ import com.xapps.media.xmusic.common.SongLoadListener;
 import com.xapps.media.xmusic.data.DataManager;
 import com.xapps.media.xmusic.data.RuntimeData;
 import com.xapps.media.xmusic.databinding.*;
-import com.xapps.media.xmusic.databinding.ActivityMainBinding;
-import com.xapps.media.xmusic.helper.FabPlacementHelper;
 import com.xapps.media.xmusic.helper.SongMetadataHelper;
 import com.xapps.media.xmusic.helper.SongSorter;
-import com.xapps.media.xmusic.models.BottomSheetBehavior;
 import com.xapps.media.xmusic.models.Song;
 import com.xapps.media.xmusic.service.PlayerService;
 import com.xapps.media.xmusic.utils.*;
@@ -56,7 +49,6 @@ import java.util.concurrent.Executors;
 import kotlin.Unit;
 import me.zhanghai.android.fastscroll.FastScroller;
 import me.zhanghai.android.fastscroll.FastScrollerBuilder;
-import me.zhanghai.android.fastscroll.PopupTextProvider;
 
 public class SongsListFragment extends BaseFragment implements FragmentCallback {
 	
@@ -218,12 +210,13 @@ public class SongsListFragment extends BaseFragment implements FragmentCallback 
 		    .centerCrop()  
             .fallback(placeholder)  
 			.error(placeholder)
-            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)  
-            .transition(DrawableTransitionOptions.withCrossFade())  
+            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .signature(new ObjectKey(data.get(position).dateModified))
+            .transition(DrawableTransitionOptions.withCrossFade())
             .placeholder(placeholder)  
             .override(imageSize, imageSize)
 		    .into(binding.songCover);
-		    if (Title == null || Title.equals("")) {
+		    if (Title == null || Title.isEmpty()) {
 			    binding.SongTitle.setText(getString(R.string.unknown));
 		    } else {
 			    binding.SongTitle.setText(Title);
