@@ -3,19 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XMusic</title>
-
-<script>
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }
-</script>
+<title>XMusic | Grimmjow</title>
+<script src="website/js/theme.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+<link rel="stylesheet" href="website/css/theme.css">
+<link rel="stylesheet" href="website/css/base.css">
+<link rel="stylesheet" href="website/css/home.css">
 
 <script type="importmap">
 {
@@ -24,518 +21,191 @@
   }
 }
 </script>
-
 <script type="module">
   import '@material/web/all.js';
 </script>
-
-<style>
-@font-face {
-  font-family: 'Google Sans Flex';
-  src: url('website/assets/GoogleSans-Flex.ttf') format('truetype');
-  font-weight: 100 1000;
-  font-style: normal;
-}
-
-:root {
-  --md-sys-color-primary: #386a20;
-  --md-sys-color-on-primary: #ffffff;
-  --md-sys-color-primary-container: #b7f397;
-  --md-sys-color-on-primary-container: #042100;
-  --md-sys-color-surface: #fdfdf6;
-  --md-sys-color-on-surface: #1a1c18;
-  --md-sys-color-surface-variant: #dfe4d7;
-  --md-sys-color-on-surface-variant: #43483e;
-  --md-sys-color-surface-container-highest: #e2e3d8;
-  --md-sys-color-error-container: #ffdad6;
-  --md-sys-color-on-error-container: #410002;
-  --md-sys-color-outline: #73796e;
-}
-
-[data-theme="dark"] {
-  --md-sys-color-primary: #9cd67d;
-  --md-sys-color-on-primary: #0c3900;
-  --md-sys-color-primary-container: #1f5107;
-  --md-sys-color-on-primary-container: #b7f397;
-  --md-sys-color-surface: #1a1c18;
-  --md-sys-color-on-surface: #e3e3dc;
-  --md-sys-color-surface-variant: #43483e;
-  --md-sys-color-on-surface-variant: #c3c8bc;
-  --md-sys-color-surface-container-highest: #33352f;
-  --md-sys-color-error-container: #93000a;
-  --md-sys-color-on-error-container: #ffdad6;
-  --md-sys-color-outline: #8c9288;
-}
-
-:root, md-filled-button, md-outlined-button, md-switch, md-icon-button {
-  --md-ref-typeface-brand: 'Google Sans Flex', 'Outfit', sans-serif;
-  --md-ref-typeface-plain: 'Google Sans Flex', 'Outfit', sans-serif;
-  --md-sys-typescale-label-large-font: 'Google Sans Flex', 'Outfit', sans-serif;
-  --md-sys-typescale-label-large-font-family: 'Google Sans Flex', 'Outfit', sans-serif;
-  --md-sys-typescale-body-medium-font-family: 'Google Sans Flex', 'Outfit', sans-serif;
-}
-
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
-body {
-  margin: 0;
-  font-family: 'Google Sans Flex', 'Outfit', sans-serif;
-  background-color: var(--md-sys-color-surface);
-  color: var(--md-sys-color-on-surface);
-  transition: background-color 0.3s ease, color 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-h1, h2, h3, strong {
-  font-variation-settings: "ROND" 100;
-  font-weight: 700;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.author-link {
-  color: var(--md-sys-color-primary);
-}
-
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: var(--md-sys-color-surface-container-highest);
-}
-
-.top-bar strong a:hover {
-  text-decoration: underline;
-}
-
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-}
-
-.hero {
-  background-color: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
-  padding: 5rem 1rem;
-  border-bottom-left-radius: 32px;
-  border-bottom-right-radius: 32px;
-  text-align: center;
-}
-
-.hero h1 {
-  font-size: clamp(2rem, 5vw, 4rem);
-  font-weight: 800;
-  margin: 0 0 1rem 0;
-  letter-spacing: -0.04em;
-}
-
-.hero p {
-  font-size: 1.2rem;
-  max-width: 850px;
-  margin: 0 auto 2rem auto;
-  opacity: 0.9;
-  line-height: 1.6;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 0 1rem;
-  flex: 1;
-  width: 100%;
-}
-
-.carousel-wrapper {
-  width: 100%;
-  overflow: hidden;
-  margin: 1rem 0 3rem 0;
-}
-
-.carousel-container {
-  position: relative;
-}
-
-.nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  background-color: var(--md-sys-color-surface-variant);
-  border-radius: 50%;
-}
-
-.prev-btn {
-  left: 2vw;
-}
-
-.next-btn {
-  right: 2vw;
-}
-
-.carousel {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  gap: 1rem;
-  padding: 1rem 5vw 2rem 5vw;
-  scrollbar-width: none;
-  scroll-padding: 0 5vw;
-}
-
-.carousel::-webkit-scrollbar {
-  display: none;
-}
-
-.carousel img {
-  scroll-snap-align: center;
-  width: 85vw;
-  max-width: 900px;
-  aspect-ratio: 3 / 2;
-  border-radius: 28px;
-  background-color: var(--md-sys-color-surface-container-highest);
-  object-fit: cover;
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  user-select: none;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
-}
-
-.card {
-  position: relative;
-  background-color: var(--md-sys-color-surface-container-highest);
-  border-radius: 24px;
-  padding: 1.5rem;
-}
-
-.card h3 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0;
-  font-size: 1.5rem;
-}
-
-.card h3 .material-symbols-outlined {
-  color: var(--md-sys-color-primary);
-  font-variation-settings: normal;
-}
-
-.status-board {
-  background-color: var(--md-sys-color-surface-variant);
-  border-radius: 24px;
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-  word-wrap: break-word;
-}
-
-.notice-board {
-  background-color: var(--md-sys-color-error-container);
-  color: var(--md-sys-color-on-error-container);
-  border-radius: 24px;
-  padding: 2rem;
-  margin-bottom: 3rem;
-  word-wrap: break-word;
-}
-
-.notice-board h2 {
-  margin-top: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.qa-section {
-  margin-bottom: 3rem;
-}
-
-details {
-  background-color: var(--md-sys-color-surface-container-highest);
-  border-radius: 16px;
-  margin-bottom: 0.75rem;
-  overflow: hidden;
-  transition: background-color 0.2s ease;
-}
-
-details[open] {
-  background-color: var(--md-sys-color-surface-variant);
-}
-
-summary {
-  padding: 1.25rem 1.5rem;
-  font-weight: 700;
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 1.1rem;
-}
-
-summary::-webkit-details-marker {
-  display: none;
-}
-
-summary::after {
-  content: '\e313';
-  font-family: 'Material Symbols Outlined';
-  font-size: 24px;
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-  margin-left: 1rem;
-}
-
-details[open] summary::after {
-  transform: rotate(180deg);
-}
-
-details p {
-  padding: 0 1.5rem 1.5rem 1.5rem;
-  margin: 0;
-  line-height: 1.6;
-}
-
-.credits-board {
-  background-color: var(--md-sys-color-surface-container-highest);
-  border-radius: 24px;
-  padding: 2rem;
-  margin-bottom: 3rem;
-  word-wrap: break-word;
-}
-
-.credits-board ul {
-  padding-left: 1.5rem;
-  line-height: 1.8;
-  margin-bottom: 0;
-}
-
-.credits-board a {
-  color: var(--md-sys-color-primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.credits-board a:hover {
-  text-decoration: underline;
-}
-
-.center-actions {
-  text-align: center;
-  margin: 3rem 0;
-}
-
-.divider {
-  border: none;
-  height: 1px;
-  background-color: var(--md-sys-color-outline);
-  opacity: 0.3;
-  margin: 0 1rem;
-}
-
-.footer {
-  text-align: center;
-  padding: 2rem 1rem;
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
-
-@media (max-width: 800px) {
-  .nav-btn {
-    display: none;
-  }
-}
-
-@media (max-width: 600px) {
-  .top-bar {
-    padding: 1rem;
-  }
-  .hero {
-    padding: 3rem 1rem;
-  }
-  .carousel img {
-    width: 90vw;
-  }
-  .carousel {
-    padding: 1rem 2.5vw 2rem 2.5vw;
-    scroll-padding: 0 2.5vw;
-  }
-}
-</style>
+<script src="website/js/carousel.js" defer></script>
+<script src="website/js/home.js" defer></script>
 </head>
 <body>
 
-<div class="top-bar">
-  <strong>XMusic by <a href="https://github.com/grimmthejow" target="_blank" class="author-link">Grimmjow</a></strong>
+<header class="top-bar top-bar--floating">
+  <strong class="brand">XMusic by <a href="https://github.com/grimmthejow" target="_blank" class="link">Grimmjow</a></strong>
   <div class="theme-toggle">
     <span class="material-symbols-outlined">light_mode</span>
-    <md-switch id="darkModeSwitch"></md-switch>
+    <md-switch class="theme-switch" aria-label="Dark mode"></md-switch>
     <span class="material-symbols-outlined">dark_mode</span>
   </div>
-</div>
+</header>
 
-<div class="hero">
-  <h1>XMusic</h1>
-  <p>A Material 3 Expressive Music player for Android, built fully in Java.</p>
-  <div class="hero-actions">
-    <md-filled-button href="download.html">
-      <md-icon slot="icon">download</md-icon>
-      Download XMusic
-    </md-filled-button>
-    <md-outlined-button href="https://github.com/FoedusProgramme/XMusic" target="_blank">
-      <md-icon slot="icon">code</md-icon>
-      View Repository
-    </md-outlined-button>
+<section class="hero">
+  <div class="hero-content">
+    <svg class="app-icon" viewBox="0 0 96 96" role="img" aria-label="XMusic app icon" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <mask id="appIconGlyph" maskUnits="userSpaceOnUse" x="0" y="0" width="96" height="96">
+          <image href="data:image/png;base64,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" x="-24" y="-24" width="144" height="144"/>
+        </mask>
+      </defs>
+      <rect class="app-icon-tile" width="96" height="96" rx="27"/>
+      <rect class="app-icon-glyph" width="96" height="96" mask="url(#appIconGlyph)"/>
+    </svg>
+    <h1>XMusic</h1>
+    <p>A Material 3 Expressive Music player for Android, built fully in Java.</p>
+    <div class="hero-actions">
+      <md-filled-button href="download.html">
+        <md-icon slot="icon">download</md-icon>
+        Download XMusic
+      </md-filled-button>
+      <md-filled-icon-button href="https://github.com/FoedusProgramme/XMusic" target="_blank" aria-label="View Repository" title="View Repository">
+        <md-icon>code</md-icon>
+      </md-filled-icon-button>
+    </div>
   </div>
-</div>
+  <div class="hero-art" aria-hidden="true">
+    <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" focusable="false">
+      <path class="ha-hill" d="M40 400 C80 340 130 320 190 340 C240 357 270 320 310 290 C360 253 400 285 450 262 C500 240 530 200 600 210 L600 400 Z"/>
+      <path class="ha-arch" d="M470 400 A52 52 0 0 1 574 400 Z"/>
+      <rect class="ha-pill" x="304" y="235" width="52" height="190" rx="26" transform="rotate(-30 330 330)"/>
+      <path class="ha-cookie" d="M538.0 230.0 Q562.7 254.8 528.9 264.0 Q537.9 297.9 504.0 288.9 Q494.8 322.7 470.0 298.0 Q445.2 322.7 436.0 288.9 Q402.1 297.9 411.1 264.0 Q377.3 254.8 402.0 230.0 Q377.3 205.2 411.1 196.0 Q402.1 162.1 436.0 171.1 Q445.2 137.3 470.0 162.0 Q494.8 137.3 504.0 171.1 Q537.9 162.1 528.9 196.0 Q562.7 205.2 538.0 230.0 Z"/>
+      <circle class="ha-ring" cx="545" cy="95" r="34"/>
+      <path class="ha-squiggle" d="M150 235 Q175 205 200 235 T250 235 T300 235"/>
+    </svg>
+  </div>
+</section>
 
-<div class="carousel-wrapper">
-  <h2 style="text-align: center; margin-bottom: 1rem;">Showcase</h2>
-  <div class="carousel-container">
-    <md-icon-button class="nav-btn prev-btn">
+<section class="showcase">
+  <h2 class="section-title">Showcase</h2>
+  <div class="carousel">
+    <div class="carousel-stage">
+      <div class="carousel-item"><img src="website/assets/ss1.jpg" alt="Screenshot 1"></div>
+      <div class="carousel-item"><img src="website/assets/ss2.jpg" alt="Screenshot 2"></div>
+      <div class="carousel-item"><img src="website/assets/ss3.jpg" alt="Screenshot 3"></div>
+    </div>
+    <div class="carousel-scroller" tabindex="0" aria-label="Screenshot carousel">
+      <div class="carousel-snap"></div>
+      <div class="carousel-snap"></div>
+      <div class="carousel-snap"></div>
+    </div>
+    <md-icon-button class="carousel-nav carousel-nav--prev" aria-label="Previous screenshot">
       <span class="material-symbols-outlined">chevron_left</span>
     </md-icon-button>
-    <div class="carousel">
-      <img src="website/assets/ss1.jpg" alt="Screenshot 1">
-      <img src="website/assets/ss2.jpg" alt="Screenshot 2">
-      <img src="website/assets/ss3.jpg" alt="Screenshot 3">
-    </div>
-    <md-icon-button class="nav-btn next-btn">
+    <md-icon-button class="carousel-nav carousel-nav--next" aria-label="Next screenshot">
       <span class="material-symbols-outlined">chevron_right</span>
     </md-icon-button>
   </div>
-</div>
+</section>
 
-<div class="container">
-  
-  <h2 style="text-align: center; margin: 1rem 0 2rem 0;">Core Features</h2>
-  <div class="grid">
-    <div class="card">
-      <md-elevation></md-elevation>
-      <h3><span class="material-symbols-outlined">play_circle</span> Playback Engine</h3>
-      <p>Media3 ExoPlayer based playback featuring background playback with notification controls and MediaSession integration.</p>
+<main class="container">
+
+  <section class="features">
+    <h2 class="section-title">Core Features</h2>
+    <div class="feature-grid">
+      <article class="feature-card">
+        <h3><span class="material-symbols-outlined">play_circle</span> Playback Engine</h3>
+        <p>Media3 ExoPlayer based playback featuring background playback with notification controls and MediaSession integration.</p>
+      </article>
+
+      <article class="feature-card">
+        <h3><span class="material-symbols-outlined">library_music</span> Local Playback</h3>
+        <p>Plays the audio files already on your device. Your library is scanned and played locally, with nothing streamed or uploaded.</p>
+      </article>
+
+      <article class="feature-card">
+        <h3><span class="material-symbols-outlined">palette</span> Dynamic UI</h3>
+        <p>Dynamic Now Playing UI tinted by album artwork colors, and main interface colors easily customizable via settings.</p>
+      </article>
+
+      <article class="feature-card">
+        <h3><span class="material-symbols-outlined">swipe_left</span> Predictive Back</h3>
+        <p>Predictive back animations everywhere. Custom animations for smooth and continuous navigation transitions throughout the app.</p>
+      </article>
+
+      <article class="feature-card">
+        <h3><span class="material-symbols-outlined">lyrics</span> Advanced Lyrics</h3>
+        <p>Advanced lyrics support with animated transitions and Romaji/translation lyrics support for LRC, ELRC and TTML.</p>
+      </article>
+
+      <article class="feature-card">
+        <h3><span class="material-symbols-outlined">security</span> Privacy First</h3>
+        <p>No ads, no tracking, and granted permissions are only used for playing and managing your music</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2 class="section-title">Notes</h2>
+
+    <div class="requirements">
+      <h3 class="board-title">Requirements</h3>
+      <p><strong>Minimum Requirements:</strong> Android 8.0 (API 26) or higher, local audio files (duh), and a brain (only if you want to report bugs).</p>
     </div>
 
-    <div class="card">
-      <md-elevation></md-elevation>
-      <h3><span class="material-symbols-outlined">palette</span> Dynamic UI</h3>
-      <p>Dynamic Now Playing UI tinted by album artwork colors, and main interface colors easily customizable via settings.</p>
+    <div class="board board--error">
+      <h3 class="board-title"><span class="material-symbols-outlined">warning</span> Important Notice</h3>
+      <p>The app is still WIP and far away from a stable release. You might notice a lot of bugs, missing features, and some instability problems, but everything will be worked on in the near future.</p>
     </div>
+  </section>
 
-    <div class="card">
-      <md-elevation></md-elevation>
-      <h3><span class="material-symbols-outlined">swipe_left</span> Predictive Back</h3>
-      <p>Predictive back animations everywhere. Custom animations for smooth and continuous navigation transitions throughout the app.</p>
+  <section class="qa">
+    <h2 class="section-title">Q & A</h2>
+    <div class="qa-list">
+      <details>
+        <summary>Is XMusic free?</summary>
+        <p>Yes. Completely free. No ads, no subscriptions, no paywalled features. Donations are absolutely optional.</p>
+      </details>
+
+      <details>
+        <summary>Does XMusic require an account or internet connection?</summary>
+        <p>No accounts needed, almost everything works fully offline, except some features like downloading lyrics/songs metadata, viewing contributions page, and updating from within the app. Your data stays on your device and never leaves it regardless.</p>
+      </details>
+
+      <details>
+        <summary>Where does XMusic get my music from?</summary>
+        <p>It scans local audio files stored on your device. Nothing is uploaded anywhere.</p>
+      </details>
+
+      <details>
+        <summary>Why doesn’t XMusic show my songs?</summary>
+        <p>Make sure storage permissions are granted and your audio files are supported by your device/Android version.</p>
+      </details>
+
+      <details>
+        <summary>Does XMusic collect any personal data?</summary>
+        <p>No. There is no tracking, analytics abuse, or data harvesting.</p>
+      </details>
+
+      <details>
+        <summary>Why did playback stop in the background?</summary>
+        <p>Your system’s battery optimization (known issue on Xiaomi devices) or OEM “power saving” probably killed it. Disable optimizations for XMusic.</p>
+      </details>
+
+      <details>
+        <summary>Can I request features or report bugs?</summary>
+        <p>Yes. Use GitHub Issues for bugs and feature requests, or join the Telegram community for discussion.</p>
+      </details>
+
+      <details>
+        <summary>Why is feature X not available?</summary>
+        <p>If you think this feature will be useful for a lot of people, feel free to suggest it via reaching to our Telegram Community.</p>
+      </details>
+
+      <details>
+        <summary>Is XMusic open source?</summary>
+        <p>Uhm I guess?</p>
+      </details>
     </div>
+  </section>
 
-    <div class="card">
-      <md-elevation></md-elevation>
-      <h3><span class="material-symbols-outlined">lyrics</span> Advanced Lyrics</h3>
-      <p>Advanced lyrics support with animated transitions and Romaji/translation lyrics support for LRC, ELRC and TTML.</p>
-    </div>
-
-    <div class="card">
-      <md-elevation></md-elevation>
-      <h3><span class="material-symbols-outlined">security</span> Privacy First</h3>
-      <p>No ads, no tracking, and granted permissions are only used for playing and managing your music</p>
-    </div>
-  </div>
-
- <div class="notes-section">
-    <h2 style="text-align: center; margin-bottom: 2rem;">Notes</h2>
-
-  <div class="status-board">
-    <h2 style="margin-top: 0;">Requirements</h2>
-    <p><strong>Minimum Requirements:</strong> Android 8.0 (API 26) or higher, local audio files (duh), and a brain (only if you want to report bugs).</p>
-  </div>
-
-  <div class="notice-board">
-    <h2><span class="material-symbols-outlined">warning</span> Important Notice</h2>
-    <p style="margin-bottom: 0;">The app is still WIP and far away from a stable release. You might notice a lot of bugs, missing features, and some instability problems, but everything will be worked on in the near future.</p>
-  </div>
-
-  <div class="qa-section">
-    <h2 style="text-align: center; margin-bottom: 2rem;">Q & A</h2>
-    
-    <details>
-      <summary>Is XMusic free?</summary>
-      <p>Yes. Completely free. No ads, no subscriptions, no paywalled features. Donations are absolutely optional.</p>
-    </details>
-
-    <details>
-      <summary>Does XMusic require an account or internet connection?</summary>
-      <p>No accounts needed, almost everything works fully offline, except some features like downloading lyrics/songs metadata, viewing contributions page, and updating from within the app. Your data stays on your device and never leaves it regardless.</p>
-    </details>
-
-    <details>
-      <summary>Where does XMusic get my music from?</summary>
-      <p>It scans local audio files stored on your device. Nothing is uploaded anywhere.</p>
-    </details>
-
-    <details>
-      <summary>Why doesn’t XMusic show my songs?</summary>
-      <p>Make sure storage permissions are granted and your audio files are supported by your device/Android version.</p>
-    </details>
-
-    <details>
-      <summary>Does XMusic collect any personal data?</summary>
-      <p>No. There is no tracking, analytics abuse, or data harvesting.</p>
-    </details>
-
-    <details>
-      <summary>Why did playback stop in the background?</summary>
-      <p>Your system’s battery optimization (known issue on Xiaomi devices) or OEM “power saving” probably killed it. Disable optimizations for XMusic.</p>
-    </details>
-
-    <details>
-      <summary>Can I request features or report bugs?</summary>
-      <p>Yes. Use GitHub Issues for bugs and feature requests, or join the Telegram community for discussion.</p>
-    </details>
-
-    <details>
-      <summary>Why is feature X not available?</summary>
-      <p>If you think this feature will be useful for a lot of people, feel free to suggest it via reaching to our Telegram Community.</p>
-    </details>
-
-    <details>
-      <summary>Is XMusic open source?</summary>
-      <p>Uhm I guess?</p>
-    </details>
-  </div>
-
-  <div class="credits-board">
-    <h2 style="margin-top: 0; text-align: center;">Credits & Special Thanks</h2>
+  <section class="board credits">
+    <h2 class="section-title">Credits & Special Thanks</h2>
     <ul>
-      <li><a href="https://github.com/nift4" target="_blank">Nick</a> - For the precious advices and help he provided for me when I needed help.</li>
-      <li><a href="https://github.com/Piyush7890" target="_blank">Piyush</a> - Oto music developer for helping me with the lyrics component.</li>
+      <li><a href="https://github.com/nift4" target="_blank" class="link">Nick</a> - For the precious advices and help he provided for me when I needed help.</li>
+      <li><a href="https://github.com/Piyush7890" target="_blank" class="link">Piyush</a> - Oto music developer for helping me with the lyrics component.</li>
       <li><strong>Oto music, PixelPlayer and Gramophone Devs</strong> - For the UI inspiration and feedback.</li>
       <li><strong>All Testers</strong> - For testing new builds, trying out buggy features, and reporting every single bug and helping me debug the app and improve it :P</li>
       <li><strong>All Contributors</strong> - For helping make XMusic better for everyone.</li>
     </ul>
-  </div>
+  </section>
 
   <div class="center-actions">
     <md-outlined-button href="https://t.me/xmusiccommunity" target="_blank">
@@ -544,75 +214,15 @@ details p {
     </md-outlined-button>
   </div>
 
-</div>
+</main>
 
 <hr class="divider">
 <footer class="footer">
   &copy; 2026 Grimmjow. All rights reserved. Distributed under the GNU General Public License v3.0.
 </footer>
-
-<script>
-  const themeSwitch = document.getElementById('darkModeSwitch');
-  const htmlElement = document.documentElement;
-
-  if (htmlElement.getAttribute('data-theme') === 'dark') {
-    themeSwitch.selected = true;
-  }
-
-  themeSwitch.addEventListener('change', (e) => {
-    if (e.target.selected) {
-      htmlElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      htmlElement.setAttribute('data-theme', 'light');
-      localStorage.setItem('theme', 'light');
-    }
-  });
-
-  const carousel = document.querySelector('.carousel');
-  const prevBtn = document.querySelector('.prev-btn');
-  const nextBtn = document.querySelector('.next-btn');
-
-  let isDown = false;
-  let startX;
-  let scrollLeft;
-
-  carousel.addEventListener('mousedown', (e) => {
-    isDown = true;
-    carousel.style.cursor = 'grabbing';
-    carousel.style.scrollSnapType = 'none'; 
-    startX = e.pageX - carousel.offsetLeft;
-    scrollLeft = carousel.scrollLeft;
-  });
-
-  carousel.addEventListener('mouseleave', () => {
-    isDown = false;
-    carousel.style.cursor = 'auto';
-    carousel.style.scrollSnapType = 'x mandatory';
-  });
-
-  carousel.addEventListener('mouseup', () => {
-    isDown = false;
-    carousel.style.cursor = 'auto';
-    carousel.style.scrollSnapType = 'x mandatory';
-  });
-
-  carousel.addEventListener('mousemove', (e) => {
-    if (!isDown) return;
-    e.preventDefault();
-    const x = e.pageX - carousel.offsetLeft;
-    const walk = (x - startX) * 1.5;
-    carousel.scrollLeft = scrollLeft - walk;
-  });
-
-  prevBtn.addEventListener('click', () => {
-    carousel.scrollBy({ left: -carousel.clientWidth * 0.8, behavior: 'smooth' });
-  });
-
-  nextBtn.addEventListener('click', () => {
-    carousel.scrollBy({ left: carousel.clientWidth * 0.8, behavior: 'smooth' });
-  });
-</script>
+<footer class="footer">
+  Thanks to Akane for the major redesign! :)
+</footer>
 
 </body>
 </html>
